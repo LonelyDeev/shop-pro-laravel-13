@@ -1,0 +1,324 @@
+<?php
+
+namespace Themes\WeblakShop\src\Controllers;
+
+use App\Http\Controllers\Controller;
+use App\Models\Admin;
+use App\Models\Banner;
+use App\Models\Product;
+use App\Models\Province;
+use App\Models\User;
+use App\Models\UserMobileVerify;
+use App\Models\Widget;
+use App\Notifications\Sms\NewSellerCodeSent;
+use App\Notifications\Sms\NewUserCodeSent;
+use App\Notifications\Sms\VerifyCodeSent;
+use App\Notifications\User\UserCreated;
+use App\Notifications\User\UserRegistered;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Str;
+
+class UserController extends Controller
+{
+    public function Check_Mobile_Email(Request $request)
+    {
+        $this->validate($request, [
+            'username'   => 'required',
+        ],[
+            'username.required'=>'لطفا این قسمت را خالی نگذارید'
+        ]);
+
+        if ($this->username($request->username)=="mobile") {
+            $this->validate($request, [
+                'username' => 'digits:11|regex:/(09)[0-9]{9}/',
+            ],[
+                'username.regex'=>'شماره موبایل نادرست است',
+                'username.digits'=>'شماره موبایل نادرست است',
+            ]);
+        }else if ($this->username($request->username)=="email") {
+
+            $this->validate($request, [
+                'username' => 'string|email|exists:Users,email',
+            ],[
+                'username.email'=>'ایمیل را بطور صحیح وارد کنید',
+                'username.exists'=>'حساب کاربری با مشخصات وارد شده وجود ندارد. لطفا از شماره تلفن همراه برای ساخت حساب کاربری استفاده نمایید.',
+            ]);
+
+        }
+
+
+        session()->put('ShowPasswordForm_Mobile_Email',$request->username);
+        return redirect('/login/password');
+
+
+    }
+    public function ShowPasswordForm($data=null)
+    {
+        if (session('SettFirstOnePassword')){
+            if (User::where('username',session('SettFirstOnePassword'))->exists()){
+                session()->put('ShowPasswordForm_Mobile_Email',session('SettFirstOnePassword'));
+                return view('front::auth.password-login');
+            }else{
+                session()->forget('SettFirstOnePassword');
+                session()->forget('ShowPasswordForm_Mobile_Email');
+                return redirect('/login');
+            }
+
+        }else{
+
+            if (session('ShowPasswordForm_Mobile_Email')){
+                $username=session('ShowPasswordForm_Mobile_Email');
+                if (User::where($this->username(session('ShowPasswordForm_Mobile_Email')),$username)->exists()){
+                    return view('front::auth.password-login');
+                }else{
+
+                    $UserMobileVerify=UserMobileVerify::where('mobile',$username)->first();
+                    if (!session('ErrorCode') and session('ErrorCode')!='true'){
+
+                        $code = rand(10000, 99999);
+                        if ($UserMobileVerify){
+                            $UserMobileVerify->code=$code;
+                            $UserMobileVerify->save();
+                        }else{
+                            $UserMobileVerify=new UserMobileVerify();
+                            $UserMobileVerify->mobile=$username;
+                            $UserMobileVerify->code=$code;
+                            $UserMobileVerify->save();
+                        }
+                        Notification::send($UserMobileVerify, new NewUserCodeSent($UserMobileVerify));
+                    }
+                   session()->forget('ErrorCode');
+
+                    $resend_time = $UserMobileVerify->updated_at->addSeconds(120)->timestamp;
+                    return view('front::auth.password-register-verify',compact('resend_time'));
+                }
+
+
+            }else{
+                return redirect('/login');
+            }
+        }
+
+
+    }
+    public function CheckPassword(Request $request)
+    {
+        session()->put('ShowPasswordForm_Mobile_Email',$request->username);
+        $this->validate($request, [
+            'username'   => 'required',
+            'password' => 'required|min:6'
+        ],[
+            'username.required'=>'لطفا این قسمت را خالی نگذارید.',
+            'password.required'=>'لطفا این قسمت را خالی نگذارید.',
+            'password.min'=>'فیلد رمز ورود 6 کاراکتر الزامی می باشد.',
+        ]);
+
+        // Attempt to log the user in
+        session()->forget('ShowPasswordForm_Mobile_Email');
+
+        if (session('SettFirstOnePassword')){
+            User::where('username',session('SettFirstOnePassword'))->update(['password'=>Hash::make($request->password)]);
+            Auth::guard('web')->attempt([$this->username($request->username) => $request->username, 'password' => $request->password], $request->remember);
+            $request->session()->regenerate();
+            session()->put('UserWelcome',$request->username);
+            session()->forget('SettFirstOnePassword');
+            return redirect('/welcome');
+        }else{
+
+            if (Auth::guard('web')->attempt([$this->username($request->username) => $request->username, 'password' => $request->password], $request->remember)) {
+                // if successful, then redirect to their intended location
+                if (Auth::user()->status){
+                    //Admin::where('id', admin()->id)->update(['updated_at' => Carbon::now()->format('Y-m-d H:m:s')]);
+                    $request->session()->regenerate();
+                    return redirect('/');
+                }else{
+                    Auth::guard('web')->logout();
+                    session()->put('admin_login_error','حساب کاربری شما غیر فعال می باشد.');
+                    return redirect('/login');
+                }
+
+            }else{
+                session()->put('ShowPasswordForm_Mobile_Email',$request->username);
+                session()->put('admin_login_error','رمز عبور وارد شده صحیح نمی باشد.');
+                return redirect('/login/password');
+            }
+
+        }
+    }
+    public function Register_Mobile(Request $request)
+    {
+
+        session()->put('ShowPasswordForm_Mobile_Email',$request->mobile);
+        $this->validate($request, [
+            'verify_code'   => 'required|numeric|digits:5',
+            'mobile'   => 'required',
+        ],[
+            'verify_code.required'=>'فیلد کد تایید الزامی است',
+            'verify_code.digits'=>'کد تایید باید ۵ رقمی باشد',
+            'verify_code.numeric'=>'فقط از اعداد استفاده کنید',
+        ]);
+        $code=$request->verify_code;
+        $UserMobileVerify=UserMobileVerify::where('mobile',$request->mobile)->first();
+        if ($UserMobileVerify->code==$code){
+            $UserMobileVerify=UserMobileVerify::where('mobile',session('ShowPasswordForm_Mobile_Email'))->first();
+            session()->put('SettFirstOnePassword',$UserMobileVerify->mobile);
+            if ($UserMobileVerify){
+                $user=new User();
+                $user->mobile=$UserMobileVerify->mobile;
+                $user->username=$UserMobileVerify->mobile;
+                $user->level='user';
+                $user->verified_at= Carbon::now();
+                $user->save();
+                $UserMobileVerify->delete();
+            }
+            session()->forget('ShowPasswordForm_Mobile_Email');
+            return redirect('/login/password');
+
+
+        }else{
+            session()->put('ErrorCode','true');
+            return Redirect::route('front.user.CheckMobileEmailPassword')->with(['data' => $request->all()] )->withErrors(['msg' => 'کد وارد شده اشتباه است']);
+        }
+    }
+
+    public function welcome()
+    {
+        if (session('UserWelcome')){
+            $user=User::where('username',session('UserWelcome'))->first();
+
+            $admins = Admin::whereIn('level', ['admin', 'creator'])->get();
+            Notification::send($admins, new UserRegistered($user));
+            if (option('sms_on_user_register', 'off') == 'on') {
+                Notification::send($user, new UserCreated($user));
+            }
+
+            session()->forget('UserWelcome');
+            return view('front::auth.welcome');
+        }else{
+            return redirect('/');
+        }
+    }
+
+    public function profile()
+    {
+        $user        = auth()->user();
+        $last_orders = $user->orders()->latest()->take(3)->get();
+        $special_products=Product::where('special',true)->published()->latest()->take(15)->get();
+        $widgets = Widget::with('options')->where('key', 'middle-banners-4')->where('is_active', true)->orderBy('ordering')->first();
+        $active="profile";
+        return view('front::user.profile', compact('user', 'last_orders','special_products','widgets','active'));
+    }
+    public function update_profile(Request $request)
+    {
+        $this->validate($request, [
+            'first_name'   => 'required|string',
+            'last_name'    => 'required|string',
+            'mobile'       => 'required|string|regex:/(09)[0-9]{9}/|digits:11|unique:users,username,' . auth()->user()->id,
+            'email'        => 'string|email|max:191|unique:users,email,' . auth()->user()->id,
+            'national_code'=> 'string|digits:10|max:191|unique:users,national_code,' . auth()->user()->id . '|nullable',
+        ]);
+        $newsletter=0;
+        $birth_date=auth()->user()->birth_date;
+        if ($request->day!="date-desc" and $request->month!="date-desc" and $request->year!="date-desc"){
+            $birth_date=$request->year.'/'.$request->month.'/'.$request->day;
+        }
+        if ($request->newsletter){
+            $newsletter=1;
+        }
+
+
+        auth()->user()->update([
+            'first_name' => $request->first_name,
+            'last_name'  => $request->last_name,
+            'username'   => $request->mobile,
+            'email'      => $request->email,
+            'mobile'      => $request->mobile,
+            'national_code'      => $request->national_code,
+            'birth_date'      => $birth_date,
+            'card_number'      => $request->card_number,
+            'newsletter'      => $newsletter,
+        ]);
+
+        return response('success');
+    }
+    public function changePassword()
+    {
+        return view('front::auth.passwords.reset');
+    }
+    public function updatePassword(Request $request)
+    {
+        $this->validate($request, [
+            'prev_password' => 'required'
+        ]);
+
+        if (!Hash::check($request->prev_password, auth()->user()->password)) {
+            throw ValidationException::withMessages(['prev_password' => 'رمز عبور قبلی وارد شده اشتباه است']);
+        }
+
+        $this->validate($request, [
+            'password' => 'required|min:6|confirmed'
+        ]);
+
+        $password = Hash::make($request->password);
+
+        auth()->user()->update([
+            'password'       => $password,
+            'remember_token' => Str::random(60),
+        ]);
+
+        DB::table('sessions')->where('user_id', auth()->user()->id)->delete();
+
+        return response('success');
+    }
+
+    public function forceChangePassword()
+    {
+        return view('front::auth.passwords.force-change');
+    }
+
+    public function forceUpdatePassword(Request $request)
+    {
+        $this->validate($request, [
+            'password' => 'required|min:6|confirmed'
+        ]);
+
+        auth()->user()->update([
+            'password'                 => Hash::make($request->password),
+            'remember_token'           => Str::random(60),
+            'force_to_password_change' => false,
+        ]);
+
+        DB::table('sessions')->where('user_id', auth()->user()->id)->delete();
+        Auth::loginUsingId(auth()->user()->id);
+
+        return response('success');
+    }
+
+    public function editProfile()
+    {
+        $user      = auth()->user();
+        $provinces = Province::all();
+        $active="profileEdit";
+        return view('front::user.edit-profile', compact('user', 'provinces','active'));
+    }
+
+    public function username($login)
+    {
+        if(is_numeric($login)){
+            $field = 'mobile';
+        } else {
+            $field = 'email';
+        }
+        request()->merge([$field => $login]);
+
+        return $field;
+    }
+
+}
