@@ -96,7 +96,7 @@ class DeveloperController extends Controller
         }
 
         $isNewVersionAvailable = $updater->source()->isNewVersionAvailable();
-
+        dd($token);
         $versionAvailable = $updater->source()->getVersionAvailable();
         $versionInstalled = $updater->source()->getVersionInstalled();
 
