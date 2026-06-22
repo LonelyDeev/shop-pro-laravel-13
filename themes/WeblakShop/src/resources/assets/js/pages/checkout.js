@@ -44,6 +44,16 @@ function getFinalPrice(shouldUpdateClass = true,idGroupSelect=null) {
         return;
     }
 
+    // ========== بررسی وجود محصولات فیزیکی ==========
+    // اگر هیچ مرسوله‌ای (محصول فیزیکی) وجود نداشته باشد
+    if ($('.consignment-container .consignments').length === 0) {
+        // فقط سایدبار را به‌روزرسانی کن (برای نمایش قیمت دانلودی‌ها)
+        if (shouldUpdateClass || isFirstLoad) {
+            updateSidebarOnly();
+        }
+        return;
+    }
+
     // جمع‌آوری اطلاعات carrier_id برای همه گروه‌ها
     let carriersData = {};
     let hasAnyCarrier = false;
@@ -156,17 +166,49 @@ function getFinalPrice(shouldUpdateClass = true,idGroupSelect=null) {
         }
     });
 }
-// ==================== رویدادها ====================
+
+// ==================== تابع به‌روزرسانی فقط سایدبار (برای محصولات دانلودی) ====================
+function updateSidebarOnly() {
+    // فقط سایدبار را به‌روزرسانی کن (بدون نیاز به city_id و carrier)
+    var action = $('#address-section').data('action');
+
+    $.ajax({
+        url: action,
+        type: 'GET',
+        data: {
+            only_sidebar: true, // پارامتر جدید برای تشخیص
+            is_first_load: isFirstLoad
+        },
+        success: function (data) {
+            if (data.checkout_sidebar) {
+                $('#checkout-sidebar').replaceWith(data.checkout_sidebar);
+            }
+            check_wallet();
+            isFirstLoad = false;
+        },
+        error: function(xhr, status, error) {
+            console.error('Error in updateSidebarOnly:', error);
+            isFirstLoad = false;
+        }
+    });
+}
+
 
 // فقط بعد از لود کامل صفحه، یک بار اجرا شود
 $(document).ready(function () {
     // مرحله 1: تنظیم کلاس‌های فعال
     updateRadioActiveClass();
 
-    // مرحله 2: محاسبه اولیه قیمت (بدون بلاک کردن صفحه)
+    // مرحله 2: محاسبه اولیه قیمت (فقط در صورت وجود محصول فیزیکی)
     setTimeout(function() {
-        if ($('#address-section .user-address-item.active-address').data('city')) {
-            getFinalPrice(true); // با آپدیت کامل
+        const hasPhysical = $('.consignment-container .consignments').length > 0;
+        if (hasPhysical) {
+            if ($('#address-section .user-address-item.active-address').data('city')) {
+                getFinalPrice(true);
+            }
+        } else {
+            // فقط سایدبار را به‌روزرسانی کن
+            updateSidebarOnly();
         }
     }, 100);
 
@@ -175,17 +217,26 @@ $(document).ready(function () {
 });
 
 $(document).on('change', 'input[name^="carrier_id_"]', function() {
-    const idGroupSelect=$(this).data('group-id')
+    const hasPhysical = $('.consignment-container .consignments').length > 0;
+    if (!hasPhysical) {
+        return; // اگر فقط دانلودی است، کاری نکن
+    }
+
+    const idGroupSelect = $(this).data('group-id');
     updateRadioActiveClass();
     setTimeout(function() {
-        getFinalPrice(true,idGroupSelect);
+        getFinalPrice(true, idGroupSelect);
     }, 50);
 });
 // رویداد تغییر شهر
 $(document).on('change', '#city, #city_id', function () {
-    // در تغییر شهر، محتوای کانتینرها باید به‌روز شود
-    getFinalPrice(true);
+    const hasPhysical = $('.consignment-container .consignments').length > 0;
+    if (hasPhysical) {
+        getFinalPrice(true);
+    }
 });
+
+// ==================== Validation ====================
 
 // ==================== Validation ====================
 
@@ -208,12 +259,16 @@ jQuery('#checkout-form').validate({
         description: { maxlength: 1000 }
     },
     submitHandler: function(form) {
-        let allGroupsHaveCarrier = true;
-
-        if ($('.consignment-container .consignments').length === 0) {
+        // ========== بررسی وجود محصولات فیزیکی ==========
+        const hasPhysical = $('.consignment-container .consignments').length > 0;
+        console.log(hasPhysical)
+        // اگر فقط محصول دانلودی است، بدون بررسی ارسال کنید
+        if (!hasPhysical) {
             form.submit();
             return;
         }
+
+        let allGroupsHaveCarrier = true;
 
         $('.consignment-container .consignments').each(function() {
             const $consignment = $(this);
@@ -238,6 +293,14 @@ jQuery('#checkout-form').validate({
 
 // بررسی آدرس در submit
 jQuery('#checkout-form').on('submit', function(e) {
+    // ========== بررسی وجود محصولات فیزیکی ==========
+    const hasPhysical = $('.consignment-container .consignments').length > 0;
+
+    // اگر فقط محصول دانلودی است، از بررسی آدرس صرف نظر کن
+    if (!hasPhysical) {
+        return true;
+    }
+
     var city_id = $('#address-section .user-address-item.active-address').data('city');
     if (!city_id) {
         toastr.error('', 'آدرس خود را وارد کنید!', {
@@ -248,7 +311,6 @@ jQuery('#checkout-form').on('submit', function(e) {
         return false;
     }
 });
-
 // ==================== Discount Form ====================
 
 $('#discount-create-form').validate({
@@ -328,7 +390,11 @@ $('.sett-address').click(function () {
                 $(item).parents('.user-address-item').addClass('active-address');
                 $(item).parent('.custom-radio-box-label').attr('data-placeholder', 'انتخاب شده');
                 $(item).parent('.custom-radio-box-label').find('.icon-address i').addClass('fa-check').removeClass('fa-circle-dot');
-                getFinalPrice(true); // بعد از تغییر آدرس، قیمت را با آپدیت کامل محاسبه کن
+
+                const hasPhysical = $('.consignment-container .consignments').length > 0;
+                if (hasPhysical) {
+                    getFinalPrice(true);
+                }
             }
         },
         beforeSend: function(xhr) {

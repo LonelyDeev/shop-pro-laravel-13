@@ -18,16 +18,15 @@ class SeoAuditController extends Controller
     {
         $this->authorize('seo.audit');
 
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+      /*  $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
         activity()->causedBy(auth()->user())->event('view')
             ->withProperties(['action' => 'view_seo_audit', 'ip' => request()->ip()])
-            ->log("مدیر {$adminName} صفحه آدیت سئو سایت را مشاهده کرد");
+            ->log("مدیر {$adminName} صفحه آدیت سئو سایت را مشاهده کرد");*/
 
         // ── آمار کلی از دیتابیس ──────────────────────────────────
-       /* $dbStats = Cache::remember('seo_audit_db_stats', 300, function () {
+        $dbStats = Cache::remember('seo_audit_db_stats', 300, function () {
             return $this->getDbStats();
-        });*/
-        $dbStats=$this->getDbStats();
+        });
 
         return view('back.seo.audit', compact('dbStats'));
     }

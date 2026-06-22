@@ -175,6 +175,11 @@ class Product extends Model
         return $this->belongsToMany(Order::class, 'order_items', 'product_id', 'order_id');
     }
 
+    public function orderItems()
+    {
+        return $this->hasMany(\App\Models\OrderItem::class, 'product_id');
+    }
+
     public function currency()
     {
         return $this->belongsTo(Currency::class);

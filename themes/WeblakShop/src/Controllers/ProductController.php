@@ -311,13 +311,16 @@ class ProductController extends Controller
         $request = new Request();
 
         $get_stores=[];
+
         if ($selected_price){
             $request->merge([
                 'product_id' => $product->id,
-                'color_id' => $selected_price->attributes()->first()->id
+                'color_id' => @$selected_price->attributes()->first()->id
             ]);
+            if ($request->color_id){
+                $get_stores=$this->get_stores_helper($request);
+            }
 
-            $get_stores=$this->get_stores_helper($request);
 
         }
 

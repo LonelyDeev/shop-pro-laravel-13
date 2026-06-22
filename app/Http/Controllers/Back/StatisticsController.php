@@ -24,6 +24,8 @@ class StatisticsController extends Controller
     {
         $this->authorize('statistics.viewsList');
 
+        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+
         $views = Viewer::latest();
 
         if (auth()->user()->level != 'creator') {
@@ -34,7 +36,18 @@ class StatisticsController extends Controller
             });
         }
 
+        $viewsCount = $views->count();
         $views = $views->paginate(20);
+
+        activity()
+            ->causedBy(auth()->user())
+            ->event('view')
+            ->withProperties([
+                'action' => 'view_views_list',
+                'views_count' => $viewsCount,
+                'ip' => request()->ip()
+            ])
+            ->log("مدیر {$adminName} لیست بازدیدهای صفحه را مشاهده کرد ({$viewsCount} بازدید)");
 
         return view('back.statistics.views.viewsList', compact('views'));
     }
@@ -43,6 +56,17 @@ class StatisticsController extends Controller
     {
         $this->authorize('statistics.views');
 
+        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+
+        activity()
+            ->causedBy(auth()->user())
+            ->event('view')
+            ->withProperties([
+                'action' => 'view_statistics_views',
+                'ip' => request()->ip()
+            ])
+            ->log("مدیر {$adminName} صفحه آمار بازدیدها را مشاهده کرد");
+
         return view('back.statistics.views.index');
     }
 
@@ -50,7 +74,21 @@ class StatisticsController extends Controller
     {
         $this->authorize('statistics.viewers');
 
+        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+
         $viewers = Viewer::latest()->whereDate('created_at', now())->get()->unique('user_id');
+        $viewersCount = $viewers->count();
+
+        activity()
+            ->causedBy(auth()->user())
+            ->event('view')
+            ->withProperties([
+                'action' => 'view_viewers_list',
+                'viewers_count' => $viewersCount,
+                'date' => now()->format('Y-m-d'),
+                'ip' => request()->ip()
+            ])
+            ->log("مدیر {$adminName} لیست بازدیدکنندگان امروز را مشاهده کرد ({$viewersCount} بازدیدکننده)");
 
         return view('back.statistics.viewers.viewers', compact('viewers'));
     }
@@ -59,6 +97,17 @@ class StatisticsController extends Controller
     {
         $this->authorize('statistics.orders');
 
+        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+
+        activity()
+            ->causedBy(auth()->user())
+            ->event('view')
+            ->withProperties([
+                'action' => 'view_statistics_orders',
+                'ip' => request()->ip()
+            ])
+            ->log("مدیر {$adminName} صفحه آمار سفارش‌ها را مشاهده کرد");
+
         return view('back.statistics.orders.index');
     }
 
@@ -66,9 +115,19 @@ class StatisticsController extends Controller
     {
         $this->authorize('statistics.product');
 
+        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+
+        activity()
+            ->causedBy(auth()->user())
+            ->event('view')
+            ->withProperties([
+                'action' => 'view_statistics_products',
+                'ip' => request()->ip()
+            ])
+            ->log("مدیر {$adminName} صفحه آمار محصولات را مشاهده کرد");
+
         return view('back.statistics.orders.products');
     }
-
 
     public function productTemplate(Request $request)
     {
@@ -77,11 +136,12 @@ class StatisticsController extends Controller
         $request->validate([
             'from_date' => ['nullable', new CheckeJdate()],
             'to_date'   => ['nullable', new CheckeJdate()],
-            'ordering'   => ['nullable', 'in:newest,oldest,most_sold,least_sold'],
+            'ordering'  => ['nullable', 'in:newest,oldest,most_sold,least_sold'],
         ]);
+
         $from_date = $request->input('from_date');
-        $to_date = $request->input('to_date');
-        $ordering = $request->input('ordering', 'newest');
+        $to_date   = $request->input('to_date');
+        $ordering  = $request->input('ordering', 'newest');
 
         if ($from_date) {
             $from_date = Jalalian::fromFormat('Y-m-d', $request->from_date)->toCarbon();
@@ -90,61 +150,75 @@ class StatisticsController extends Controller
             $to_date = Jalalian::fromFormat('Y-m-d', $request->to_date)->toCarbon();
         }
 
-        // گرفتن اطلاعات محصولات و سفارش‌ها
+        // Subquery برای موجودی — جلوگیری از چند برابر شدن ردیف‌ها در JOIN
+        $stockSubquery = DB::table('prices')
+            ->selectRaw('product_id, SUM(stock) AS total_stock')
+            ->groupBy('product_id');
+
         $products = OrderItem::selectRaw('
-            products.id AS product_id,
-            products.slug AS product_slug,
-            products.title AS product_title,
-            products.image AS product_image,
+            products.id          AS product_id,
+            products.slug        AS product_slug,
+            products.title       AS product_title,
+            products.image       AS product_image,
             SUM(order_items.quantity) AS total_orders,
-            SUM(CASE WHEN orders.status = "paid" THEN order_items.quantity ELSE 0 END) AS successful_orders,
+            SUM(CASE WHEN orders.status = "paid"  THEN order_items.quantity ELSE 0 END) AS successful_orders,
             SUM(CASE WHEN orders.status != "paid" THEN order_items.quantity ELSE 0 END) AS failed_orders,
             SUM(CASE WHEN DATE(orders.created_at) = CURDATE() THEN order_items.quantity ELSE 0 END) AS today_orders,
-            SUM(prices.stock) AS available_stock,
             SUM(order_items.quantity * order_items.price) AS total_order_amount,
-            SUM(CASE WHEN orders.status = "paid" THEN order_items.quantity * order_items.price ELSE 0 END) AS total_profit
+            SUM(CASE WHEN orders.status = "paid" THEN order_items.quantity * order_items.price ELSE 0 END) AS total_profit,
+            COALESCE(stock_data.total_stock, 0) AS available_stock
         ')
             ->join('products', 'order_items.product_id', '=', 'products.id')
-            ->join('orders', 'order_items.order_id', '=', 'orders.id')
-            ->join('prices', 'prices.product_id', '=', 'products.id') // اتصال جدول prices
+            ->join('orders',   'order_items.order_id',   '=', 'orders.id')
+            // ✅ LEFT JOIN با subquery به جای JOIN مستقیم
+            ->leftJoinSub($stockSubquery, 'stock_data', function ($join) {
+                $join->on('stock_data.product_id', '=', 'products.id');
+            })
             ->when($product_name, function ($query, $product_name) {
-                // Decode کردن رشته جستجو
                 $decodedProductName = urldecode($product_name);
-
-                // شکستن جستجو به کلمات
                 $keywords = explode(' ', $decodedProductName);
-
-                // اعمال جستجو برای هر کلمه
                 foreach ($keywords as $keyword) {
-                    $query->where('products.title', 'LIKE', "%{$keyword}%");
+                    if (trim($keyword) !== '') {
+                        $query->where('products.title', 'LIKE', "%{$keyword}%");
+                    }
                 }
-
-                return $query;
             })
             ->when($from_date, function ($query, $from_date) {
-                return $query->whereDate('orders.created_at','>=', $from_date);
+                return $query->whereDate('orders.created_at', '>=', $from_date);
             })
             ->when($to_date, function ($query, $to_date) {
-                return $query->whereDate('orders.created_at','<=', $to_date);
+                return $query->whereDate('orders.created_at', '<=', $to_date);
             })
-            ->groupBy('products.id')
-        ->when($ordering, function ($query, $ordering) {
-            switch ($ordering) {
-                case 'newest':
-                    $query->orderByRaw('MAX(orders.created_at) DESC');
-                    break;
-                case 'oldest':
-                    $query->orderByRaw('MAX(orders.created_at) asc');
-                    break;
-                case 'most_sold':
-                    $query->orderBy('total_orders', 'desc');
-                    break;
-                case 'least_sold':
-                    $query->orderBy('total_orders', 'asc');
-                    break;
-            }
-        })
+            ->groupBy('products.id', 'products.slug', 'products.title', 'products.image', 'stock_data.total_stock')
+            ->when($ordering, function ($query, $ordering) {
+                switch ($ordering) {
+                    case 'newest':
+                        return $query->orderByRaw('MAX(orders.created_at) DESC');
+                    case 'oldest':
+                        return $query->orderByRaw('MAX(orders.created_at) ASC');
+                    case 'most_sold':
+                        return $query->orderBy('total_orders', 'desc');
+                    case 'least_sold':
+                        return $query->orderBy('total_orders', 'asc');
+                }
+            })
             ->paginate(50);
+
+        // ثبت لاگ
+        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        activity()
+            ->causedBy(auth()->user())
+            ->event('export')
+            ->withProperties([
+                'action'        => 'filter_product_statistics',
+                'product_name'  => $product_name,
+                'from_date'     => $request->from_date,
+                'to_date'       => $request->to_date,
+                'ordering'      => $ordering,
+                'results_count' => $products->total(),
+                'ip'            => request()->ip(),
+            ])
+            ->log("مدیر {$adminName} آمار فروش محصولات را با فیلترهای مشخص شده مشاهده کرد");
 
         return view('back.statistics.orders.partials.productItemTemplate', [
             'products' => $products,
@@ -155,6 +229,17 @@ class StatisticsController extends Controller
     {
         $this->authorize('statistics.users');
 
+        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+
+        activity()
+            ->causedBy(auth()->user())
+            ->event('view')
+            ->withProperties([
+                'action' => 'view_statistics_users',
+                'ip' => request()->ip()
+            ])
+            ->log("مدیر {$adminName} صفحه آمار کاربران را مشاهده کرد");
+
         return view('back.statistics.users.index');
     }
 
@@ -162,7 +247,20 @@ class StatisticsController extends Controller
     {
         $this->authorize('statistics.sms');
 
+        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+
         $sms = Sms::latest()->paginate(20);
+        $smsCount = $sms->total();
+
+        activity()
+            ->causedBy(auth()->user())
+            ->event('view')
+            ->withProperties([
+                'action' => 'view_sms_log',
+                'sms_count' => $smsCount,
+                'ip' => request()->ip()
+            ])
+            ->log("مدیر {$adminName} لاگ ارسال پیامک‌ها را مشاهده کرد ({$smsCount} پیامک)");
 
         return view('back.statistics.sms.sms-log', compact('sms'));
     }

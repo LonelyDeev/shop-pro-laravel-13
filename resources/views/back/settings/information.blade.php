@@ -52,11 +52,17 @@
                             نقشه
                         </button>
                     </li>
+                    <li>
+                        <button class="gs-tab-btn" data-tab="torobEmalls" role="tab">
+                            ترب و ایمالز
+                        </button>
+                    </li>
                 </ul>
             </div>
 
             {{-- ===== Form ===== --}}
-            <form id="information-form" action="{{ route('admin.settings.information') }}" method="POST" enctype="multipart/form-data">
+            <form id="information-form" action="{{ route('admin.settings.information') }}" method="POST"
+                  enctype="multipart/form-data">
                 @csrf
 
                 {{-- ============================================================ --}}
@@ -185,7 +191,8 @@
                                 <div class="gs-form-group">
                                     <label class="gs-label">ساعات کاری</label>
                                     <input type="text" name="info_working_hours" class="gs-input"
-                                           value="{{ option('info_working_hours') }}" placeholder="شنبه تا پنجشنبه ۸ تا ۱۷">
+                                           value="{{ option('info_working_hours') }}"
+                                           placeholder="شنبه تا پنجشنبه ۸ تا ۱۷">
                                 </div>
 
                                 <div class="gs-form-group">
@@ -260,14 +267,19 @@
                                 </div>
 
                                 <div class="gs-form-group">
-                                    <label class="gs-label">فعال کردن سایت چند زبانه<span class="gs-badge gs-badge-info">بزودی</span></label>
+                                    <label class="gs-label">فعال کردن سایت چند زبانه<span
+                                            class="gs-badge gs-badge-info">بزودی</span></label>
                                     <input type="hidden" name="multi_language_enabled" id="multiLangValue"
                                            value="{{ option('multi_language_enabled', '0') }}">
                                     <div class="gs-toggle-group" id="multiLangToggle">
-                                        <button type="button" disabled class="gs-toggle-btn {{ option('multi_language_enabled') == '0' ? 'gs-toggle-off' : '' }}" data-value="0">
+                                        <button type="button" disabled
+                                                class="gs-toggle-btn {{ option('multi_language_enabled') == '0' ? 'gs-toggle-off' : '' }}"
+                                                data-value="0">
                                             🔒 غیرفعال
                                         </button>
-                                        <button type="button" disabled class="gs-toggle-btn {{ option('multi_language_enabled') == '1' ? 'gs-toggle-on' : '' }}" data-value="1">
+                                        <button type="button" disabled
+                                                class="gs-toggle-btn {{ option('multi_language_enabled') == '1' ? 'gs-toggle-on' : '' }}"
+                                                data-value="1">
                                             🌐 فعال
                                         </button>
                                     </div>
@@ -301,7 +313,8 @@
                                 <div class="gs-form-group">
                                     <label class="gs-label">کلمات کلیدی</label>
                                     <input id="tags" type="text" name="info_tags" class="gs-input"
-                                           value="{{ option('info_tags') }}" placeholder="کلمات کلیدی را با کاما جدا کنید">
+                                           value="{{ option('info_tags') }}"
+                                           placeholder="کلمات کلیدی را با کاما جدا کنید">
                                 </div>
 
                                 <div class="gs-form-group">
@@ -318,7 +331,8 @@
                                     <textarea name="info_short_description" class="gs-input gs-textarea" rows="3"
                                               maxlength="160"
                                               placeholder="توضیحات مختصری درباره سایت...">{{ option('info_short_description') }}</textarea>
-                                    <span class="gs-char-count" data-max="160" data-target="info_short_description"></span>
+                                    <span class="gs-char-count" data-max="160"
+                                          data-target="info_short_description"></span>
                                 </div>
 
                                 <div class="gs-form-group gs-span-2">
@@ -342,7 +356,8 @@
                         <div class="gs-card-header">
                             <div class="gs-card-header-text">
                                 <h6 class="gs-card-title">تصویر اشتراک‌گذاری (OG Image)</h6>
-                                <p class="gs-card-sub">تصویری که هنگام اشتراک‌گذاری در شبکه‌های اجتماعی نمایش داده می‌شود</p>
+                                <p class="gs-card-sub">تصویری که هنگام اشتراک‌گذاری در شبکه‌های اجتماعی نمایش داده
+                                    می‌شود</p>
                             </div>
                             <div class="gs-card-icon gs-icon-sky">
                                 <i class="fa fa-share-square"></i>
@@ -441,13 +456,15 @@
                                 <div class="gs-form-group">
                                     <label class="gs-label">کدهای هدر</label>
                                     <p class="gs-hint-text">این کدها داخل تگ <code>&lt;head&gt;</code> قرار می‌گیرند</p>
-                                    <textarea name="info_header_codes" class="gs-input gs-textarea gs-ltr gs-code" rows="7"
+                                    <textarea name="info_header_codes" class="gs-input gs-textarea gs-ltr gs-code"
+                                              rows="7"
                                               placeholder="<!-- Google Analytics, Meta Pixel, etc. -->">{{ option('info_header_codes') }}</textarea>
                                 </div>
 
                                 <div class="gs-form-group">
                                     <label class="gs-label">اسکریپت‌های اضافه (قبل از بسته شدن body)</label>
-                                    <p class="gs-hint-text">این کدها قبل از بسته شدن تگ <code>&lt;/body&gt;</code> قرار می‌گیرند</p>
+                                    <p class="gs-hint-text">این کدها قبل از بسته شدن تگ <code>&lt;/body&gt;</code> قرار
+                                        می‌گیرند</p>
                                     <textarea name="info_scripts" class="gs-input gs-textarea gs-ltr gs-code" rows="7"
                                               placeholder="<script>...</script>">{{ option('info_scripts') }}</textarea>
                                 </div>
@@ -511,24 +528,28 @@
                                     <label class="gs-label">نوع نقشه</label>
                                     <div class="gs-map-type-grid">
 
-                                        <label class="gs-map-type-card {{ option('info_map_type') == 'google' ? 'gs-map-selected' : '' }}"
-                                               for="map_type_google">
+                                        <label
+                                            class="gs-map-type-card {{ option('info_map_type') == 'google' ? 'gs-map-selected' : '' }}"
+                                            for="map_type_google">
                                             <input type="radio" class="gs-map-radio" id="map_type_google"
                                                    name="info_map_type" value="google"
                                                 {{ option('info_map_type') == 'google' ? 'checked' : '' }}>
-                                            <span style="font-size:1.4rem;color:#ea4335"><i class="fab fa-google"></i></span>
+                                            <span style="font-size:1.4rem;color:#ea4335"><i
+                                                    class="fab fa-google"></i></span>
                                             <div class="gs-map-type-info">
                                                 <div class="gs-map-type-name">نقشه گوگل</div>
                                                 <div class="gs-map-type-sub">Google Maps</div>
                                             </div>
                                         </label>
 
-                                        <label class="gs-map-type-card {{ option('info_map_type') != 'google' ? 'gs-map-selected' : '' }}"
-                                               for="map_type_mapir">
+                                        <label
+                                            class="gs-map-type-card {{ option('info_map_type') != 'google' ? 'gs-map-selected' : '' }}"
+                                            for="map_type_mapir">
                                             <input type="radio" class="gs-map-radio" id="map_type_mapir"
                                                    name="info_map_type" value="mapir"
                                                 {{ option('info_map_type') != 'google' ? 'checked' : '' }}>
-                                            <span style="font-size:1.4rem;color:#6366f1"><i class="fa fa-map"></i></span>
+                                            <span style="font-size:1.4rem;color:#6366f1"><i
+                                                    class="fa fa-map"></i></span>
                                             <div class="gs-map-type-info">
                                                 <div class="gs-map-type-name">نقشه Map.ir</div>
                                                 <div class="gs-map-type-sub">map.ir</div>
@@ -548,13 +569,15 @@
                                         {{-- نقشه گوگل --}}
                                         <div style="flex: 1; display: flex; flex-direction: column;">
                                             <small style="margin-bottom: 5px; font-weight: bold;">Google Map</small>
-                                            <div class="gs-map-container" id="googleMap" style="width: 100%; height: 400px;"></div>
+                                            <div class="gs-map-container" id="googleMap"
+                                                 style="width: 100%; height: 400px;"></div>
                                         </div>
 
                                         {{-- نقشه مپیر --}}
                                         <div style="flex: 1; display: flex; flex-direction: column;">
                                             <small style="margin-bottom: 5px; font-weight: bold;">نقشه Map.ir</small>
-                                            <div class="gs-map-container" id="mapIr" style="width: 100%; height: 400px;"></div>
+                                            <div class="gs-map-container" id="mapIr"
+                                                 style="width: 100%; height: 400px;"></div>
                                         </div>
 
                                     </div>
@@ -564,6 +587,59 @@
                     </div>
 
                 </div>{{-- /tab-map --}}
+
+
+
+
+                {{-- ============================================================ --}}
+                {{--  TAB 5 — ترب و ایمالز                                        --}}
+                {{-- ============================================================ --}}
+                <div class="gs-tab-pane mb-4 " id="tab-torobEmalls" role="tabpanel">
+
+                    <div class="gs-card">
+                        <div class="gs-card-header">
+                            <div class="gs-card-header-text">
+                                <h6 class="gs-card-title">API ترب و ایمالز</h6>
+                                <p class="gs-card-sub">موقعیت جغرافیایی نمایش داده شده در صفحه تماس با ما</p>
+                            </div>
+                            <div class="gs-card-icon gs-icon-red">
+                                <i class="fa fa-code"></i>
+                            </div>
+                        </div>
+                        <div class="gs-card-body">
+
+                                <div class="card-body pb-2">
+                                    <div class="tab-title lts-05 mb-2">
+                                        <div>آدرس api ترب <span>اطلاعات meta tag ترب برای محصولات قرار داده شده است. همچنین با ارائه api زیر به ترب میتوانید مکانیزم ایندکس شدن محصولات در ترب را بصورت اتوماتیک و سریع انجام دهید.</span>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-4">
+                                        <div class="col-12">
+                                            <div class="alert alert-info d-inline-block clickable" draggable="false"
+                                                 data-pd-tooltip="true" style="direction: ltr; user-select: none;" onclick="copyText(this)">
+                                                {{route('api.torob.products')}}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="tab-title lts-05 mb-2">
+                                        <div>آدرس api ایمالز <span>اطلاعات meta tag ایمالز برای محصولات قرار داده شده است. همچنین با ارائه api زیر به ایمالز میتوانید مکانیزم ایندکس شدن محصولات در ایمالز را بصورت اتوماتیک و سریع انجام دهید.</span>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-4">
+                                        <div class="col-12">
+                                            <div class="alert alert-info d-inline-block clickable" draggable="false"
+                                                 data-pd-tooltip="true" style="direction: ltr; user-select: none;" onclick="copyText(this)">
+                                                {{route('api.emalls.products')}}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                        </div>
+                    </div>
+
+                </div>{{-- /tab-map --}}
+
 
             </form>{{-- /form --}}
 
@@ -577,7 +653,8 @@
                     <a href="{{ route('admin.settings.information') }}" class="gs-btn gs-btn-outline">
                         انصراف
                     </a>
-                    <button type="submit" id="information-form-btn" form="information-form" class="gs-btn gs-btn-primary">
+                    <button type="submit" id="information-form-btn" form="information-form"
+                            class="gs-btn gs-btn-primary">
                         <i class="fa fa-check"></i>
                         ذخیره تغییرات
                     </button>

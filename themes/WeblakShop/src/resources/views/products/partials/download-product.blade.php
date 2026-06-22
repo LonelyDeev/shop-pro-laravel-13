@@ -257,27 +257,27 @@
                                     <p class="m-0 mr-1">{{ $price->file->title }}</p>
                                 </div>
 
-                            <div class="table-suppliers-cell table-suppliers-cell-title">
-                                <div class="seller-wrapper">
-                                    <p class="table-suppliers-seller-name">
-                                        @if(!$product->seller_id)
-                                            <span><a href="/">{{ option('info_site_title', 'او پی شاپ') }}</a></span>
-                                        @else
-                                            <span><a href="/">{{ $product->seller->seller_info->business_name }}</a></span>
-                                        @endif
-                                    </p>
-                                    <div class="table-suppliers-rating">
-                                        <div class="product-seller-second-line">
-                                            عملکرد:
-                                            <span class="u-text-bold">۵</span>
-                                            از ۵
-                                            <span class="u-divider"></span>
-                                            <span class="u-text-bold">۸۳٪</span>
-                                            رضایت از کالا
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            {{--    <div class="table-suppliers-cell table-suppliers-cell-title">
+                                   <div class="seller-wrapper">
+                                       <p class="table-suppliers-seller-name">
+                                           @if(!$product->seller_id)
+                                               <span><a href="/">{{ option('info_site_title', 'او پی شاپ') }}</a></span>
+                                           @else
+                                               <span><a href="/">{{ $product->seller->seller_info->business_name }}</a></span>
+                                           @endif
+                                       </p>
+                                 {{-- <div class="table-suppliers-rating">
+                                           <div class="product-seller-second-line">
+                                               عملکرد:
+                                               <span class="u-text-bold">۵</span>
+                                               از ۵
+                                               <span class="u-divider"></span>
+                                               <span class="u-text-bold">۸۳٪</span>
+                                               رضایت از کالا
+                                           </div>
+                                       </div>
+                                   </div>
+                               </div>--}}
                             <div class="table-suppliers-cell table-suppliers-cell-price">
                                 <div class="seller-wrapper">
                                     <div class="price-secondary">

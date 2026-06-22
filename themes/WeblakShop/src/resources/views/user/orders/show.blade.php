@@ -8,8 +8,14 @@
         $totalPrice = 0;
         $totalShippingCost = 0;
         $totalDiscount = 0;
-
+        $downloadGroup = [];
         foreach ($order->items as $item) {
+
+             if ($item->product && $item->product->isDownload()) {
+            $downloadGroup[] = $item;
+            continue;
+            }
+
             $sellerId = $item->seller_id;
             $groupId = $sellerId ? 'seller_' . $sellerId : 'store';
 
@@ -46,6 +52,41 @@
             $totalDiscount += $itemDiscount;
             $totalShippingCost += $item->shipping_cost ?? 0;
         }
+
+
+         // اگر محصولات دانلودی وجود دارند، آنها را به عنوان یک گروه جداگانه اضافه کن
+    if (!empty($downloadGroup)) {
+        $sellerGroups['download'] = [
+            'seller_id' => null,
+            'seller_name' => 'محصولات دانلودی',
+            'seller_logo' => null,
+            'items' => $downloadGroup,
+            'subtotal' => 0,
+            'shipping_cost' => 0,
+            'discount' => 0,
+            'total' => 0,
+            'shipping_status' => 'delivered', // وضعیت تحویل داده شده
+            'tracking_code' => null,
+            'carrier_name' => 'دانلودی',
+            'delivery_date' => null,
+            'cancel_reason' => null,
+            'refunded' => false,
+            'is_download_group' => true
+        ];
+
+        foreach ($downloadGroup as $item) {
+            $itemTotalPrice = $item->real_price * $item->quantity;
+            $itemDiscount = ($item->real_price - $item->price) * $item->quantity;
+
+            $sellerGroups['download']['subtotal'] += $itemTotalPrice;
+            $sellerGroups['download']['discount'] += $itemDiscount;
+            $sellerGroups['download']['total'] += $itemTotalPrice;
+
+            $totalPrice += $itemTotalPrice;
+            $totalDiscount += $itemDiscount;
+        }
+    }
+
 
         $finalPayable = $totalPrice - $totalDiscount + $totalShippingCost;
         $hasPhysicalProduct = $order->hasPhysicalProduct();
@@ -237,6 +278,7 @@
                                 'canceled' => ['label' => 'لغو شد', 'step' => 0, 'color' => '#dc3545', 'icon' => 'fa-ban']
                             ];
 
+                            $isDownloadGroup = $group['is_download_group'] ?? false;
                             $currentStatus = $group['shipping_status'];
                             $currentStep = $statusSteps[$currentStatus]['step'] ?? 1;
                             $maxStep = 7;
@@ -261,9 +303,12 @@
                                     </div>
                                 </div>
 
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="badge" style="background-color: {{ $progressColor }};">{{ $statusSteps[$currentStatus]['label'] }}</span>
-                                </div>
+                                @if($order->status == 'paid')
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge" style="background-color: {{ $progressColor }};">{{ $statusSteps[$currentStatus]['label'] }}</span>
+                                    </div>
+                                @endif
+
                             </div>
 
                             <div class="card-body p-3">
@@ -432,116 +477,118 @@
                                                 </div>
                                             </div>
 
-                                            @if ($item->product && $item->product->isDownload() && $item->get_price && $item->get_price->isDownloadable())
-                                                <div class="mt-2">
-                                                    <a href="{{ $item->get_price->downloadLink() }}" class="btn btn-sm btn-outline-primary">
-                                                        <i class="fas fa-download me-1"></i> دانلود محصول
-                                                    </a>
-                                                </div>
-                                            @endif
+
 
                                             </div>
                                         </div>
-
+                                        @if ($item->product && $item->product->isDownload() && $item->get_price && $item->get_price->isDownloadable())
+                                            <div class="mt-3 mr-auto">
+                                                <a href="{{ $item->get_price->downloadLink() }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-download me-1"></i> دانلود محصول
+                                                </a>
+                                            </div>
+                                        @endif
                                     </div>
                                 @endforeach
                             </div>
 
-                            <div class="container-fluid">
-                                <div class="order-status-container mb-3">
+                            {{-- فقط برای محصولات فیزیکی وضعیت ارسال نمایش داده شود --}}
+                            @if(!($isDownloadGroup ?? false) and $order->status == 'paid')
+                                <div class="container-fluid">
+                                    <div class="order-status-container mb-3">
 
-                                @if($isCanceled)
-                                    {{-- وضعیت لغو شده --}}
-                                    <div class="card bg-danger bg-opacity-10 border-0 p-2">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <i class="fas fa-ban text-danger fs-5"></i>
-                                            <span class="text-white fw-bold">سفارش لغو شده است</span>
-                                           {{-- <span class="text-muted small ms-auto">{{ $statusSteps[$currentStatus]['label'] }}</span>--}}
-                                        </div>
-                                        @if($group['cancel_reason'])
-                                            <div class="mt-1 small text-muted">
-                                                <i class="fas fa-info-circle me-1"></i> دلیل: {{ $group['cancel_reason'] }}
+                                        @if($isCanceled)
+                                            {{-- وضعیت لغو شده --}}
+                                            <div class="card bg-danger bg-opacity-10 border-0 p-2">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <i class="fas fa-ban text-danger fs-5"></i>
+                                                    <span class="text-white fw-bold">سفارش لغو شده است</span>
+                                                </div>
+                                                @if($group['cancel_reason'])
+                                                    <div class="mt-1 small text-muted">
+                                                        <i class="fas fa-info-circle me-1"></i> دلیل: {{ $group['cancel_reason'] }}
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        @else
+
+                                            {{-- نمایش وضعیت عادی --}}
+                                            <div class="d-flex justify-content-between align-items-center mb-2 mt-3">
+                                                <span class="small text-muted">وضعیت سفارش</span>
+                                            </div>
+
+                                            {{-- نوار پیشرفت --}}
+                                            <div class="progress mb-3" style="height: 8px; background-color: #e2e8f0; border-radius: 10px;">
+                                                <div class="progress-bar" role="progressbar"
+                                                     style="width: {{ $progressPercent }}%; background-color: {{ $progressColor }}; border-radius: 10px; transition: width 0.5s ease;">
+                                                </div>
+                                            </div>
+
+                                            {{-- مراحل با نام کامل --}}
+                                            <div class="row g-0 text-center">
+                                                @foreach(['w-pending', 'pending', 'processing', 'waiting', 'sent', 'post-sent', 'delivered'] as $index => $stepKey)
+                                                    @php
+                                                        $stepNumber = $statusSteps[$stepKey]['step'];
+                                                        $isCompleted = $stepNumber < $currentStep;
+                                                        $isActive = $stepNumber == $currentStep;
+                                                        $stepLabel = $statusSteps[$stepKey]['label'];
+                                                        $stepIcon = $statusSteps[$stepKey]['icon'];
+                                                    @endphp
+                                                    <div class="col" style="flex: 1;">
+                                                        <div class="position-relative">
+                                                            {{-- دایره وضعیت --}}
+                                                            <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1"
+                                                                 style="width: 24px; height: 24px;
+                                background-color: {{ $isCompleted ? $progressColor : ($isActive ? $progressColor : '#f1f5f9') }};
+                                border: 2px solid {{ $isCompleted || $isActive ? $progressColor : '#cbd5e1' }};">
+                                                                @if($isCompleted)
+                                                                    <i class="fas fa-check text-white" style="font-size: 10px;"></i>
+                                                                @elseif($isActive)
+                                                                    <i class="fas {{ $stepIcon }} text-white" style="font-size: 10px;"></i>
+                                                                @else
+                                                                    <i class="fas {{ $stepIcon }} text-muted" style="font-size: 10px;"></i>
+                                                                @endif
+                                                            </div>
+
+                                                            {{-- متن مرحله --}}
+                                                            <div class="small {{ $isActive ? 'fw-bold' : 'text-muted' }} d-none d-sm-block"
+                                                                 style="color: {{ $isActive ? $progressColor : 'inherit' }};">
+                                                                {{ $stepLabel }}
+                                                            </div>
+
+                                                            {{-- متن کوتاه برای موبایل --}}
+                                                            <div class="small {{ $isActive ? 'fw-bold' : 'text-muted' }} d-sm-none"
+                                                                 style="color: {{ $isActive ? $progressColor : 'inherit' }};">
+                                                                @switch($stepKey)
+                                                                    @case('w-pending') انتظار @break
+                                                                    @case('pending') بررسی @break
+                                                                    @case('processing') پردازش @break
+                                                                    @case('waiting') آماده @break
+                                                                    @case('sent') ارسال @break
+                                                                    @case('post-sent') پست @break
+                                                                    @case('delivered') تحویل @break
+                                                                @endswitch
+                                                            </div>
+
+                                                            {{-- نشانگر مرحله فعال --}}
+                                                            @if($isActive)
+                                                                <div class="small text-success mt-1">
+                                                                    <i class="fas fa-spinner fa-pulse"></i>
+                                                                </div>
+                                                            @endif
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+
+                                            {{-- درصد پیشرفت --}}
+                                            <div class="text-center mt-2">
+                                                <small class="text-muted">پیشرفت سفارش: {{ round($progressPercent) }}%</small>
                                             </div>
                                         @endif
                                     </div>
-                                @else
-                                    {{-- نمایش وضعیت عادی --}}
-                                    <div class="d-flex justify-content-between align-items-center mb-2 mt-3">
-                                        <span class="small text-muted">وضعیت سفارش</span>
-                                      {{--  <span class="badge" style="background-color: {{ $progressColor }};">{{ $statusSteps[$currentStatus]['label'] }}</span>--}}
-                                    </div>
-
-                                    {{-- نوار پیشرفت --}}
-                                    <div class="progress mb-3" style="height: 8px; background-color: #e2e8f0; border-radius: 10px;">
-                                        <div class="progress-bar" role="progressbar"
-                                             style="width: {{ $progressPercent }}%; background-color: {{ $progressColor }}; border-radius: 10px; transition: width 0.5s ease;">
-                                        </div>
-                                    </div>
-
-                                    {{-- مراحل با نام کامل --}}
-                                    <div class="row g-0 text-center">
-                                        @foreach(['w-pending', 'pending', 'processing', 'waiting', 'sent', 'post-sent', 'delivered'] as $index => $stepKey)
-                                            @php
-                                                $stepNumber = $statusSteps[$stepKey]['step'];
-                                                $isCompleted = $stepNumber < $currentStep;
-                                                $isActive = $stepNumber == $currentStep;
-                                                $stepLabel = $statusSteps[$stepKey]['label'];
-                                                $stepIcon = $statusSteps[$stepKey]['icon'];
-                                            @endphp
-                                            <div class="col" style="flex: 1;">
-                                                <div class="position-relative">
-                                                    {{-- دایره وضعیت --}}
-                                                    <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1"
-                                                         style="width: 24px; height: 24px;
-                                    background-color: {{ $isCompleted ? $progressColor : ($isActive ? $progressColor : '#f1f5f9') }};
-                                    border: 2px solid {{ $isCompleted || $isActive ? $progressColor : '#cbd5e1' }};">
-                                                        @if($isCompleted)
-                                                            <i class="fas fa-check text-white" style="font-size: 10px;"></i>
-                                                        @elseif($isActive)
-                                                            <i class="fas {{ $stepIcon }} text-white" style="font-size: 10px;"></i>
-                                                        @else
-                                                            <i class="fas {{ $stepIcon }} text-muted" style="font-size: 10px;"></i>
-                                                        @endif
-                                                    </div>
-
-                                                    {{-- متن مرحله --}}
-                                                    <div class="small {{ $isActive ? 'fw-bold' : 'text-muted' }} d-none d-sm-block"
-                                                         style="color: {{ $isActive ? $progressColor : 'inherit' }};">
-                                                        {{ $stepLabel }}
-                                                    </div>
-
-                                                    {{-- متن کوتاه برای موبایل --}}
-                                                    <div class="small {{ $isActive ? 'fw-bold' : 'text-muted' }} d-sm-none"
-                                                         style="color: {{ $isActive ? $progressColor : 'inherit' }};">
-                                                        @switch($stepKey)
-                                                            @case('w-pending') انتظار @break
-                                                            @case('pending') بررسی @break
-                                                            @case('processing') پردازش @break
-                                                            @case('waiting') آماده @break
-                                                            @case('sent') ارسال @break
-                                                            @case('post-sent') پست @break
-                                                            @case('delivered') تحویل @break
-                                                        @endswitch
-                                                    </div>
-
-                                                    {{-- نشانگر مرحله فعال --}}
-                                                    @if($isActive)
-                                                        <div class="small text-success mt-1">
-                                                            <i class="fas fa-spinner fa-pulse"></i>
-                                                        </div>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                        @endforeach
-                                    </div>
-
-                                    {{-- درصد پیشرفت --}}
-                                    <div class="text-center mt-2">
-                                        <small class="text-muted">پیشرفت سفارش: {{ round($progressPercent) }}%</small>
-                                    </div>
-                                @endif
-                            </div>
-                            </div>
+                                </div>
+                            @endif
                         </div>
                     @endforeach
 

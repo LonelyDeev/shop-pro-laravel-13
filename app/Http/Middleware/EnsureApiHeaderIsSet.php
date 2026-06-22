@@ -22,6 +22,13 @@ class EnsureApiHeaderIsSet
     {
         $api_key = $request->header('x-api-key');
 
+        $currentPath = $request->path();
+        $exceptPaths = ['api/v1/torob/products', 'api/v1/emalls/products']; // مسیرهای کامل
+
+        if (in_array($currentPath, $exceptPaths)) {
+            return $next($request);
+        }
+
         if ($api_key) {
             if (Apikey::where('key', $api_key)->where('is_active', true)->first()) {
                 return $next($request);

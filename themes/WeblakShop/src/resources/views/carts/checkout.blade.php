@@ -50,7 +50,19 @@
 
                 <div class="shipment-page-container">
 
-                    @include('front::carts.partials.address-list', ['addresses' => $addresses])
+                    @php
+                        $hasPhysical = isset($sellerGroups) && count($sellerGroups) > 0;
+                    @endphp
+
+                    @if($hasPhysical)
+                        @include('front::carts.partials.address-list', ['addresses' => $addresses])
+                    @else
+                        {{-- پیام برای محصولات دانلودی --}}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            محصولات شما دانلودی هستند و نیازی به ثبت آدرس ندارید.
+                        </div>
+                    @endif
 
                     <div id="checkout-carrier-container">
                         @include('front::carts.partials.carriers-container', ['cart' => $cart,'sellerGroups'=>$sellerGroups])

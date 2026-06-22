@@ -63,11 +63,16 @@
                                         <thead>
                                             <tr>
                                                 <th>
-                                                    <span style="width: 20px;">
-                                                        <label class="checkbox checkbox-all">
-                                                            <input type="checkbox"><span></span>
-                                                        </label>
+                                                    <fieldset class="checkbox">
+                                                        <div class="vs-checkbox-con vs-checkbox-primary checkbox-all ">
+                                                            <input type="checkbox">
+                                                            <span class="vs-checkbox ">
+                                                        <span class="vs-checkbox--check">
+                                                            <i class="vs-icon feather icon-check"></i>
+                                                        </span>
                                                     </span>
+                                                        </div>
+                                                    </fieldset>
                                                 </th>
                                                 <th>عنوان</th>
                                                 <th>نوع</th>
@@ -80,11 +85,18 @@
                                             @foreach ($items as $item)
                                                 <tr id="fild-{{ $item->id }}-tr">
                                                     <td>
-                                                        <span style="width: 20px;">
-                                                            <label class="checkbox checkbox-single">
-                                                                <input type="checkbox" value="{{ $item->id }}"><span></span>
-                                                            </label>
+                                                        <fieldset class="checkbox">
+                                                            <div
+                                                                class="vs-checkbox-con vs-checkbox-primary checkbox-single">
+                                                                <input type="checkbox" value="{{$item->id}}">
+                                                                <span class="vs-checkbox ">
+                                                        <span class="vs-checkbox--check">
+                                                            <i class="vs-icon feather icon-check"></i>
                                                         </span>
+                                                    </span>
+                                                            </div>
+                                                        </fieldset>
+
                                                     </td>
                                                     <td><span class="d-inline-block">{{ $item->title }}</span> </td>
 

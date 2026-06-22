@@ -12,7 +12,7 @@ class ApikeyController extends Controller
 {
     public function __construct()
     {
-        $this->authorizeResource(Apikey::class, 'apikeys');
+        $this->authorizeResource(Apikey::class, 'apikey');
     }
     public function index()
     {

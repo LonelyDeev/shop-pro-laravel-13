@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\ProvinceController;
 use App\Http\Controllers\Api\V1\UserController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\V1\TorobEmallsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -25,11 +26,15 @@ use Illuminate\Support\Facades\Route;
 */
 
 // ------------------ Api V1 Routes
-Route::group(['prefix' => 'v1'], function () {
+Route::prefix('v1')->name('api.')->group(function () {
 
     // ------------------ AuthController
     Route::post('login', [AuthController::class, 'login']);
     Route::post('register', [AuthController::class, 'register']);
+
+
+    Route::get('torob/products', [TorobEmallsController::class, 'torob'])->name('torob.products');
+    Route::get('emalls/products', [TorobEmallsController::class, 'emalls'])->name('emalls.products');
 
     // ------------------ Auth Required Routes
     Route::group([

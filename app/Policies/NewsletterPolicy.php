@@ -17,6 +17,10 @@ class NewsletterPolicy
         return $admin->can('newsletters.index');
     }
 
+    public function view(Admin $admin, Newsletter $newsletter)
+    {
+        return $admin->can('newsletters.show');
+    }
     public function delete(Admin $admin, Newsletter $newsletter)
     {
         return $admin->can('newsletters.delete');

@@ -88,12 +88,10 @@ jQuery('#contact-form').validate({
     },
 });
 
-
 $('#contact-form').submit(function(e) {
     e.preventDefault();
-
     if ($(this).valid()) {
-
+        block('#contact-form')
         var formData = new FormData(this);
 
         $.ajax({
@@ -111,6 +109,7 @@ $('#contact-form').submit(function(e) {
                 reloadCaptcha();
 
                 $('#contact-form').trigger('reset');
+                unblock('#contact-form')
             },
 
             beforeSend: function(xhr) {

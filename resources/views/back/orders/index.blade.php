@@ -319,7 +319,7 @@
 
                         <select name="status" class="form-control">
                             <option value="w-pending">در انتظار بررسی</option>
-                            <option value="pending">در حال بررسی</option>
+                            <option value="pending">در حال پردازش</option>
                             <option value="waiting">منتظر ارسال</option>
                             <option value="sent">ارسال شد</option>
                             <option value="canceled">ارسال لغو شد</option>

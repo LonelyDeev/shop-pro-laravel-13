@@ -186,7 +186,88 @@
                 </div>
             </div>
         </div>
+
     @endforeach
+
+
+        {{-- نمایش محصولات دانلودی (بدون ارسال) --}}
+        @if($downloadItems && count($downloadItems) > 0)
+            <div class="card shadow-1 ">
+                <div class="card-body">
+                    <div class="consignment text-right">
+                        <div class="main-title d-flex align-items-center mb-3">
+                            <div class="d-flex flex-column justify-content-center">
+                                <span class="fw-light fs-9 text-gray">محصولات دانلودی</span>
+                                <span class="fw-bold lts-05 text-dark">
+                            <span class="fs-9 text-gray fw-light badge bg-light ms-1">{{ count($downloadItems) }} کالا</span>
+                        </span>
+                            </div>
+                        </div>
+
+                        <div class="send-time mb-3">
+                    <span class="d-inline-flex lts-05 alert alert-success text-dark m-0">
+                        <span class="me-1">هزینه ارسال: </span>
+                        <span class="fw-bold">رایگان (دانلودی)</span>
+                    </span>
+                        </div>
+
+                        <div class="row align-items-center">
+                            <div class="col-auto pe-0">
+                                <ul class="consignment-items ps-0">
+                                    @foreach($downloadItems as $product)
+                                        <li class="item item-full">
+                                            <div class="thumbnail">
+                                                <a href="{{ route('front.products.show', $product['slug']) }}">
+                                                    <img src="{{ $product['image'] }}" alt="{{ $product['title'] }}" loading="lazy">
+                                                </a>
+                                            </div>
+                                            <div class="body d-flex flex-column justify-content-center">
+                                                <h4 class="mb-2">
+                                                    <a class="link fs-8 lts-05" href="{{ route('front.products.show', $product['slug']) }}">
+                                                        {{ $product['title'] }}
+                                                    </a>
+                                                </h4>
+                                                <ul class="mb-2">
+                                                    <div class="cart-item--data">
+                                                        <ul>
+                                                            @foreach($product['variants'] as $variant)
+                                                                <li class="mb-0 ml-2" style="vertical-align: middle;">
+                                                                    <div class="cart-item--variant">
+                                                                        @if($variant['type']=="color")
+                                                                            <span class="color" style="background-color: {{ $variant['value'] }};"></span>
+                                                                        @endif
+                                                                        @if(str_contains($variant['name'], 'گارانتی'))
+                                                                            <i class="fas fa-shield-halved"></i>
+                                                                        @endif
+                                                                        <span class="color-name lts-05 mr-1">{{ $variant['name'] }}</span>
+                                                                    </div>
+                                                                </li>
+                                                            @endforeach
+                                                        </ul>
+                                                    </div>
+                                                </ul>
+                                                <div class="cart-item--price fa-num">
+                                                    <div class="cart-item--price-now">
+                                                        <span>{{ number_format($product['final_price']) }}</span>
+                                                        <span class="unit unit-sm">تومان</span>
+                                                    </div>
+                                                    @if($product['discount'])
+                                                        <div class="cart-item--discount mr-2">
+                                                            <del>{{ number_format($product['price']) }}</del>
+                                                            <span class="unit-red unit-sm">تومان</span>
+                                                        </div>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
 </div>
 
 

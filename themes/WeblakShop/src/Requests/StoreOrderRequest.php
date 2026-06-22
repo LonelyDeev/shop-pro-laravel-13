@@ -25,13 +25,23 @@ class StoreOrderRequest extends FormRequest
     public function rules()
     {
         $gateways = Gateway::active()->pluck('key')->toArray();
-        $cart     = get_cart();
+        $cart = get_cart();
+
+        // بررسی وجود محصولات فیزیکی در سبد خرید
+        $hasPhysical = $cart && $cart->products->filter(fn($p) => $p->type === 'physical')->isNotEmpty();
+
         $rules = [
             'gateway'     => 'required|in:wallet,' . implode(',', $gateways),
             'description' => 'nullable|string|max:1000',
-            'address' => 'required',
         ];
 
+        // اگر محصول فیزیکی وجود دارد، آدرس الزامی است
+        if ($hasPhysical) {
+            $rules['address'] = 'required|exists:addresses,id';
+        } else {
+            // اگر فقط محصول دانلودی است، آدرس اختیاری است
+            $rules['address'] = 'nullable|exists:addresses,id';
+        }
 
         return $rules;
     }

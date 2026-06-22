@@ -236,10 +236,12 @@
                                                             <i class="fa-solid fa-ellipsis-vertical"></i>
                                                         </button>
                                                         <div class="dropdown-menu" aria-labelledby="dropdownMenu{{ $subscriber->id }}">
+                                                            @can('newsletters.show')
                                                             <button class="dropdown-item btn-show-details" data-id="{{ $subscriber->id }}" data-action="{{ route('admin.newsletters.show', $subscriber) }}">
                                                                 <i class="fa fa-eye mr-1"></i>جزئیات
                                                             </button>
                                                             <div class="dropdown-divider"></div>
+                                                            @endcan
                                                             @can('newsletters.delete')
                                                                 <button class="dropdown-item btn-delete" data-toggle="modal" data-id="{{ $subscriber->id }}" data-target="#delete-modal" data-action="{{ route('admin.newsletters.destroy', $subscriber) }}">
                                                                     <i class="fa-solid fa-trash-can mr-1"></i> حذف

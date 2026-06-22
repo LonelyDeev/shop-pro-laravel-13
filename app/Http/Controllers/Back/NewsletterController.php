@@ -13,7 +13,7 @@ class NewsletterController extends Controller
 {
     public function __construct()
     {
-        $this->authorizeResource(Newsletter::class, 'newsletters');
+        $this->authorizeResource(Newsletter::class, 'newsletter');
     }
     public function index(Request $request)
     {

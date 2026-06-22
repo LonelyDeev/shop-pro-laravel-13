@@ -84,8 +84,10 @@
                                                                 <i class="fa-solid fa-ellipsis-vertical"></i>
                                                             </button>
                                                             <div class="dropdown-menu" aria-labelledby="dropdownMenu{{ $post->id }}">
-                                                                <a class="dropdown-item" target='_blank' href="{{ Route::has('front.posts.show') ? route('front.posts.show', ['post' => $post]) : '' }}"><i class="fa-regular fa-eye mr-1"></i>نمایش</a>
+                                                                @can('posts.details')
+                                                                <a class="dropdown-item" target='_blank' href="{{  route('admin.posts.details', ['post' => $post]) }}"><i class="fa-regular fa-eye mr-1"></i>جزئیات</a>
                                                                 <div class="dropdown-divider"></div>
+                                                                @endcan
                                                                 @can('posts.update')
                                                                     <a class="dropdown-item" href="{{ route('admin.posts.edit', ['post' => $post]) }}"><i class="fa-solid fa-pencil mr-1"></i>ویرایش</a>
                                                                     <div class="dropdown-divider"></div>

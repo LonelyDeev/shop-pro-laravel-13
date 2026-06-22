@@ -1118,6 +1118,15 @@
                             </li>
                         @endcan
 
+                        @can('seo.audit')
+                            <li class="{{ active_class('admin.seo.audit') }} nav-item">
+                                <a href="{{ route('admin.seo.audit') }}">
+                                    <i class="fa fa-search" style='font-size: 15px'></i>
+                                    <span class="menu-title">برسی سئو سایت</span>
+                                </a>
+                            </li>
+                        @endcan
+
 
                     </ul>
                 </li>
@@ -1132,6 +1141,7 @@
 
                     </a>
                     <ul class="menu-content">
+
                         <li class="{{ active_class('admin.permissions.index') }}">
                             <a href="{{ route('admin.permissions.index') }}"><i class="fa-solid fa-circle"></i><span
                                     class="menu-item">دسترسی ها</span></a>
@@ -1145,6 +1155,13 @@
                         <li class="{{ active_class('admin.logs.index') }}">
                             <a target="_blank" href="{{ route('admin.logs.index') }}"><i class="fa-solid fa-circle"></i><span
                                     class="menu-item">لاگ ها</span></a>
+                        </li>
+
+                        <li class="{{ active_class('admin.robots.index') }}">
+                            <a href="{{ route('admin.robots.index') }}">
+                                <i class="fas fa-robot"></i>
+                                <span class="menu-item">robots.txt</span>
+                            </a>
                         </li>
 
                         <li class="{{ active_class('admin.developer.showUpdater') }}">

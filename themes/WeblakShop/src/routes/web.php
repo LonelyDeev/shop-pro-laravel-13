@@ -147,11 +147,51 @@ Route::group(['as' => 'front.'], function () {
     // ------------------ brands
     Route::get('brands/{brand}', [BrandController::class, 'show'])->name('brands.show');
 
-    // ------------------ sitemap
-    Route::get('sitemap', [SitemapController::class, 'index']);
-    Route::get('sitemap-blogs', [SitemapController::class, 'posts']);
-    Route::get('sitemap-pages', [SitemapController::class, 'pages']);
-    Route::get('sitemap-products', [SitemapController::class, 'products']);
+// ------------------ Sitemap Routes ------------------
+    Route::prefix('sitemap')->name('sitemap.')->group(function () {
+
+        // فایل اصلی sitemap.xml
+        Route::get('/xml', [SitemapController::class, 'index'])->name('index');
+        Route::get('/', [SitemapController::class, 'index']); // alias
+
+        // Sitemap محصولات (با صفحه‌بندی)
+        Route::get('products-{page}.xml', [SitemapController::class, 'products'])->name('products');
+        Route::get('products.xml', [SitemapController::class, 'products'])->name('products.first');
+
+        // Sitemap مقالات (با صفحه‌بندی)
+        Route::get('articles-{page}.xml', [SitemapController::class, 'articles'])->name('articles');
+        Route::get('articles.xml', [SitemapController::class, 'articles'])->name('articles.first');
+
+        // Sitemap صفحات استاتیک
+        Route::get('statics.xml', [SitemapController::class, 'statics'])->name('statics');
+
+        // Sitemap دسته‌بندی‌ها
+        Route::get('product_categories.xml', [SitemapController::class, 'productCategories'])->name('product_categories');
+        Route::get('article_categories.xml', [SitemapController::class, 'articleCategories'])->name('article_categories');
+
+        // Sitemap برچسب‌ها (تگ‌ها)
+        Route::get('product_tags.xml', [SitemapController::class, 'productTags'])->name('product_tags');
+        Route::get('article_tags.xml', [SitemapController::class, 'articleTags'])->name('article_tags');
+
+        // Sitemap برندها
+        Route::get('brands.xml', [SitemapController::class, 'brands'])->name('brands');
+
+        // Sitemap صفحات
+        Route::get('pages.xml', [SitemapController::class, 'pages'])->name('pages');
+
+        // Sitemap فرم‌ها
+        Route::get('forms.xml', [SitemapController::class, 'forms'])->name('forms');
+
+        // Sitemap فروشگاه‌ها
+        Route::get('stores.xml', [SitemapController::class, 'stores'])->name('stores');
+
+        // تولید دستی همه sitemap ها
+        Route::get('generate', [SitemapController::class, 'generateAll'])->name('generate');
+    });
+
+// مسیر مستقیم sitemap.xml (برای گوگل)
+    Route::get('sitemap.xml', [SitemapController::class, 'index'])->name('sitemap.xml');
+
 
     // ------------------ contacts
     Route::resource('contact', ContactController::class)->only(['index', 'store']);

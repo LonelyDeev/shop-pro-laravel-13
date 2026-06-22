@@ -27,6 +27,7 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 use Shetabit\Payment\Facade\Payment;
 use Shetabit\Multipay\Invoice;
@@ -92,10 +93,20 @@ class OrderController extends Controller
             return redirect()->route('front.checkout');
         }
 
-        // ========== دسته‌بندی محصولات بر اساس فروشنده ==========
-        $sellerGroups = [];
+        // ========== جدا کردن محصولات فیزیکی و دانلودی ==========
+        $physicalProducts = $cart->products->filter(fn($p) => $p->type === 'physical');
+        $downloadProducts = $cart->products->filter(fn($p) => $p->type === 'download');
 
-        foreach ($cart->products as $product) {
+        // اگر فقط محصول دانلودی در سبد است، نیازی به آدرس نیست
+        if ($physicalProducts->isEmpty() && $downloadProducts->isNotEmpty()) {
+            // آدرس برای محصولات دانلودی الزامی نیست
+        }
+
+        // ========== دسته‌بندی محصولات بر اساس فروشنده (فقط فیزیکی) ==========
+        $sellerGroups = [];
+        $physicalTotal = 0; // متغیر جدید برای مجموع قیمت نهایی فیزیکی
+
+        foreach ($physicalProducts as $product) {
             $price = Price::with(['seller'])->find($product->pivot->price_id);
             if (!$price) continue;
 
@@ -124,34 +135,55 @@ class OrderController extends Controller
                     'groupId' => $groupId,
                     'products' => [],
                     'total_weight' => 0,
-                    'price' => 0,
-                    'total_price' => 0,
+                    'price' => 0,          // قیمت اصلی (بدون تخفیف) برای محاسبه تخفیف کلی
+                    'total_price' => 0,    // قیمت نهایی با تخفیف محصول
                     'carrier_id' => $selectedCarrierId,
                     'delivery_date' => $selectedDeliveryDate,
                     'shipping_cost' => 0
                 ];
             }
 
+            $finalPrice = $price->discount_price ?? $price->price;
+
             $sellerGroups[$groupId]['products'][] = [
                 'product' => $product,
                 'price' => $price,
                 'quantity' => $product->pivot->quantity,
                 'weight' => ($product->weight ?? 0) * $product->pivot->quantity,
-                'final_price' => $price->discount_price ?? $price->price
+                'final_price' => $finalPrice
             ];
             $sellerGroups[$groupId]['total_weight'] += ($product->weight ?? 0) * $product->pivot->quantity;
             $sellerGroups[$groupId]['price'] += ($price->price) * $product->pivot->quantity;
-            $sellerGroups[$groupId]['total_price'] += ($price->discount_price ?? $price->price) * $product->pivot->quantity;
+            $sellerGroups[$groupId]['total_price'] += $finalPrice * $product->pivot->quantity;
+
+            // جمع کل قیمت نهایی فیزیکی
+            $physicalTotal += $finalPrice * $product->pivot->quantity;
         }
 
-        // ========== اعتبارسنجی و محاسبه هزینه ارسال برای هر گروه ==========
+        // ========== محاسبه قیمت کل محصولات دانلودی ==========
+        $downloadTotalPrice = 0;
+        $downloadItems = [];
+
+        foreach ($downloadProducts as $product) {
+            $price = Price::with(['seller'])->find($product->pivot->price_id);
+            if (!$price) continue;
+
+            $finalPrice = $price->discount_price ?? $price->price;
+            $downloadTotalPrice += $finalPrice * $product->pivot->quantity;
+
+            $downloadItems[] = [
+                'product' => $product,
+                'price' => $price,
+                'quantity' => $product->pivot->quantity,
+                'final_price' => $finalPrice
+            ];
+        }
+
+        // ========== اعتبارسنجی و محاسبه هزینه ارسال برای هر گروه (فقط فیزیکی) ==========
         $totalShippingCost = 0;
-        $subtotal = 0;
         $errors = [];
 
         foreach ($sellerGroups as $groupId => &$group) {
-            $subtotal += $group['price'];
-
             // 1. بررسی وجود روش ارسال
             if (!$group['carrier_id']) {
                 $errors[] = "روش ارسال برای مرسوله {$group['name']} انتخاب نشده است";
@@ -204,6 +236,13 @@ class OrderController extends Controller
             }
         }
 
+        // اگر فقط محصول دانلودی داریم و هیچ محصول فیزیکی نیست، نیازی به آدرس و ارسال نیست
+        if ($physicalProducts->isEmpty() && $downloadProducts->isNotEmpty()) {
+            // بدون خطای ارسال
+        } elseif ($physicalProducts->isNotEmpty() && empty($sellerGroups)) {
+            $errors[] = "محصولات فیزیکی یافت نشد";
+        }
+
         if (!empty($errors)) {
             return redirect()->back()->withInput()->withErrors($errors);
         }
@@ -213,7 +252,9 @@ class OrderController extends Controller
         $data = $request->validated();
 
         $discountAmount = $cart->totalDiscount();
-        $finalPrice = $subtotal + $totalShippingCost - $discountAmount;
+
+        // محاسبه قیمت نهایی: مجموع قیمت نهایی فیزیکی + دانلودی + هزینه ارسال - تخفیف کلی
+        $finalPrice = $physicalTotal + $downloadTotalPrice + $totalShippingCost - $discountAmount;
 
         $data['shipping_cost'] = $totalShippingCost;
         $data['price'] = $finalPrice;
@@ -230,13 +271,26 @@ class OrderController extends Controller
         }
 
         $data['user_id'] = $user->id;
-        $data['name'] = $address->fullname;
-        $data['mobile'] = $address->mobile;
-        $data['province_id'] = $address->province_id;
-        $data['city_id'] = $address->city_id;
-        $data['postal_code'] = $address->postal_code;
-        $data['address'] = $address->address;
-        $data['location'] = $address->lat.','.$address->lng;
+
+        // اطلاعات آدرس (برای محصولات فیزیکی الزامی است)
+        if ($physicalProducts->isNotEmpty()) {
+            $data['name'] = $address->fullname;
+            $data['mobile'] = $address->mobile;
+            $data['province_id'] = $address->province_id;
+            $data['city_id'] = $address->city_id;
+            $data['postal_code'] = $address->postal_code;
+            $data['address'] = $address->address;
+            $data['location'] = $address->lat . ',' . $address->lng;
+        } else {
+            // برای محصولات دانلودی، آدرس را خالی می‌گذاریم یا از اطلاعات کاربر استفاده می‌کنیم
+            $data['name'] = $user->name ?? '';
+            $data['mobile'] = $user->mobile ?? '';
+            $data['province_id'] = null;
+            $data['city_id'] = null;
+            $data['postal_code'] = null;
+            $data['address'] = null;
+            $data['location'] = null;
+        }
 
         if ($gateway) {
             $data['gateway_id'] = $gateway->id;
@@ -244,79 +298,75 @@ class OrderController extends Controller
 
         $order = Order::create($data);
 
-        // ========== ایجاد آیتم‌های سفارش (فقط با حلقه $cart->products) ==========
+        // ========== ایجاد آیتم‌های سفارش ==========
         $sellerIds = [];
 
-        foreach ($cart->products as $product) {
-            $price = $price = Price::with(['seller'])->find($product->pivot->price_id);
-
+        // -- محصولات فیزیکی --
+        foreach ($physicalProducts as $product) {
+            $price = Price::with(['seller'])->find($product->pivot->price_id);
             if (!$price) continue;
 
-            // پیدا کردن گروه مربوط به این محصول برای دریافت carrier_id و delivery_date
             $sellerId = $price->seller_id;
             $groupId = $sellerId ? 'seller_' . $sellerId : 'store';
             $group = $sellerGroups[$groupId] ?? null;
 
+            // دریافت اطلاعات ارسال از گروه
+            $carrier_id = null;
+            $delivery_date = null;
+            $shipping_cost = 0;
 
-            if ($request->has('carrier_id_store') and $request->input('carrier_id_store') !== '') {
-                $carrier=Carrier::find($request->input('carrier_id_store'));
-                $carrier_id=$carrier->id;
-                $delivery_date=$carrier->default_delivery_range;
-                if ($carrier->delivery_time_type == 'user_select') {
-                    $delivery_date=$request->input('carrier_date_store');
-                }
-
-                $shipping_cost= $this->calculateCarrierCost($carrier,$product->weight,$address->city_id);
+            if ($group) {
+                $carrier_id = $group['carrier_id'] ?? null;
+                $delivery_date = $group['delivery_date'] ?? null;
+                $shipping_cost = $group['shipping_cost'] ?? 0;
             }
 
-            if ($request->has('carrier_id_seller_'.$price->seller_id) and $request->input('carrier_id_seller_'.$price->seller_id) !== '') {
-                $carrier=Carrier::find($request->input('carrier_id_seller_'.$price->seller_id));
-                $carrier_id=$carrier->id;
-                $delivery_date=$carrier->default_delivery_range;
-                if ($carrier->delivery_time_type == 'user_select') {
-                    $delivery_date=$request->input('carrier_date_seller_'.$price->seller_id);
-                }
-                $shipping_cost= $this->calculateCarrierCost($carrier,$product->weight,$address->city_id);
+            $allAttributes = $this->getProductAttributes($price);
+
+            $order->items()->create([
+                'product_id' => $product->id,
+                'seller_id' => $price->seller_id,
+                'title' => $product->title,
+                'price' => $price->discount_price ?? $price->price,
+                'real_price' => $price->price,
+                'quantity' => $product->pivot->quantity,
+                'discount' => $price->discount ?? 0,
+                'price_id' => $product->pivot->price_id,
+                'shipping_cost' => $shipping_cost,
+                'carrier_id' => $carrier_id,
+                'delivery_date' => $delivery_date,
+                'attributes' => $allAttributes,
+                'product_type' => 'physical',
+            ]);
+
+            if ($price->seller_id) {
+                $sellerIds[] = $price->seller_id;
             }
+        }
 
-            $allAttributes = [];
-            $get_attributes = $price->get_attributes()->with('group')->get();
+        // -- محصولات دانلودی --
+        foreach ($downloadItems as $item) {
+            $product = $item['product'];
+            $price = $item['price'];
 
-            foreach ($get_attributes as $attribute) {
-                $attribute_groups_name = $attribute->group->name;
+            $allAttributes = $this->getProductAttributes($price);
 
-                // اگر گروه قبلاً وجود دارد، به آرایه اضافه کن
-                if (!isset($allAttributes[$attribute_groups_name])) {
-                    $allAttributes[$attribute_groups_name] = [];
-                }
-
-                $allAttributes[$attribute_groups_name][] = [
-                    'name' => $attribute->name,
-                    'value' => $attribute->value,
-                ];
-            }
-
-            $allAttributes = json_encode($allAttributes);
-
-
-            if ($price) {
-                $order->items()->create([
-                    'product_id' => $product->id,
-                    'seller_id' => $price->seller_id,
-                    'title' => $product->title,
-                    'price' => $price->discount_price ?? $price->price,
-                    'real_price' => $price->price,
-                    'quantity' => $product->pivot->quantity,
-                    'discount' => $price->discount ?? 0,
-                    'price_id' => $product->pivot->price_id,
-                    'shipping_cost' => $shipping_cost ? $shipping_cost : 0,
-                    'carrier_id' => $carrier_id ? $carrier_id : null,
-                    'delivery_date' => $delivery_date ? $delivery_date : null,
-                    'attributes' => $allAttributes,
-                ]);
-
-                //$price->decrement('stock', $product->pivot->quantity);
-            }
+            $order->items()->create([
+                'product_id' => $product->id,
+                'seller_id' => $price->seller_id,
+                'title' => $product->title,
+                'price' => $item['final_price'],
+                'real_price' => $price->price,
+                'quantity' => $item['quantity'],
+                'discount' => $price->discount ?? 0,
+                'price_id' => $product->pivot->price_id,
+                'shipping_cost' => 0,
+                'carrier_id' => null,
+                'delivery_date' => null,
+                'attributes' => $allAttributes,
+                'product_type' => 'download',
+                'is_downloadable' => true,
+            ]);
 
             if ($price->seller_id) {
                 $sellerIds[] = $price->seller_id;
@@ -335,6 +385,30 @@ class OrderController extends Controller
         event(new OrderCreated($order));
 
         return $this->pay($order, $request);
+    }
+
+    /**
+     * استخراج ویژگی‌های محصول
+     */
+    private function getProductAttributes($price)
+    {
+        $allAttributes = [];
+        $get_attributes = $price->get_attributes()->with('group')->get();
+
+        foreach ($get_attributes as $attribute) {
+            $attribute_groups_name = $attribute->group->name;
+
+            if (!isset($allAttributes[$attribute_groups_name])) {
+                $allAttributes[$attribute_groups_name] = [];
+            }
+
+            $allAttributes[$attribute_groups_name][] = [
+                'name' => $attribute->name,
+                'value' => $attribute->value,
+            ];
+        }
+
+        return json_encode($allAttributes);
     }
     private function calculateCarrierCost($carrier, $weight, $cityId)
     {
@@ -426,27 +500,27 @@ class OrderController extends Controller
         if ($order->status != 'unpaid') {
             return redirect()->route('front.orders.show', ['order' => $order])->with('error', 'سفارش شما لغو شده است یا قبلا پرداخت کرده اید');
         }
-
-        // ========== رزرو موجودی قبل از پرداخت ==========
+        // ========== رزرو موجودی قبل از پرداخت (فقط برای محصولات فیزیکی) ==========
         try {
             DB::transaction(function () use ($order) {
                 foreach ($order->items as $item) {
-                    $price = $item->get_price;
+                    // فقط برای محصولات فیزیکی موجودی رزرو شود
+                    if ($item->product->isPhysical()) {
+                        $price = $item->get_price;
 
-                    if ($price) {
-                        // بررسی موجودی کافی
-                        $availableStock = $price->stock - $price->reserved_stock;
-                        if ($availableStock < $item->quantity) {
-                            throw new \Exception("موجودی کافی برای محصول {$item->product->title} وجود ندارد");
+                        if ($price) {
+                            $availableStock = $price->stock - $price->reserved_stock;
+                            if ($availableStock < $item->quantity) {
+                                throw new \Exception("موجودی کافی برای محصول {$item->product->title} وجود ندارد");
+                            }
+
+                            $this->stockService->reserve(
+                                $price,
+                                $item->quantity,
+                                $order->id,
+                                $item->id
+                            );
                         }
-
-                        // رزرو موجودی
-                        $this->stockService->reserve(
-                            $price,
-                            $item->quantity,
-                            $order->id,
-                            $item->id
-                        );
                     }
                 }
             });
@@ -455,7 +529,7 @@ class OrderController extends Controller
                 ->with('error', $e->getMessage());
         }
 
-
+        // اگر مبلغ سفارش صفر باشد (پرداخت رایگان)
         if ($order->price == 0) {
             return $this->orderPaid($order);
         }
@@ -473,7 +547,6 @@ class OrderController extends Controller
         }
 
         try {
-
             $gateway_configs = get_gateway_configs($gateway);
 
             return Payment::via($gateway)->config($gateway_configs)->callbackUrl(route('front.orders.verify', ['gateway' => $gateway]))->purchase(
@@ -556,7 +629,9 @@ class OrderController extends Controller
 
         if ($amount >= 0) {
             $result = $order->payUsingWallet();
+
             if ($result) {
+                // تأیید رزرو توسط متد orderPaid انجام می‌شود، بنابراین اینجا نیازی نیست
                 return $this->orderPaid($order);
             }
         }
@@ -616,14 +691,21 @@ class OrderController extends Controller
     /**
      * پرداخت سفارش و تایید نهایی
      */
+    /**
+     * پرداخت سفارش و تایید نهایی
+     */
     private function orderPaid(Order $order)
     {
         DB::beginTransaction();
 
         try {
-
-            // ========== بررسی مجدد موجودی با قفل ==========
+            // ========== بررسی مجدد موجودی با قفل (فقط برای محصولات فیزیکی) ==========
             foreach ($order->items as $item) {
+                // اگر محصول دانلودی است، از بررسی موجودی صرف نظر کن
+                if (!$item->product->isPhysical()) {
+                    continue;
+                }
+
                 $price = $item->get_price;
 
                 if (!$price) {
@@ -644,8 +726,13 @@ class OrderController extends Controller
                 }
             }
 
-            // ========== ثبت حرکات انبار ==========
+            // ========== ثبت حرکات انبار (فقط برای محصولات فیزیکی) ==========
             foreach ($order->items as $item) {
+                // اگر محصول دانلودی است، از ثبت حرکات انبار صرف نظر کن
+                if (!$item->product->isPhysical()) {
+                    continue;
+                }
+
                 $price = $item->get_price;
 
                 if ($price) {
@@ -665,6 +752,13 @@ class OrderController extends Controller
                 }
             }
 
+            /*// ========== فعال‌سازی لینک دانلود برای محصولات دانلودی ==========
+            foreach ($order->items as $item) {
+                if (!$item->product->isPhysical()) { // فقط دانلودی
+                    $this->activateDownloadLink($item, $order);
+                }
+            }*/
+
             // به‌روزرسانی وضعیت سفارش
             $order->update([
                 'status' => 'paid',
@@ -683,7 +777,7 @@ class OrderController extends Controller
             DB::rollBack();
 
             // لاگ خطا
-            Log::warning('خطا در هنگام پرداخت سفارش', [
+            \Log::warning('خطا در هنگام پرداخت سفارش', [
                 'order_id' => $order->id,
                 'error' => $e->getMessage()
             ]);
@@ -933,6 +1027,51 @@ class OrderController extends Controller
             abort(404);
         }
         return view('front::user.orders.print', compact('order'));
+    }
+
+    /**
+     * فعال‌سازی لینک دانلود برای محصولات دانلودی
+     */
+    private function activateDownloadLink($orderItem, $order)
+    {
+        $price = $orderItem->get_price;
+        if (!$price) {
+            return;
+        }
+
+        // فرض بر این است که مدل Price دارای رابطه file است
+        $file = $price->file;
+        if (!$file) {
+            \Log::warning("فایل دانلودی برای محصول {$orderItem->title} یافت نشد", [
+                'order_id' => $order->id,
+                'order_item_id' => $orderItem->id
+            ]);
+            return;
+        }
+
+        // ایجاد لینک دانلود
+        $downloadLink = \App\Models\DownloadLink::create([
+            'order_item_id' => $orderItem->id,
+            'user_id' => $order->user_id,
+            'file_id' => $file->id,
+            'token' => \Illuminate\Support\Str::random(64),
+            'expires_at' => now()->addDays(option('download_expiry_days', 30)),
+            'max_downloads' => option('max_downloads', 5),
+            'download_count' => 0,
+            'is_active' => true,
+        ]);
+
+        $orderItem->update([
+            'download_link_id' => $downloadLink->id,
+            'download_activated_at' => now(),
+        ]);
+
+        // ارسال ایمیل حاوی لینک دانلود (اختیاری)
+        try {
+            \Mail::to($order->user->email)->send(new \App\Mail\DownloadLinkMail($orderItem, $downloadLink));
+        } catch (\Exception $e) {
+            \Log::warning("ارسال ایمیل لینک دانلود ناموفق: " . $e->getMessage());
+        }
     }
 
 }

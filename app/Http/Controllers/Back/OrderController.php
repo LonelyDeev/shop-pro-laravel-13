@@ -145,9 +145,21 @@ class OrderController extends Controller
     {
         $this->authorize('orders.view');
 
-        foreach ($request->ids as $id) {
-            $orders = Order::paid()->whereIn('id', $request->ids)->get();
-        }
+        $orders = Order::paid()->whereIn('id', $request->ids)->get();
+        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $orderIds = implode('، ', $request->ids);
+
+        activity()
+            ->causedBy(auth()->user())
+            ->event('export')
+            ->withProperties([
+                'action' => 'print_shipping_forms',
+                'order_ids' => $request->ids,
+                'orders_count' => $orders->count(),
+                'format' => 'shipping_forms',
+                'ip' => request()->ip()
+            ])
+            ->log("مدیر {$adminName} فرم‌های حمل و نقل سفارش‌های {$orderIds} را چاپ کرد");
 
         return view('back.orders.print-all-shipping-forms', compact('orders'));
     }
@@ -156,21 +168,67 @@ class OrderController extends Controller
     {
         $this->authorize('orders.view');
 
-        foreach ($request->ids as $id) {
-            $orders = Order::paid()->whereIn('id', $request->ids)->get();
-        }
+        $orders = Order::paid()->whereIn('id', $request->ids)->get();
+        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $orderIds = implode('، ', $request->ids);
+
+        activity()
+            ->causedBy(auth()->user())
+            ->event('export')
+            ->withProperties([
+                'action' => 'print_shipping_forms_min',
+                'order_ids' => $request->ids,
+                'orders_count' => $orders->count(),
+                'format' => 'shipping_forms_min',
+                'ip' => request()->ip()
+            ])
+            ->log("مدیر {$adminName} فرم‌های خلاصه حمل و نقل سفارش‌های {$orderIds} را چاپ کرد");
 
         return view('back.orders.print-all-shipping-form-min', compact('orders'));
     }
-
 
     public function printAll(Request $request)
     {
         $this->authorize('orders.view');
 
         $orders = Order::paid()->whereIn('id', $request->ids)->get();
+        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $orderIds = implode('، ', $request->ids);
+
+        activity()
+            ->causedBy(auth()->user())
+            ->event('export')
+            ->withProperties([
+                'action' => 'print_orders',
+                'order_ids' => $request->ids,
+                'orders_count' => $orders->count(),
+                'format' => 'print_all',
+                'ip' => request()->ip()
+            ])
+            ->log("مدیر {$adminName} سفارش‌های {$orderIds} را چاپ کرد");
 
         return view('back.orders.print-all', compact('orders'));
+    }
+
+    public function print(Request $request, Order $order)
+    {
+        $this->authorize('orders.view');
+        $id_seller = $request->seller_id;
+        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+
+        activity()
+            ->performedOn($order)
+            ->causedBy(auth()->user())
+            ->event('export')
+            ->withProperties([
+                'action' => 'print_order',
+                'order_id' => $order->id,
+                'seller_id' => $id_seller,
+                'ip' => request()->ip()
+            ])
+            ->log("مدیر {$adminName} سفارش شماره {$order->id} را چاپ کرد");
+
+        return view('back.orders.print', compact('order', 'id_seller'));
     }
 
     public function shipping_status(Order $order, Request $request)
@@ -180,6 +238,11 @@ class OrderController extends Controller
         $this->validate($request, [
             'status' => 'required',
         ]);
+
+        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $oldStatus = $order->shipping_status;
+        $newStatus = $request->status;
+
         $order->update([
             'shipping_status' => $request->status
         ]);
@@ -188,43 +251,57 @@ class OrderController extends Controller
             'shipping_status' => $request->status
         ]);
 
-        if ($request->back_money_val=='yes' and $request->back_money_val){
-            $user=User::find($order->user_id);
-            $walletHistory=WalletHistory::where(['wallet_id'=>$user->wallet->id,'order_id'=>$order->id,'orderCanceled'=>1])->first();
+        // ثبت لاگ تغییر وضعیت ارسال
+        activity()
+            ->performedOn($order)
+            ->causedBy(auth()->user())
+            ->event('updated')
+            ->withProperties([
+                'action' => 'update_shipping_status',
+                'order_id' => $order->id,
+                'old_status' => $oldStatus,
+                'new_status' => $newStatus,
+                'back_money' => $request->back_money_val ?? 'no',
+                'ip' => request()->ip()
+            ])
+            ->log("مدیر {$adminName} وضعیت ارسال سفارش شماره {$order->id} را از {$oldStatus} به {$newStatus} تغییر داد");
 
-            foreach ($order->items as $item){
-                if ($item->seller_id){
-                    $seller=Seller::find($item->seller_id);
-                    $walletHistorySellerAmount=WalletHistory::where(['wallet_id'=>$seller->wallet->id,'order_id'=>$order->id])->first();
-                    if ($walletHistorySellerAmount){
-                        $walletHistorySeller=WalletHistory::where(['wallet_id'=>$seller->wallet->id,'order_id'=>$order->id,'orderCanceled'=>1])->first();
-                        if (!$walletHistorySeller){
+        if ($request->back_money_val == 'yes' && $request->back_money_val) {
+            $user = User::find($order->user_id);
+            $walletHistory = WalletHistory::where(['wallet_id' => $user->wallet->id, 'order_id' => $order->id, 'orderCanceled' => 1])->first();
+
+            foreach ($order->items as $item) {
+                if ($item->seller_id) {
+                    $seller = Seller::find($item->seller_id);
+                    $walletHistorySellerAmount = WalletHistory::where(['wallet_id' => $seller->wallet->id, 'order_id' => $order->id])->first();
+                    if ($walletHistorySellerAmount) {
+                        $walletHistorySeller = WalletHistory::where(['wallet_id' => $seller->wallet->id, 'order_id' => $order->id, 'orderCanceled' => 1])->first();
+                        if (!$walletHistorySeller) {
                             $request->merge([
-                                'backMoney'=>'on',
-                                'amount'=>$walletHistorySellerAmount->amount,
-                                'type'=>'withdraw',
-                                'order_id'=>$order->id,
-                                'description'=>'لغو سفارش با شماره: '.$order->id,
+                                'backMoney' => 'on',
+                                'amount' => $walletHistorySellerAmount->amount,
+                                'type' => 'withdraw',
+                                'order_id' => $order->id,
+                                'description' => 'لغو سفارش با شماره: ' . $order->id,
                             ]);
 
-                            (new WalletController)->store($seller->wallet,$request);
+                            (new WalletController)->store($seller->wallet, $request);
                             sleep(1);
                         }
                     }
-
                 }
             }
 
-            if (!$walletHistory){
+            if (!$walletHistory) {
                 $request->merge([
-                    'backMoney'=>'on',
-                    'amount'=>$order->price,
-                    'type'=>'deposit',
-                    'order_id'=>$order->id,
-                    'description'=>'لغو سفارش با شماره: '.$order->id,
+                    'backMoney' => 'on',
+                    'amount' => $order->price,
+                    'type' => 'deposit',
+                    'order_id' => $order->id,
+                    'description' => 'لغو سفارش با شماره: ' . $order->id,
                 ]);
 
-                (new WalletController)->store($user->wallet,$request);
+                (new WalletController)->store($user->wallet, $request);
             }
         }
 
@@ -239,29 +316,33 @@ class OrderController extends Controller
             'status' => 'required',
         ]);
 
+        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
         $orders = Order::whereIn('id', $request->ids)->get();
+        $oldStatuses = [];
 
         foreach ($orders as $order) {
+            $oldStatuses[$order->id] = $order->shipping_status;
+
             if (!$order->isPaid()) {
-                throw ValidationException::withMessages(['id' => 'سفارش شماره ' . $order->id . 'پرداخت نشده است ']);
+                throw ValidationException::withMessages(['id' => 'سفارش شماره ' . $order->id . ' پرداخت نشده است']);
             }
 
             if ($order->reserved()) {
-                throw ValidationException::withMessages(['id' => 'سفارش شماره ' . $order->id . ' رزرو شده است ']);
+                throw ValidationException::withMessages(['id' => 'سفارش شماره ' . $order->id . ' رزرو شده است']);
             }
 
-            if ($request->status=='canceled' and $request->backMoney){
-                $user=User::find($order->user_id);
-                $walletHistory=WalletHistory::where(['wallet_id'=>$user->wallet->id,'order_id'=>$order->id,'orderCanceled'=>1])->first();
-                if (!$walletHistory){
+            if ($request->status == 'canceled' && $request->backMoney) {
+                $user = User::find($order->user_id);
+                $walletHistory = WalletHistory::where(['wallet_id' => $user->wallet->id, 'order_id' => $order->id, 'orderCanceled' => 1])->first();
+                if (!$walletHistory) {
                     $request->merge([
-                        'amount'=>$order->price,
-                        'type'=>'deposit',
-                        'order_id'=>$order->id,
-                        'description'=>'لغو سفارش با شماره: '.$order->id,
+                        'amount' => $order->price,
+                        'type' => 'deposit',
+                        'order_id' => $order->id,
+                        'description' => 'لغو سفارش با شماره: ' . $order->id,
                     ]);
 
-                    (new WalletController)->store($user->wallet,$request);
+                    (new WalletController)->store($user->wallet, $request);
                 }
             }
         }
@@ -276,10 +357,64 @@ class OrderController extends Controller
             ]);
         }
 
+        // ثبت لاگ تغییر گروهی وضعیت ارسال
+        $orderIds = implode('، ', $request->ids);
+        $newStatus = $request->status;
+        $backMoneyText = $request->backMoney ? 'بازگشت وجه انجام شد' : 'بدون بازگشت وجه';
 
+        activity()
+            ->causedBy(auth()->user())
+            ->event('updated')
+            ->withProperties([
+                'action' => 'bulk_update_shipping_status',
+                'order_ids' => $request->ids,
+                'old_statuses' => $oldStatuses,
+                'new_status' => $newStatus,
+                'back_money' => $request->backMoney ?? 'no',
+                'back_money_text' => $backMoneyText,
+                'orders_count' => $orders->count(),
+                'ip' => request()->ip()
+            ])
+            ->log("مدیر {$adminName} وضعیت ارسال {$orders->count()} سفارش (شماره‌های {$orderIds}) را به {$newStatus} تغییر داد");
 
         return response('success');
     }
+
+    public function export(Request $request)
+    {
+        $this->authorize('orders.export');
+
+        $orders = Order::filter($request)->get();
+        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $ordersCount = $orders->count();
+        $format = $request->export_type ?? 'print';
+
+        activity()
+            ->causedBy(auth()->user())
+            ->event('export')
+            ->withProperties([
+                'action' => 'export_orders',
+                'export_type' => $format,
+                'orders_count' => $ordersCount,
+                'filters' => $request->except('export_type'),
+                'ip' => request()->ip()
+            ])
+            ->log("مدیر {$adminName} خروجی {$ordersCount} سفارش را با فرمت {$format} دریافت کرد");
+
+        switch ($request->export_type) {
+            case 'excel':
+                return $this->exportExcel($orders, $request);
+                break;
+            default:
+                return $this->exportPrint($orders, $request);
+        }
+    }
+
+    private function exportExcel($orders)
+    {
+        return Excel::download(new OrdersExport($orders), 'orders.xlsx');
+    }
+
 
     public function notCompleted()
     {
@@ -296,16 +431,22 @@ class OrderController extends Controller
         return view('back.orders.not-completed', compact('prices'));
     }
 
-    public function print(Request $request,Order $order)
-    {
-        $this->authorize('orders.view');
-        $id_seller=$request->seller_id;
-        return view('back.orders.print', compact('order','id_seller'));
-    }
-
     public function shippingForm(Order $order)
     {
         $this->authorize('orders.view');
+
+        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+
+        activity()
+            ->performedOn($order)
+            ->causedBy(auth()->user())
+            ->event('export')
+            ->withProperties([
+                'action' => 'view_shipping_form',
+                'order_id' => $order->id,
+                'ip' => request()->ip()
+            ])
+            ->log("مدیر {$adminName} فرم حمل و نقل سفارش شماره {$order->id} را مشاهده کرد");
 
         return view('back.orders.shipping-form', compact('order'));
     }
@@ -314,26 +455,235 @@ class OrderController extends Controller
     {
         $this->authorize('orders.view');
 
+        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+
+        activity()
+            ->performedOn($order)
+            ->causedBy(auth()->user())
+            ->event('export')
+            ->withProperties([
+                'action' => 'view_shipping_form_min',
+                'order_id' => $order->id,
+                'ip' => request()->ip()
+            ])
+            ->log("مدیر {$adminName} فرم خلاصه حمل و نقل سفارش شماره {$order->id} را مشاهده کرد");
+
         return view('back.orders.shipping-form-min', compact('order'));
     }
 
-    public function export(Request $request)
+    public function set_tracking_code(Request $request, Order $order)
     {
-        $this->authorize('orders.export');
+        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $oldTrackingCode = $order->tracking_code;
+        $newTrackingCode = $request->code;
 
-        $orders = Order::filter($request)->get();
+        $order->tracking_code = $request->code;
+        $order->save();
 
-        switch ($request->export_type) {
-            case 'excel': {
-                    return $this->exportExcel($orders, $request);
-                    break;
-                }
-            default: {
-                    return $this->exportPrint($orders, $request);
-                }
-        }
+        activity()
+            ->performedOn($order)
+            ->causedBy(auth()->user())
+            ->event('updated')
+            ->withProperties([
+                'action' => 'set_tracking_code',
+                'order_id' => $order->id,
+                'old_tracking_code' => $oldTrackingCode,
+                'new_tracking_code' => $newTrackingCode,
+                'ip' => request()->ip()
+            ])
+            ->log("مدیر {$adminName} کد رهگیری سفارش شماره {$order->id} را از «{$oldTrackingCode}» به «{$newTrackingCode}» تغییر داد");
     }
 
+    public function showItem(OrderItem $orderItem)
+    {
+        // لود کردن روابط لازم
+        $orderItem->load(['order', 'product', 'seller.seller_info']);
+
+        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+
+        activity()
+            ->performedOn($orderItem->order)
+            ->causedBy(auth()->user())
+            ->event('view')
+            ->withProperties([
+                'action' => 'view_order_item',
+                'order_id' => $orderItem->order->id,
+                'order_item_id' => $orderItem->id,
+                'product_title' => $orderItem->product->title ?? 'نامشخص',
+                'seller_id' => $orderItem->seller_id,
+                'ip' => request()->ip()
+            ])
+            ->log("مدیر {$adminName} جزئیات آیتم سفارش شماره {$orderItem->order->id} را مشاهده کرد");
+
+        // اطلاعات فروشنده
+        $sellerName = $orderItem->seller
+            ? ($orderItem->seller->seller_info->business_name ?? $orderItem->seller->name ?? 'فروشنده')
+            : 'فروشگاه اصلی';
+
+        // گرفتن تمام محصولات این فروشنده در این سفارش
+        $sellerItems = $orderItem->order->items->where('seller_id', $orderItem->seller_id);
+
+        // بررسی لغو شدن سفارش
+        $orderCanceled = null;
+        if ($orderItem->order && $orderItem->order->user) {
+            $orderCanceled = WalletHistory::where([
+                'order_id' => $orderItem->order->id,
+                'order_item_id' => $orderItem->id,
+                'orderCanceled' => 1
+            ])->first();
+        }
+
+        return view('back.orders.order-item', compact(
+            'orderItem',
+            'sellerName',
+            'sellerItems',
+            'orderCanceled'
+        ));
+    }
+
+    public function itemShippingStatus(Request $request, OrderItem $orderItem)
+    {
+        $this->authorize('orders.update');
+
+        $request->validate([
+            'shipping_status' => 'required|in:w-pending,pending,processing,waiting,sent,post-sent,delivered,canceled,refunded',
+            'cancel_reason' => 'nullable|string|max:500',
+            'canceled_refund_amount' => 'nullable|boolean'
+        ]);
+
+        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $order = $orderItem->order()->first();
+        $sellerId = $orderItem->seller_id;
+        $oldStatus = $orderItem->shipping_status;
+        $newStatus = $request->shipping_status;
+
+        // بررسی پرداخت شده بودن سفارش
+        if (!$order->isPaid()) {
+            throw ValidationException::withMessages([
+                'message' => 'سفارش پرداخت نشده است'
+            ]);
+        }
+
+        if ($orderItem->refunded) {
+            throw ValidationException::withMessages([
+                'message' => 'این آیتم سفارش قبلاً لغو شده و وجه آن برگشت داده شده است. امکان تغییر وضعیت وجود ندارد.'
+            ]);
+        }
+
+        // به‌روزرسانی وضعیت ارسال برای همه آیتم‌های同一 فروشنده
+        $order->items()->where('seller_id', $sellerId)->update([
+            'shipping_status' => $request->shipping_status
+        ]);
+
+        // ذخیره دلیل لغو (در صورت وجود)
+        $cancelReason = null;
+        if ($request->filled('cancel_reason')) {
+            $cancelReason = $request->cancel_reason;
+            $order->items()->where('seller_id', $sellerId)->update([
+                'cancel_reason' => $request->cancel_reason,
+                'canceled_at' => now()
+            ]);
+        }
+
+        // ثبت لاگ تغییر وضعیت ارسال آیتم سفارش
+        $logMessage = "مدیر {$adminName} وضعیت ارسال آیتم سفارش شماره {$order->id} (محصول: {$orderItem->product->title}) را از {$oldStatus} به {$newStatus} تغییر داد";
+        if ($cancelReason) {
+            $logMessage .= " (دلیل لغو: {$cancelReason})";
+        }
+
+        activity()
+            ->performedOn($order)
+            ->causedBy(auth()->user())
+            ->event('updated')
+            ->withProperties([
+                'action' => 'update_item_shipping_status',
+                'order_id' => $order->id,
+                'order_item_id' => $orderItem->id,
+                'product_title' => $orderItem->product->title ?? 'نامشخص',
+                'seller_id' => $sellerId,
+                'old_status' => $oldStatus,
+                'new_status' => $newStatus,
+                'cancel_reason' => $cancelReason,
+                'refund_amount' => $request->boolean('canceled_refund_amount'),
+                'ip' => request()->ip()
+            ])
+            ->log($logMessage);
+
+        // در صورت لغو سفارش و بازگشت وجه
+        if ($request->shipping_status == 'canceled') {
+            $this->refundOrderItems($order, $orderItem, $sellerId);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'وضعیت با موفقیت تغییر کرد'
+        ]);
+    }
+
+    private function createWalletHistory($wallet, $type, $amount, $orderId, $orderItemId, $description, $source = 'admin')
+    {
+        return $wallet->histories()->create([
+            'type' => $type,  // deposit (واریز) یا withdraw (برداشت)
+            'source' => $source, // admin, seller, user
+            'status' => 'success',
+            'amount' => $amount,
+            'order_id' => $orderId,
+            'order_item_id' => $orderItemId,
+            'description' => $description,
+            'orderCanceled' => 1
+        ]);
+    }
+
+    public function itemTrackingStatus(Request $request, OrderItem $orderItem)
+    {
+        $this->authorize('orders.update');
+
+        $request->validate([
+            'tracking_code' => 'required',
+        ]);
+
+        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $order = $orderItem->order()->first();
+        $sellerId = $orderItem->seller_id;
+
+        // بررسی پرداخت شده بودن سفارش
+        if (!$order->isPaid()) {
+            throw ValidationException::withMessages([
+                'message' => 'سفارش پرداخت نشده است'
+            ]);
+        }
+
+        if ($orderItem->refunded) {
+            throw ValidationException::withMessages([
+                'message' => 'این آیتم سفارش قبلاً لغو شده و وجه آن برگشت داده شده است. امکان ثبت کد رهگیری وجود ندارد.'
+            ]);
+        }
+
+        $oldTrackingCode = $orderItem->tracking_code;
+        $newTrackingCode = $request->tracking_code;
+
+        $order->items()->where('seller_id', $sellerId)->update([
+            'tracking_code' => $request->tracking_code,
+        ]);
+
+        activity()
+            ->performedOn($order)
+            ->causedBy(auth()->user())
+            ->event('updated')
+            ->withProperties([
+                'action' => 'set_item_tracking_code',
+                'order_id' => $order->id,
+                'order_item_id' => $orderItem->id,
+                'product_title' => $orderItem->product->title ?? 'نامشخص',
+                'seller_id' => $sellerId,
+                'old_tracking_code' => $oldTrackingCode,
+                'new_tracking_code' => $newTrackingCode,
+                'ip' => request()->ip()
+            ])
+            ->log("مدیر {$adminName} کد رهگیری آیتم سفارش شماره {$order->id} (محصول: {$orderItem->product->title}) را از «{$oldTrackingCode}» به «{$newTrackingCode}» تغییر داد");
+
+        return response('success');
+    }
     public function userInfo(Request $request)
     {
         $this->authorize('orders.create');
@@ -385,103 +735,8 @@ class OrderController extends Controller
         return ProductResource::collection($products);
     }
 
-    private function exportExcel($orders)
-    {
-        return Excel::download(new OrdersExport($orders), 'orders.xlsx');
-    }
-
-    public function set_tracking_code(Request $request,Order $order)
-    {
-        $order->tracking_code=$request->code;
-        $order->save();
-    }
 
 
-
-    public function showItem(OrderItem $orderItem)
-    {
-        // لود کردن روابط لازم
-        $orderItem->load(['order', 'product', 'seller.seller_info']);
-
-        // اطلاعات فروشنده
-        $sellerName = $orderItem->seller
-            ? ($orderItem->seller->seller_info->business_name ?? $orderItem->seller->name ?? 'فروشنده')
-            : 'فروشگاه اصلی';
-
-        // گرفتن تمام محصولات این فروشنده در این سفارش
-        $sellerItems = $orderItem->order->items->where('seller_id', $orderItem->seller_id);
-
-        // بررسی لغو شدن سفارش
-        $orderCanceled = null;
-        if($orderItem->order && $orderItem->order->user) {
-            $orderCanceled = WalletHistory::where([
-                'order_id' => $orderItem->order->id,
-                'order_item_id' => $orderItem->id,
-                'orderCanceled' => 1
-            ])->first();
-        }
-
-        return view('back.orders.order-item', compact(
-            'orderItem',
-            'sellerName',
-            'sellerItems',
-            'orderCanceled'
-        ));
-    }
-
-    public function itemShippingStatus(Request $request, OrderItem $orderItem)
-    {
-        $this->authorize('orders.update');
-
-        $request->validate([
-            'shipping_status' => 'required|in:w-pending,pending,processing,waiting,sent,post-sent,delivered,canceled,refunded',
-            'cancel_reason' => 'nullable|string|max:500',
-            'canceled_refund_amount' => 'nullable|boolean'
-        ]);
-
-
-
-        $order = $orderItem->order()->first();
-        $sellerId = $orderItem->seller_id;
-
-
-        // بررسی پرداخت شده بودن سفارش
-        if (!$order->isPaid()) {
-            throw ValidationException::withMessages([
-                'message' => 'سفارش پرداخت نشده است'
-            ]);
-        }
-
-        if ($orderItem->refunded) {
-            throw ValidationException::withMessages([
-                'message' => 'این آیتم سفارش قبلاً لغو شده و وجه آن برگشت داده شده است. امکان تغییر وضعیت وجود ندارد.'
-            ]);
-        }
-
-        // به‌روزرسانی وضعیت ارسال برای همه آیتم‌های同一 فروشنده
-        $order->items()->where('seller_id', $sellerId)->update([
-            'shipping_status' => $request->shipping_status
-        ]);
-
-        // ذخیره دلیل لغو (در صورت وجود)
-        if ($request->filled('cancel_reason')) {
-            $order->items()->where('seller_id', $sellerId)->update([
-                'cancel_reason' => $request->cancel_reason,
-                'canceled_at' => now()
-            ]);
-        }
-
-        // در صورت لغو سفارش و بازگشت وجه
-        /*if ($request->shipping_status == 'canceled' && $request->boolean('canceled_refund_amount')) {*/
-        if ($request->shipping_status == 'canceled') {
-            $this->refundOrderItems($order, $orderItem, $sellerId);
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'وضعیت با موفقیت تغییر کرد'
-        ]);
-    }
 
     /**
      * بازگشت وجه آیتم‌های سفارش
@@ -582,48 +837,5 @@ class OrderController extends Controller
     /**
      * ایجاد تاریخچه کیف پول
      */
-    private function createWalletHistory($wallet, $type, $amount, $orderId, $orderItemId, $description, $source = 'admin')
-    {
-        return $wallet->histories()->create([
-            'type' => $type,  // deposit (واریز) یا withdraw (برداشت)
-            'source' => $source, // admin, seller, user
-            'status' => 'success',
-            'amount' => $amount,
-            'order_id' => $orderId,
-            'order_item_id' => $orderItemId,
-            'description' => $description,
-            'orderCanceled' => 1
-        ]);
-    }
-
-    public function itemTrackingStatus(Request $request,OrderItem $orderItem)
-    {
-        $this->authorize('orders.update');
-
-        $request->validate([
-            'tracking_code' => 'required',
-        ]);
-
-        $order = $orderItem->order()->first();
-        // بررسی پرداخت شده بودن سفارش
-        if (!$order->isPaid()) {
-            throw ValidationException::withMessages([
-                'message' => 'سفارش پرداخت نشده است'
-            ]);
-        }
-
-        if ($orderItem->refunded) {
-            throw ValidationException::withMessages([
-                'message' => 'این آیتم سفارش قبلاً لغو شده و وجه آن برگشت داده شده است. امکان ثبت کد رهگیری وجود ندارد.'
-            ]);
-        }
-        $seller_id=$orderItem->seller_id;
-        $orderItem->order()->first()->items()->where('seller_id', $seller_id)->update([
-            'tracking_code'=>$request->tracking_code,
-        ]);
-
-        return response('success');
-
-    }
 
 }

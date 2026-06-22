@@ -96,6 +96,7 @@ class DeveloperController extends Controller
         }
 
         $isNewVersionAvailable = $updater->source()->isNewVersionAvailable();
+
         $versionAvailable = $updater->source()->getVersionAvailable();
         $versionInstalled = $updater->source()->getVersionInstalled();
 

@@ -58,7 +58,12 @@
 
                                             <div class="checkout-col-desc">
                                                 <a href="{{ route('front.products.show', ['product' => $product]) }}">
-                                                    <h3>{{ $product->title }}</h3>
+                                                    <h3>
+                                                        {{ $product->title }}
+                                                        @if (!$product->isPhysical())
+                                                            <span class="badge badge-info" style="font-size: 0.7rem; background-color: #17a2b8; color: #fff; padding: 3px 8px; border-radius: 12px;">📥 دانلودی </span>
+                                                        @endif
+                                                    </h3>
                                                 </a>
                                                 <div class="checkout-variant-color">
                                                     @if ($product->isPhysical())
@@ -80,6 +85,7 @@
                                                         @endif
                                                 </div>
 
+                                                @if ($product->isPhysical())
                                                 <div class="quantity">
                                                     <input class="quantity cart_quantity count" type="number" min="{{ cart_min($price_to_stock) }}" max="{{ cart_max($price_to_stock) }}" name="product-{{ $product->pivot->id }}" step="1" value="{{ $product->pivot->quantity }}" data-minus-class="mdi mdi-minus" data-remove-class="mdi mdi-delete-outline" required>
                                                     <div class="quantity-nav counter-box">
@@ -87,6 +93,7 @@
                                                         <div class="quantity-button quantity-down dec">-</div>
                                                     </div>
                                                 </div>
+                                                @endif
                                                 <a class="add-to-sfl float-left d-inline-block">
                                                     <div class="cart-item-product-price float-none line-height-0">
                                                         {{ number_format($price_to_stock->discountPrice() * $product->pivot->quantity) }}

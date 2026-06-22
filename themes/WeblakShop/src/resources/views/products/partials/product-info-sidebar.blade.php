@@ -1,9 +1,14 @@
 @if ($product->addableToCart())
 
     @php
+
         // جمع‌آوری همه seller_id های یکتا (بدون تکرار)
+        $stores_attribute_prices=[];
+        if ($get_stores){
+            $stores_attribute_prices=$get_stores['attribute_prices'];
+        }
         $uniqueSellers = [];
-        foreach($get_stores['attribute_prices'] as $attribute_prices){
+        foreach($stores_attribute_prices as $attribute_prices){
             $sellerKey = $attribute_prices->seller_id ?? 'site';
             $uniqueSellers[$sellerKey] = true;
         }

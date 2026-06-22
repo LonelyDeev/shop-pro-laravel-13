@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Models\Favorite;
+use App\Models\Permission;
 use App\Models\Review;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
@@ -41,13 +42,14 @@ class GlobalActivityObserver
         'App\Models\UserMobileVerify',
         'App\Models\NewSeller',
         'App\Models\BlockedDevice',
-        'App\Models\Redirect',
         'App\Models\Sms',
         'App\Models\PushSubscription',
         'App\Models\Favorite',
         'App\Models\Like',
         'App\Models\Review',
         'App\Models\ReviewPoint',
+        'App\Models\OrderItem',
+        'App\Models\Permission',
 
         // مدل‌های آماری
         'App\Models\Statistic',

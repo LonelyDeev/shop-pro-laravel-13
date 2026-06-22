@@ -77,9 +77,11 @@
                                                                 <i class="fa-solid fa-ellipsis-vertical"></i>
                                                             </button>
                                                             <div class="dropdown-menu" aria-labelledby="dropdownMenu{{ $page->id }}">
-                                                                <a class="dropdown-item" target='_blank' href="{{ Route::has('front.pages.show') ? route('front.pages.show', ['page' => $page]) : '' }}"><i class="fa-regular fa-eye mr-1"></i>نمایش</a>
+                                                                @can('pages.details')
+                                                                <a class="dropdown-item" target='_blank' href="{{ route('admin.pages.details', ['page' => $page])}}"><i class="fa-regular fa-eye mr-1"></i>جزئیات</a>
                                                                 <div class="dropdown-divider"></div>
-                                                                @can('pages.update')
+                                                                @endcan
+                                                                    @can('pages.update')
                                                                     <a class="dropdown-item" href="{{ route('admin.pages.edit', ['page' => $page]) }}"><i class="fa-solid fa-pencil mr-1"></i>ویرایش</a>
                                                                     <div class="dropdown-divider"></div>
                                                                 @endcan

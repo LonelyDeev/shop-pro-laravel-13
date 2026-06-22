@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Models\Admin;
+use App\Models\Apikey;
 use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
@@ -15,7 +16,7 @@ class ApiKeyPolicy
         return $admin->can('apikeys.index');
     }
 
-    public function view(Admin $admin, Admin $model)
+    public function view(Admin $admin, Apikey $apikey)
     {
         return $admin->can('apikeys.view');
     }
@@ -25,13 +26,13 @@ class ApiKeyPolicy
         return $admin->can('apikeys.create');
     }
 
-    public function update(Admin $admin, Admin $model)
+    public function update(Admin $admin, Apikey $apikey)
     {
-        return $admin->can('apikeys.update') && ($model->level != 'creator');
+        return $admin->can('apikeys.update') or ($admin->level == 'creator');
     }
 
-    public function delete(Admin $admin, Admin $model)
+    public function delete(Admin $admin, Apikey $apikey)
     {
-        return $admin->can('apikeys.delete') && ($model->level != 'creator');
+        return $admin->can('apikeys.delete') or ($admin->level == 'creator');
     }
 }

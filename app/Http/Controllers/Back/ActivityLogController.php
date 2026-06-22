@@ -3,8 +3,12 @@
 namespace App\Http\Controllers\Back;
 
 use App\Http\Controllers\Controller;
+use App\Models\Admin;
 use App\Models\Post;
+use App\Models\Seller;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Morilog\Jalali\Jalalian;
 use Spatie\Activitylog\Models\Activity;
 use Illuminate\Support\Str;
@@ -54,14 +58,106 @@ class ActivityLogController extends Controller
             });
         }
 
-        // دریافت آمارها بر اساس فیلترهای اعمال شده (بدون paginate)
+        // دریافت آمارها بر اساس فیلترهای اعمال شده
         $statsQuery = clone $query;
+
+        // آمار پایه
         $stats = [
             'total' => $statsQuery->count(),
             'created' => (clone $statsQuery)->where('event', 'created')->count(),
             'updated' => (clone $statsQuery)->where('event', 'updated')->count(),
             'deleted' => (clone $statsQuery)->where('event', 'deleted')->count(),
         ];
+
+        // آمار امروز
+        $todayStart = now()->startOfDay();
+        $todayEnd = now()->endOfDay();
+
+        $stats['today'] = [
+            'total' => (clone $statsQuery)->whereBetween('created_at', [$todayStart, $todayEnd])->count(),
+            'created' => (clone $statsQuery)->whereBetween('created_at', [$todayStart, $todayEnd])->where('event', 'created')->count(),
+            'updated' => (clone $statsQuery)->whereBetween('created_at', [$todayStart, $todayEnd])->where('event', 'updated')->count(),
+            'deleted' => (clone $statsQuery)->whereBetween('created_at', [$todayStart, $todayEnd])->where('event', 'deleted')->count(),
+        ];
+
+        // آمار این هفته
+        $weekStart = now()->startOfWeek();
+        $weekEnd = now()->endOfWeek();
+
+        $stats['this_week'] = [
+            'total' => (clone $statsQuery)->whereBetween('created_at', [$weekStart, $weekEnd])->count(),
+            'created' => (clone $statsQuery)->whereBetween('created_at', [$weekStart, $weekEnd])->where('event', 'created')->count(),
+            'updated' => (clone $statsQuery)->whereBetween('created_at', [$weekStart, $weekEnd])->where('event', 'updated')->count(),
+            'deleted' => (clone $statsQuery)->whereBetween('created_at', [$weekStart, $weekEnd])->where('event', 'deleted')->count(),
+        ];
+
+        // آمار این ماه
+        $monthStart = now()->startOfMonth();
+        $monthEnd = now()->endOfMonth();
+
+        $stats['this_month'] = [
+            'total' => (clone $statsQuery)->whereBetween('created_at', [$monthStart, $monthEnd])->count(),
+            'created' => (clone $statsQuery)->whereBetween('created_at', [$monthStart, $monthEnd])->where('event', 'created')->count(),
+            'updated' => (clone $statsQuery)->whereBetween('created_at', [$monthStart, $monthEnd])->where('event', 'updated')->count(),
+            'deleted' => (clone $statsQuery)->whereBetween('created_at', [$monthStart, $monthEnd])->where('event', 'deleted')->count(),
+        ];
+
+        // آمار بیشترین فعالیت کاربران
+        $filteredForTop = clone $statsQuery;
+        $filteredForTop->getQuery()->orders = [];
+
+        $topUsers = $filteredForTop
+            ->select('causer_id', 'causer_type', DB::raw('count(*) as total'))
+            ->whereNotNull('causer_id')
+            ->groupBy('causer_id', 'causer_type')
+            ->orderBy('total', 'desc')
+            ->limit(5)
+            ->get()
+            ->map(function ($item) {
+                $causer = null;
+                if ($item->causer_type === 'App\Models\Admin') {
+                    $causer = Admin::find($item->causer_id);
+                } elseif ($item->causer_type === 'App\Models\User') {
+                    $causer = User::find($item->causer_id);
+                } elseif ($item->causer_type === 'App\Models\Seller') {
+                    $causer = Seller::find($item->causer_id);
+                }
+
+                return [
+                    'name' => $causer->full_name ?? $causer->name ?? 'ناشناس',
+                    'type' => class_basename($item->causer_type),
+                    'total' => $item->total,
+                ];
+            });
+
+        $stats['top_users'] = $topUsers;
+
+        // آمار بر اساس روزهای هفته
+        $filteredForDaily = clone $statsQuery;
+        $filteredForDaily->getQuery()->orders = [];
+
+        $dailyStats = $filteredForDaily
+            ->select(DB::raw('DAYNAME(created_at) as day'), DB::raw('count(*) as total'))
+            ->groupBy('day')
+            ->orderBy(DB::raw("FIELD(day, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday')"))
+            ->get()
+            ->map(function ($item) {
+                $dayNames = [
+                    'Monday' => 'دوشنبه',
+                    'Tuesday' => 'سه‌شنبه',
+                    'Wednesday' => 'چهارشنبه',
+                    'Thursday' => 'پنج‌شنبه',
+                    'Friday' => 'جمعه',
+                    'Saturday' => 'شنبه',
+                    'Sunday' => 'یک‌شنبه',
+                ];
+                return [
+                    'day' => $dayNames[$item->day] ?? $item->day,
+                    'total' => $item->total,
+                ];
+            });
+
+        $stats['daily'] = $dailyStats;
 
         $activities = $query->paginate(20)->withQueryString();
 
@@ -686,7 +782,11 @@ class ActivityLogController extends Controller
     {
         $fieldTitles = [
             'title' => 'عنوان',
+            'first_name' => 'نام',
+            'last_name' => 'نام خانوادگی',
             'post_type' => 'نوع پست',
+            'ticket_id' => 'شناسه تیکت',
+            'message' => 'پیغام',
             'category_id' => 'دسته‌بندی',
             'slug' => 'نامک',
             'image' => 'تصویر',
@@ -843,6 +943,9 @@ class ActivityLogController extends Controller
         }
         if ($action === 'like_post') {
             return "{$actorLink}, {$subjectLink} را لایک کرد";
+        }
+        if ($action === 'view_order_item') {
+            return "{$actorLink}, {$subjectLink} را مشاهده کرد";
         }
 
 

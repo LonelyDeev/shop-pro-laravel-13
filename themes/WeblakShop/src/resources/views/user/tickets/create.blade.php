@@ -43,16 +43,18 @@
                                         <input type="file" class="form-control" name="upload_files[]"  multiple>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div class=" form-legal-row-submit">
-                                <div class="parent-btn col-md-4 display-inline-block">
-                                    <button id="submit-btn" class="dk-btn dk-btn-info w-100">
-                                        ایجاد تیکت
-                                        <i class="fa fa-check sign-in"></i>
-                                    </button>
+                                <div class=" form-legal-row-submit">
+                                    <div class="parent-btn col-md-4 display-inline-block">
+                                        <button id="submit-btn" class="dk-btn dk-btn-info w-100">
+                                            ایجاد تیکت
+                                            <i class="fa fa-check sign-in"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
+
+
                         </div>
                     </form>
                 </div>

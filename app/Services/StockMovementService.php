@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Price;
+use App\Models\Product;
 use App\Models\StockMovement;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -417,5 +418,27 @@ class StockMovementService
 
         $allAttributes = json_encode($allAttributes);
         return $allAttributes;
+    }
+
+    public function deleteProductSafely(Product $product): bool
+    {
+        return DB::transaction(function () use ($product) {
+            // 1. ابتدا تمام رکوردهای stock_movements این محصول را آپدیت کن
+            StockMovement::where('product_id', $product->id)
+                ->update(['product_id' => null]);
+
+            // 2. حالا می‌توانی محصول را حذف کنی
+            $deleted = $product->delete();
+/*
+            if ($deleted) {
+                Log::info("حذف ایمن محصول", [
+                    'product_id' => $product->id,
+                    'product_name' => $product->name,
+                    'operator' => auth()->id()
+                ]);
+            }*/
+
+            return $deleted;
+        });
     }
 }

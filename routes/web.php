@@ -64,6 +64,8 @@ use App\Http\Controllers\Back\HolidayController;
 use App\Http\Controllers\Back\WarehouseController;
 use App\Http\Controllers\Back\PulseController;
 use App\Http\Controllers\Back\ActivityLogController;
+use App\Http\Controllers\Back\SeoAuditController;
+use App\Http\Controllers\Back\RobotsController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -157,6 +159,7 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
     Route::get('product/categories', [ProductController::class, 'categories'])->name('products.categories.index');
     Route::post('product/slug', [ProductController::class, 'generate_slug']);
     Route::get('products/export/create', [ProductController::class, 'export'])->name('products.export');
+    Route::get('product/{product}/details', [ProductController::class, 'show_details'])->name('products.show_details');
 
     Route::get('product/prices', [ProductController::class, 'indexPrices'])->name('product.prices.index');
     Route::put('product/prices', [ProductController::class, 'updatePrices'])->name('product.prices.update');
@@ -237,6 +240,7 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
     Route::resource('posts', PostController::class)->except(['show']);
     Route::get('post/categories', [PostController::class, 'categories'])->name('posts.categories.index');
     Route::post('post/slug', [PostController::class, 'generate_slug']);
+    Route::get('post/{post}/details', [PostController::class, 'show_details'])->name('posts.details');
 
 
     // ------------------ categories
@@ -259,6 +263,7 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
 
     // ------------------ pages
     Route::resource('pages', PageController::class)->except(['show']);
+    Route::get('page/{page}/details', [PageController::class, 'show_details'])->name('pages.details');
 
     // ------------------ apikeys
     Route::resource('apikeys', ApikeyController::class)->except(['show']);
@@ -577,6 +582,28 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
         Route::post('developer/updater', [DeveloperController::class, 'updateApplication'])->name('developer.updateApplication');
         Route::post('developer/updaterAfter', [DeveloperController::class, 'updaterAfter'])->name('developer.updaterAfter');
     });
+
+
+    Route::prefix('seo')->name('seo.')->group(function () {
+        Route::get('/audit', [SeoAuditController::class, 'index'])->name('audit');
+        // کراول زنده URL
+        Route::post('/crawl', [SeoAuditController::class, 'crawl'])->name('crawl');
+        // بررسی robots.txt
+        Route::get('/robots', [SeoAuditController::class, 'checkRobots'])->name('robots');
+        // بررسی sitemap.xml
+        Route::get('/sitemap', [SeoAuditController::class, 'checkSitemap'])->name('sitemap');
+        // بررسی لینک‌های شکسته
+        Route::post('/broken-links', [SeoAuditController::class, 'checkBrokenLinks'])->name('broken-links');
+
+    });
+
+    Route::prefix('robots')->name('robots.')->group(function () {
+        Route::get('/', [RobotsController::class, 'index'])->name('index');
+        Route::post('/update', [RobotsController::class, 'update'])->name('update');
+        Route::post('/preview', [RobotsController::class, 'preview'])->name('preview');
+
+    });
+
 });
 
 

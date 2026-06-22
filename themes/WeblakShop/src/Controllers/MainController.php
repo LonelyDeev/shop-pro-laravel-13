@@ -60,27 +60,23 @@ class  MainController extends Controller
 
         $defaultAddress = auth()->user()->addresses()->where('active', 1)->first();
         $cityId = $defaultAddress ? $defaultAddress->city_id : null;
-
         $provinceId = $defaultAddress ? $defaultAddress->province_id : null;
 
-        // ========== دسته‌بندی محصولات بر اساس seller_id از جدول prices ==========
+        // ========== جدا کردن محصولات فیزیکی و دانلودی ==========
+        $physicalProducts = $cart->products->filter(fn($p) => $p->type === 'physical');
+        $downloadProducts = $cart->products->filter(fn($p) => $p->type === 'download');
+
+        // ========== دسته‌بندی محصولات فیزیکی بر اساس seller_id ==========
         $sellerGroups = [];
         $sellerCounter = 1;
 
-        foreach ($cart->products as $product) {
-            // دریافت قیمت از طریق price_id در pivot
-            $price = Price::with(['attributes', 'seller'])
-                ->find($product->pivot->price_id);
+        foreach ($physicalProducts as $product) {
+            $price = Price::with(['attributes', 'seller'])->find($product->pivot->price_id);
+            if (!$price) continue;
 
-            if (!$price) {
-                continue;
-            }
-
-            // تعیین فروشنده از طریق seller_id در جدول prices
             $sellerId = $price->seller_id;
             $groupId = $sellerId ? 'seller_' . $sellerId : 'store';
 
-            // دریافت ویژگی‌ها
             $variants = [];
             foreach ($price->attributes as $attribute) {
                 $variants[] = [
@@ -91,7 +87,6 @@ class  MainController extends Controller
                 ];
             }
 
-            // اطلاعات پایه محصول
             $productData = [
                 'id' => $product->id,
                 'title' => $product->title,
@@ -107,7 +102,6 @@ class  MainController extends Controller
                 'variants' => $variants,
             ];
 
-            // ایجاد یا به‌روزرسانی گروه فروشنده
             if (!isset($sellerGroups[$groupId])) {
                 if ($sellerId) {
                     $seller = Seller::find($sellerId);
@@ -121,15 +115,11 @@ class  MainController extends Controller
                     $sellerInfo = null;
                 }
 
-
-                // روش ارسال انتخاب شده برای این گروه (از آرایه carriers)
                 $selectedCarrierId = null;
                 $carrierKey = $groupId == 'store' ? 'carrier_id_store' : 'carrier_id_' . $groupId;
-
                 if (isset($selectedCarriers[$carrierKey])) {
                     $selectedCarrierId = $selectedCarriers[$carrierKey];
                 }
-
 
                 $sellerGroups[$groupId] = [
                     'number' => $sellerCounter++,
@@ -154,9 +144,8 @@ class  MainController extends Controller
             $sellerGroups[$groupId]['total_price'] += $productData['final_price'] * $productData['quantity'];
         }
 
-        // ========== دریافت روش‌های ارسال برای هر گروه ==========
+        // ========== دریافت روش‌های ارسال فقط برای گروه‌های فیزیکی ==========
         foreach ($sellerGroups as $groupId => &$group) {
-
             $carriers = Carrier::active()
                 ->when($group['is_store'], function($query) {
                     return $query->whereNull('seller_id');
@@ -167,32 +156,28 @@ class  MainController extends Controller
                 ->get();
 
             $availableCarriers = [];
-
             foreach ($carriers as $carrier) {
-
                 $shippingCost = $this->calculateCarrierCost($carrier, $group['total_weight'], $cityId);
-                    $availableCarriers[] = [
-                        'id' => $carrier->id,
-                        'title' => $carrier->title,
-                        'image' => $carrier->image ? asset($carrier->image) : null,
-                        'description' => $carrier->description,
-                        'shipping_cost' => '',
-                        'is_free' => '',
-                        'delivery_type' => $carrier->delivery_time_type,
-                        'delivery_text' => $carrier->delivery_time_type == 'default'
-                            ? ($carrier->default_delivery_range ?? 'ارسال در 3 الی 6 روز کاری')
-                            : null,
-                        'delivery_dates' => $carrier->delivery_time_type == 'user_select'
-                            ? $this->getDeliveryDates($carrier)
-                            : null,
-                        'carrige_forward' => $carrier->carrige_forward ?? false
-                    ];
-
+                $availableCarriers[] = [
+                    'id' => $carrier->id,
+                    'title' => $carrier->title,
+                    'image' => $carrier->image ? asset($carrier->image) : null,
+                    'description' => $carrier->description,
+                    'shipping_cost' => $shippingCost,
+                    'is_free' => $shippingCost == 0,
+                    'delivery_type' => $carrier->delivery_time_type,
+                    'delivery_text' => $carrier->delivery_time_type == 'default'
+                        ? ($carrier->default_delivery_range ?? 'ارسال در 3 الی 6 روز کاری')
+                        : null,
+                    'delivery_dates' => $carrier->delivery_time_type == 'user_select'
+                        ? $this->getDeliveryDates($carrier)
+                        : null,
+                    'carrige_forward' => $carrier->carrige_forward ?? false
+                ];
             }
 
             $group['carriers'] = $availableCarriers;
 
-            // انتخاب روش ارسال پیش‌فرض
             if (count($availableCarriers) > 0) {
                 $group['selected_carrier'] = $availableCarriers[0];
                 $group['shipping_cost'] = $availableCarriers[0]['shipping_cost'];
@@ -200,7 +185,34 @@ class  MainController extends Controller
             }
         }
 
+        // ========== آماده‌سازی محصولات دانلودی برای نمایش ==========
+        $downloadItems = [];
+        foreach ($downloadProducts as $product) {
+            $price = Price::with(['attributes'])->find($product->pivot->price_id);
+            if (!$price) continue;
 
+            $variants = [];
+            foreach ($price->attributes as $attribute) {
+                $variants[] = [
+                    'type' => $attribute->group->type,
+                    'name' => $attribute->name,
+                    'value' => $attribute->value,
+                    'color_code' => $attribute->type == 'color' ? $attribute->value : null
+                ];
+            }
+
+            $downloadItems[] = [
+                'id' => $product->id,
+                'title' => $product->title,
+                'slug' => $product->slug,
+                'image' => $product->image ? asset($product->image) : asset('empty.svg'),
+                'quantity' => $product->pivot->quantity,
+                'price' => $price->price,
+                'final_price' => $price->discount_price,
+                'discount' => $price->discount ?? null,
+                'variants' => $variants,
+            ];
+        }
 
         return view('front::carts.checkout', compact(
             'provinces',
@@ -210,7 +222,8 @@ class  MainController extends Controller
             'cityId',
             'provinceId',
             'addresses',
-            'sellerGroups'
+            'sellerGroups',
+            'downloadItems'
         ));
     }
 
@@ -311,14 +324,18 @@ class  MainController extends Controller
         // ========== دریافت روش‌های ارسال انتخابی ==========
         $selectedCarriers = $request->input('carriers', []);
 
-        // ========== دسته‌بندی محصولات ==========
+        // ========== جدا کردن محصولات فیزیکی و دانلودی ==========
+        $physicalProducts = $cart->products->filter(fn($p) => $p->type === 'physical');
+        $downloadProducts = $cart->products->filter(fn($p) => $p->type === 'download');
+
+        // ========== دسته‌بندی محصولات فیزیکی ==========
         $sellerGroups = [];
         $sellerCounter = 1;
         $totalShippingCost = 0;
-        $subtotal = 0;
+        $subtotal = 0; // قیمت اصلی (بدون تخفیف)
         $sellerShippingCosts = [];
 
-        foreach ($cart->products as $product) {
+        foreach ($physicalProducts as $product) {
             $price = Price::with(['attributes', 'seller'])->find($product->pivot->price_id);
             if (!$price) continue;
 
@@ -336,14 +353,16 @@ class  MainController extends Controller
                 ];
             }
 
+            $finalPrice = $price->discount_price ?? $price->price;
+
             $productData = [
                 'id' => $product->id,
                 'title' => $product->title,
                 'slug' => $product->slug,
                 'image' => $product->image ? asset($product->image) : asset('empty.svg'),
                 'quantity' => $product->pivot->quantity,
-                'price' => $price->price,
-                'final_price' => $price->discount_price,
+                'price' => $price->price, // قیمت اصلی
+                'final_price' => $finalPrice, // قیمت نهایی با تخفیف (برای نمایش)
                 'discount' => $price->discount ?? null,
                 'weight' => ($product->weight ?? 0) * $product->pivot->quantity,
                 'price_id' => $price->id,
@@ -391,11 +410,44 @@ class  MainController extends Controller
 
             $sellerGroups[$groupId]['products'][] = $productData;
             $sellerGroups[$groupId]['total_weight'] += $productData['weight'];
-            $sellerGroups[$groupId]['total_price'] += $productData['final_price'] * $productData['quantity'];
-            $subtotal += $productData['price'] * $productData['quantity'];
+            $sellerGroups[$groupId]['total_price'] += $finalPrice * $productData['quantity'];
+            $subtotal += $price->price * $productData['quantity']; // قیمت اصلی
         }
 
-        // ========== دریافت روش‌های ارسال و محاسبه هزینه برای هر گروه ==========
+        // ========== آماده‌سازی محصولات دانلودی برای نمایش ==========
+        $downloadItems = [];
+        foreach ($downloadProducts as $product) {
+            $price = Price::with(['attributes'])->find($product->pivot->price_id);
+            if (!$price) continue;
+
+            $variants = [];
+            foreach ($price->attributes as $attribute) {
+                $variants[] = [
+                    'type' => $attribute->group->type ?? null,
+                    'name' => $attribute->name,
+                    'value' => $attribute->value,
+                    'color_code' => $attribute->type == 'color' ? $attribute->value : null
+                ];
+            }
+
+            $finalPrice = $price->discount_price ?? $price->price;
+
+            $downloadItems[] = [
+                'id' => $product->id,
+                'title' => $product->title,
+                'slug' => $product->slug,
+                'image' => $product->image ? asset($product->image) : asset('empty.svg'),
+                'quantity' => $product->pivot->quantity,
+                'price' => $price->price,
+                'final_price' => $finalPrice,
+                'discount' => $price->discount ?? null,
+                'variants' => $variants,
+            ];
+
+            $subtotal += $price->price * $product->pivot->quantity; // قیمت اصلی
+        }
+
+        // ========== دریافت روش‌های ارسال و محاسبه هزینه برای هر گروه (فقط فیزیکی) ==========
         foreach ($sellerGroups as $groupId => &$group) {
             $carriers = Carrier::active()
                 ->when($group['is_store'], function($query) {
@@ -438,7 +490,6 @@ class  MainController extends Controller
                         $group['delivery_info'] = $carrierData['delivery_text'];
                         $totalShippingCost += $shippingCost;
 
-                        // ذخیره هزینه ارسال هر فروشنده برای نمایش در سایدبار
                         $sellerName = $group['name'];
                         $sellerShippingCosts[$sellerName] = ($sellerShippingCosts[$sellerName] ?? 0) + $shippingCost;
                     }
@@ -469,25 +520,27 @@ class  MainController extends Controller
             $carrierDelivery = Carrier::find($carrier_id);
             if ($carrierDelivery && $carrierDelivery->delivery_time_type == "user_select") {
                 $deliveryDates = $this->getDeliveryDates($carrierDelivery);
-                $AllDeliveryDates[$key] = $deliveryDates; // مستقیماً با کلید carrier_id_store
+                $AllDeliveryDates[$key] = $deliveryDates;
             }
         }
 
-        $deliveryDateForOne=[];
-        if ($request->has('idGroupSelect') and $request->idGroupSelect!=null){
-            $carrierG='carrier_id_'.$request->idGroupSelect;
-            $carrier_id=$request->carriers[$carrierG];
-            $carrierDelivery = Carrier::find($carrier_id);
-            $deliveryDates=[];
-            if ($carrierDelivery->delivery_time_type == "user_select") {
-                $deliveryDates = $this->getDeliveryDates($carrierDelivery);
+        $deliveryDateForOne = [];
+        if ($request->has('idGroupSelect') && $request->idGroupSelect != null) {
+            $carrierG = 'carrier_id_' . $request->idGroupSelect;
+            $carrier_id = $request->carriers[$carrierG] ?? null;
+            if ($carrier_id) {
+                $carrierDelivery = Carrier::find($carrier_id);
+                $deliveryDates = [];
+                if ($carrierDelivery && $carrierDelivery->delivery_time_type == "user_select") {
+                    $deliveryDates = $this->getDeliveryDates($carrierDelivery);
+                }
+                $groupIdOne = $request->idGroupSelect;
+                $deliveryDateForOne = [
+                    'deliveryDateForOne' => $deliveryDates,
+                    'groupId' => $groupIdOne,
+                    'carrier_id' => $carrier_id,
+                ];
             }
-            $groupIdOne=$request->idGroupSelect;
-            $deliveryDateForOne=[
-                'deliveryDateForOne'=>$deliveryDates,
-                'groupId'=>$groupIdOne,
-                'carrier_id'=>$carrier_id,
-            ];
         }
 
         return [
@@ -498,6 +551,7 @@ class  MainController extends Controller
                 'totalShippingCost' => $totalShippingCost,
                 'sellerShippingCosts' => $sellerShippingCosts,
                 'finalPrice' => $finalPrice,
+                'downloadItems' => $downloadItems,
             ])->render(),
 
             'carriers_container' => view('front::carts.partials.carriers-container', [
@@ -505,14 +559,13 @@ class  MainController extends Controller
                 'cityId' => $cityId,
                 'sellerGroups' => $sellerGroups,
                 'AllDeliveryDates' => $AllDeliveryDates,
-                'request_carrier'=>$request->carriers
+                'request_carrier' => $request->carriers,
+                'downloadItems' => $downloadItems,
             ])->render(),
-            'deliveryDateForOne' => view('front::carts.partials.delivery-dates-for-one',[
+
+            'deliveryDateForOne' => view('front::carts.partials.delivery-dates-for-one', [
                 'deliveryDateForOne' => $deliveryDateForOne,
             ])->render(),
-            /*'AllDeliveryDates' => view('front::carts.partials.delivery-dates'),[
-                'AllDeliveryDates' => $AllDeliveryDates
-            ],*/
         ];
     }
 

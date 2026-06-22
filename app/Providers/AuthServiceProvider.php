@@ -27,9 +27,10 @@ class AuthServiceProvider extends ServiceProvider
         $this->registerPolicies();
 
         if (!$this->app->runningInConsole() && application_installed()) {
+
             foreach ($this->getPermissions() as $permission) {
-                Gate::define($permission->name, function ($user) use ($permission) {
-                    return $user->level == 'creator' or $user->hasRole($permission->roles);
+                Gate::define($permission->name, function ($admin) use ($permission) {
+                    return $admin->level == 'creator' or $admin->hasRole($permission->roles);
                 });
             }
         }

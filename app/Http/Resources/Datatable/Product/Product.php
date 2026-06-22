@@ -5,6 +5,7 @@ namespace App\Http\Resources\Datatable\Product;
 use App\Models\SellerVariant;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Gate;
 
 class Product extends JsonResource
 {
@@ -69,10 +70,11 @@ class Product extends JsonResource
             'variant'           => route('seller.products.variant', ['product_id' => $this->id]),
 
             'links' => [
-                'edit'    => route('admin.products.edit', ['product' => $this]),
+                'show'    => Gate::allows('products.details', $this) ? route('admin.products.show_details', ['product' => $this]) : '#',
+                'edit'    => Gate::allows('products.update', $this) ? route('admin.products.edit', ['product' => $this]) : '#',
                 'edit_seller'    => $editRoute,
-                'destroy' => route('admin.products.destroy', ['product' => $this]),
-                'copy'    => route('admin.products.create', ['product' => $this]),
+                'destroy' => Gate::allows('products.delete', $this) ? route('admin.products.destroy', ['product' => $this]) : '#',
+                'copy'    => Gate::allows('products.create', $this) ? route('admin.products.create', ['product' => $this]) : '#',
                 'front'   => Route::has('front.products.show') ? route('front.products.show', ['product' => $this]) : '#',
             ]
         ];
