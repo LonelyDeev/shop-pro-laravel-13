@@ -58,7 +58,6 @@
                                     <i class="feather icon-settings mr-1"></i> اجرای دستورات بعد از بروزرسانی
                                 </button>
 
-                                <!-- دکمه بررسی مجدد -->
                                 <button id="check-update" type="button" class="btn btn-lg btn-info mb-1 waves-effect waves-light">
                                     <i class="feather icon-refresh-cw mr-1"></i> بررسی مجدد
                                 </button>
@@ -97,6 +96,19 @@
                 <!-- Status Messages -->
                 <div id="status-messages"></div>
 
+                <!-- Log Messages -->
+                <div class="card" id="log-card" style="display: none;">
+                    <div class="card-header">
+                        <h4 class="card-title">گزارش بروزرسانی</h4>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-body">
+                            <div id="log-content" style="max-height: 300px; overflow-y: auto; background: #f8f9fa; padding: 15px; border-radius: 5px; font-size: 13px; direction: ltr;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="card">
                     <div class="card-header">
                         <h4 class="card-title">تغییرات بروزرسانی ها</h4>
@@ -129,8 +141,35 @@
     <script>
         $(document).ready(function() {
             let progressInterval = null;
-            let statusCheckInterval = null;
             let isProcessing = false;
+            let logMessages = [];
+
+            // تابع اضافه کردن لاگ
+            function addLog(message, type = 'info') {
+                const colors = {
+                    info: '#17a2b8',
+                    success: '#28a745',
+                    warning: '#ffc107',
+                    error: '#dc3545'
+                };
+
+                const icon = {
+                    info: '📘',
+                    success: '✅',
+                    warning: '⚠️',
+                    error: '❌'
+                };
+
+                const logEntry = `<div style="color: ${colors[type] || '#000'}; padding: 5px 0; border-bottom: 1px solid #e9ecef;">
+                    <span style="font-weight: bold;">${icon[type] || '📌'}</span>
+                    ${message}
+                    <span style="float: left; color: #6c757d; font-size: 11px;">${new Date().toLocaleTimeString('fa-IR')}</span>
+                </div>`;
+
+                $('#log-content').append(logEntry);
+                $('#log-content').scrollTop($('#log-content')[0].scrollHeight);
+                $('#log-card').slideDown(300);
+            }
 
             // تابع نمایش پیام
             function showMessage(type, message, dismissible = true) {
@@ -146,6 +185,12 @@
                     </div>
                 `;
                 $('#status-messages').append(html);
+
+                // اضافه کردن به لاگ
+                const logType = type === 'success' ? 'success' :
+                    type === 'error' ? 'error' :
+                        type === 'warning' ? 'warning' : 'info';
+                addLog(message, logType);
             }
 
             // تابع نمایش/مخفی کردن پیشرفت
@@ -166,7 +211,6 @@
                     $('#progress-text').html(text);
                 }
 
-                // تغییر رنگ بر اساس درصد
                 const bar = $('#progress-bar');
                 if (percent < 30) {
                     bar.removeClass('bg-success bg-info bg-warning').addClass('bg-primary');
@@ -191,22 +235,34 @@
                             isProcessing = true;
                             toggleProgress(true);
                             updateProgress(response.progress || 0,
-                                `<i class="feather icon-loader mr-1"></i> در حال بروزرسانی... (${response.progress || 0}%)`);
+                                `<i class="feather icon-loader mr-1"></i> ${response.message || 'در حال بروزرسانی...'} (${response.progress || 0}%)`);
 
                             // غیرفعال کردن دکمه‌ها
                             $('#update-application').prop('disabled', true);
                             $('#updater-after').prop('disabled', true);
+                            $('#check-update').prop('disabled', true);
 
                             // تغییر متن دکمه
                             $('#update-application').html('<i class="feather icon-refresh-cw fa-spin mr-1"></i> در حال بروزرسانی...');
+
+                            // نمایش پیام‌های مرحله‌ای
+                            if (response.step) {
+                                addLog(`📌 ${response.step}`, 'info');
+                            }
+
                         } else if (response.status === 'success') {
                             isProcessing = false;
                             toggleProgress(false);
-                            showMessage('success', `✅ بروزرسانی با موفقیت انجام شد! نسخه جدید: ${response.version || 'نامشخص'}`);
+
+                            // پیام موفقیت با جزئیات
+                            const successMsg = `✅ بروزرسانی با موفقیت انجام شد! نسخه جدید: ${response.version || 'نامشخص'}`;
+                            showMessage('success', successMsg);
+                            addLog(`✅ بروزرسانی کامل شد! نسخه ${response.version} نصب شد`, 'success');
 
                             // فعال کردن دکمه‌ها
                             $('#update-application').prop('disabled', false);
                             $('#updater-after').prop('disabled', false);
+                            $('#check-update').prop('disabled', false);
                             $('#update-application').html('<i class="feather icon-refresh-ccw mr-1"></i> بروزرسانی');
 
                             // به‌روزرسانی نسخه نمایش داده شده
@@ -216,20 +272,38 @@
                                 clearInterval(progressInterval);
                                 progressInterval = null;
                             }
+
                         } else if (response.status === 'error') {
                             isProcessing = false;
                             toggleProgress(false);
-                            showMessage('error', `❌ خطا در بروزرسانی: ${response.message || 'خطای ناشناخته'}`);
+
+                            // نمایش خطا با جزئیات
+                            const errorMsg = `❌ خطا در بروزرسانی: ${response.message || 'خطای ناشناخته'}`;
+                            showMessage('error', errorMsg);
+                            addLog(`❌ ${response.message || 'خطای ناشناخته'}`, 'error');
+
+                            if (response.details) {
+                                addLog(`📋 جزئیات: ${response.details}`, 'warning');
+                            }
 
                             // فعال کردن دکمه‌ها
                             $('#update-application').prop('disabled', false);
                             $('#updater-after').prop('disabled', false);
+                            $('#check-update').prop('disabled', false);
                             $('#update-application').html('<i class="feather icon-refresh-ccw mr-1"></i> بروزرسانی');
 
                             if (progressInterval) {
                                 clearInterval(progressInterval);
                                 progressInterval = null;
                             }
+
+                        } else if (response.status === 'waiting') {
+                            // وضعیت انتظار برای شروع Job
+                            isProcessing = true;
+                            toggleProgress(true);
+                            updateProgress(0, `<i class="feather icon-loader mr-1"></i> ${response.message || 'در انتظار شروع...'}`);
+                            addLog(`⏳ ${response.message || 'در انتظار شروع بروزرسانی...'}`, 'warning');
+
                         } else {
                             // اگر آپدیت در حال انجام نیست
                             if (isProcessing) {
@@ -237,18 +311,21 @@
                                 toggleProgress(false);
                                 $('#update-application').prop('disabled', false);
                                 $('#updater-after').prop('disabled', false);
+                                $('#check-update').prop('disabled', false);
                                 $('#update-application').html('<i class="feather icon-refresh-ccw mr-1"></i> بروزرسانی');
                             }
                         }
                     },
-                    error: function() {
-                        // اگر خطا رخ داد، سعی نکنید دوباره
+                    error: function(xhr) {
+                        // اگر خطا رخ داد
                         if (isProcessing) {
                             isProcessing = false;
                             toggleProgress(false);
                             showMessage('error', '❌ خطا در ارتباط با سرور برای بررسی وضعیت');
+                            addLog('❌ خطا در ارتباط با سرور', 'error');
                             $('#update-application').prop('disabled', false);
                             $('#updater-after').prop('disabled', false);
+                            $('#check-update').prop('disabled', false);
                             $('#update-application').html('<i class="feather icon-refresh-ccw mr-1"></i> بروزرسانی');
                         }
                     }
@@ -259,10 +336,14 @@
             $('#update-application').on('click', function() {
                 const $btn = $(this);
 
-                // جلوگیری از کلیک مجدد
                 if ($btn.prop('disabled') || isProcessing) {
+                    showMessage('warning', '⚠️ در حال حاضر بروزرسانی در حال انجام است. لطفاً صبر کنید.');
                     return;
                 }
+
+                // پاک کردن لاگ‌های قبلی
+                $('#log-content').empty();
+                $('#status-messages').empty();
 
                 // غیرفعال کردن دکمه
                 $btn.prop('disabled', true);
@@ -271,6 +352,7 @@
                 // نمایش پیشرفت
                 toggleProgress(true);
                 updateProgress(0, '<i class="feather icon-loader mr-1"></i> در حال شروع بروزرسانی...');
+                addLog('🚀 شروع فرآیند بروزرسانی', 'info');
 
                 // ارسال درخواست بروزرسانی
                 $.ajax({
@@ -281,7 +363,11 @@
                     },
                     success: function(response) {
                         if (response.status === 'started') {
-                            showMessage('success', `✅ بروزرسانی شروع شد! نسخه ${response.version || 'جدید'} در حال دانلود...`);
+                            const msg = `✅ بروزرسانی شروع شد! نسخه ${response.version || 'جدید'} در حال دانلود...`;
+                            showMessage('success', msg);
+                            addLog(`✅ ${msg}`, 'success');
+                            addLog('⏳ لطفاً منتظر بمانید... این فرآیند ممکن است چند دقیقه طول بکشد', 'warning');
+
                             isProcessing = true;
 
                             // شروع چک کردن وضعیت
@@ -289,8 +375,8 @@
                                 clearInterval(progressInterval);
                             }
 
-                            // هر 5 ثانیه وضعیت را بررسی کن
-                            progressInterval = setInterval(checkUpdateStatus, 5000);
+                            // هر 3 ثانیه وضعیت را بررسی کن
+                            progressInterval = setInterval(checkUpdateStatus, 3000);
 
                             // بلافاصله یک بار چک کن
                             setTimeout(checkUpdateStatus, 1000);
@@ -298,20 +384,50 @@
                             // تغییر متن دکمه
                             $btn.html('<i class="feather icon-refresh-cw fa-spin mr-1"></i> در حال بروزرسانی...');
                             $('#updater-after').prop('disabled', true);
+                            $('#check-update').prop('disabled', true);
+
+                        } else if (response.status === 'queued') {
+                            // Job در صف قرار گرفته
+                            const msg = `⏳ درخواست بروزرسانی در صف قرار گرفت. لطفاً صبر کنید...`;
+                            showMessage('info', msg);
+                            addLog(`⏳ ${msg}`, 'warning');
+                            addLog(`📋 شناسه Job: ${response.job_id || 'نامشخص'}`, 'info');
+
+                            isProcessing = true;
+
+                            // شروع چک کردن وضعیت
+                            if (progressInterval) {
+                                clearInterval(progressInterval);
+                            }
+
+                            progressInterval = setInterval(checkUpdateStatus, 5000);
+                            setTimeout(checkUpdateStatus, 2000);
+
+                            $btn.html('<i class="feather icon-refresh-cw fa-spin mr-1"></i> در حال بروزرسانی...');
+                            $('#updater-after').prop('disabled', true);
+                            $('#check-update').prop('disabled', true);
+
                         } else {
                             showMessage('error', `❌ ${response.message || 'خطا در شروع بروزرسانی'}`);
+                            addLog(`❌ ${response.message || 'خطا در شروع بروزرسانی'}`, 'error');
                             $btn.prop('disabled', false);
                             $btn.html('<i class="feather icon-refresh-ccw mr-1"></i> بروزرسانی');
                             toggleProgress(false);
+                            $('#check-update').prop('disabled', false);
                         }
                     },
                     error: function(xhr) {
                         const response = xhr.responseJSON;
-                        showMessage('error', `❌ ${response?.message || 'خطا در ارتباط با سرور'}`);
+                        const errorMsg = response?.message || 'خطا در ارتباط با سرور';
+                        showMessage('error', `❌ ${errorMsg}`);
+                        addLog(`❌ ${errorMsg}`, 'error');
+                        addLog(`📋 کد خطا: ${xhr.status}`, 'error');
+
                         $btn.prop('disabled', false);
                         $btn.html('<i class="feather icon-refresh-ccw mr-1"></i> بروزرسانی');
                         toggleProgress(false);
                         isProcessing = false;
+                        $('#check-update').prop('disabled', false);
                     }
                 });
             });
@@ -321,11 +437,14 @@
                 const $btn = $(this);
 
                 if ($btn.prop('disabled')) {
+                    showMessage('warning', '⚠️ لطفاً ابتدا بروزرسانی را کامل کنید.');
                     return;
                 }
 
                 $btn.prop('disabled', true);
                 $btn.html('<i class="feather icon-refresh-cw fa-spin mr-1"></i> در حال اجرا...');
+
+                addLog('🔄 شروع اجرای دستورات پس از بروزرسانی', 'info');
 
                 $.ajax({
                     url: '{{ route("admin.developer.updaterAfter") }}',
@@ -335,16 +454,30 @@
                     },
                     success: function(response) {
                         if (response.status === 'success') {
-                            showMessage('success', `✅ ${response.message || 'دستورات با موفقیت اجرا شدند'}`);
+                            const msg = `✅ ${response.message || 'دستورات با موفقیت اجرا شدند'}`;
+                            showMessage('success', msg);
+                            addLog(`✅ ${msg}`, 'success');
+                            if (response.details) {
+                                addLog(`📋 ${response.details}`, 'info');
+                            }
                         } else {
-                            showMessage('error', `❌ ${response.message || 'خطا در اجرای دستورات'}`);
+                            const msg = `❌ ${response.message || 'خطا در اجرای دستورات'}`;
+                            showMessage('error', msg);
+                            addLog(`❌ ${msg}`, 'error');
+                            if (response.details) {
+                                addLog(`📋 ${response.details}`, 'error');
+                            }
                         }
                         $btn.prop('disabled', false);
                         $btn.html('<i class="feather icon-settings mr-1"></i> اجرای دستورات بعد از بروزرسانی');
                     },
                     error: function(xhr) {
                         const response = xhr.responseJSON;
-                        showMessage('error', `❌ ${response?.message || 'خطا در ارتباط با سرور'}`);
+                        const msg = response?.message || 'خطا در ارتباط با سرور';
+                        showMessage('error', `❌ ${msg}`);
+                        addLog(`❌ ${msg}`, 'error');
+                        addLog(`📋 کد خطا: ${xhr.status}`, 'error');
+
                         $btn.prop('disabled', false);
                         $btn.html('<i class="feather icon-settings mr-1"></i> اجرای دستورات بعد از بروزرسانی');
                     }
@@ -359,6 +492,7 @@
 
                 // پاک کردن پیام‌های قبلی
                 $('#status-messages').empty();
+                addLog('🔍 بررسی مجدد نسخه جدید...', 'info');
 
                 // اگر در حال بروزرسانی هستیم، وضعیت را چک کن
                 if (isProcessing) {
@@ -374,21 +508,32 @@
                     method: 'GET',
                     success: function(response) {
                         if (response.update_available) {
-                            showMessage('info', `📦 نسخه جدید ${response.version} موجود است!`);
+                            const msg = `📦 نسخه جدید ${response.version} موجود است!`;
+                            showMessage('info', msg);
+                            addLog(`📦 ${msg}`, 'info');
+                            if (response.changelog) {
+                                addLog(`📋 تغییرات: ${response.changelog}`, 'info');
+                            }
+
                             // تغییر وضعیت دکمه بروزرسانی
                             const updateBtn = $('#update-application');
                             updateBtn.prop('disabled', false);
                             updateBtn.html('<i class="feather icon-refresh-ccw mr-1"></i> بروزرسانی');
+
                             // رفرش صفحه بعد از 2 ثانیه
                             setTimeout(() => location.reload(), 2000);
                         } else {
-                            showMessage('success', '✅ شما از آخرین نسخه استفاده میکنید');
+                            const msg = '✅ شما از آخرین نسخه استفاده میکنید';
+                            showMessage('success', msg);
+                            addLog(`✅ ${msg}`, 'success');
                         }
                         $btn.prop('disabled', false);
                         $btn.html('<i class="feather icon-refresh-cw mr-1"></i> بررسی مجدد');
                     },
                     error: function() {
-                        showMessage('error', '❌ خطا در بررسی نسخه جدید');
+                        const msg = '❌ خطا در بررسی نسخه جدید';
+                        showMessage('error', msg);
+                        addLog(`❌ ${msg}`, 'error');
                         $btn.prop('disabled', false);
                         $btn.html('<i class="feather icon-refresh-cw mr-1"></i> بررسی مجدد');
                     }
@@ -401,7 +546,10 @@
             toggleProgress(true);
             $('#update-application').prop('disabled', true);
             $('#updater-after').prop('disabled', true);
+            $('#check-update').prop('disabled', true);
             $('#update-application').html('<i class="feather icon-refresh-cw fa-spin mr-1"></i> در حال بروزرسانی...');
+
+            addLog('🔄 بازیابی وضعیت بروزرسانی...', 'info');
 
             // شروع چک کردن وضعیت
             progressInterval = setInterval(checkUpdateStatus, 5000);
@@ -412,9 +560,6 @@
             $(window).on('beforeunload', function() {
                 if (progressInterval) {
                     clearInterval(progressInterval);
-                }
-                if (statusCheckInterval) {
-                    clearInterval(statusCheckInterval);
                 }
             });
         });
