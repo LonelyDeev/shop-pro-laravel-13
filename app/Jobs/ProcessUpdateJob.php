@@ -39,7 +39,14 @@ class ProcessUpdateJob implements ShouldQueue
         $extractPath = null;
 
         try {
+            // مرحله 1: شروع
+            Cache::put('update_step', 'شروع بروزرسانی', now()->addHours(2));
+            Cache::put('update_progress', 0, now()->addHours(2));
+
             // 1. دریافت اطلاعات از پنل
+            Cache::put('update_step', 'دریافت اطلاعات آپدیت', now()->addHours(2));
+            Cache::put('update_progress', 10, now()->addHours(2));
+
             $response = Http::timeout(60)->get($this->panelUrl, [
                 'token' => $this->updateCode,
                 'version' => $this->currentVersion,
@@ -61,6 +68,10 @@ class ProcessUpdateJob implements ShouldQueue
             File::ensureDirectoryExists(dirname($zipPath));
 
             // 2. دانلود فایل با timeout بیشتر
+
+            Cache::put('update_step', 'شروع دانلود فایل', now()->addHours(2));
+            Cache::put('update_progress', 20, now()->addHours(2));
+
             $downloadResponse = Http::timeout(600)
                 ->sink($zipPath)
                 ->withOptions([
@@ -79,6 +90,10 @@ class ProcessUpdateJob implements ShouldQueue
             }
 
             // 3. استخراج
+
+            Cache::put('update_step', 'در حال استخراج فایل...', now()->addHours(2));
+            Cache::put('update_progress', 90, now()->addHours(2));
+
             $zip = new ZipArchive();
             if ($zip->open($zipPath) !== true) {
                 throw new Exception('خطا در باز کردن فایل ZIP.');
@@ -88,10 +103,17 @@ class ProcessUpdateJob implements ShouldQueue
             $zip->close();
 
             // 4. بکاپ گرفتن
+            Cache::put('update_step', 'در حال نصب فایل‌ها...', now()->addHours(2));
+            Cache::put('update_progress', 95, now()->addHours(2));
+
             File::ensureDirectoryExists($backupPath);
             $this->copyFiles($extractPath, base_path(), $backupPath);
 
             // 5. پاکسازی
+
+            Cache::put('update_step', 'در حال نهایی‌سازی...', now()->addHours(2));
+            Cache::put('update_progress', 98, now()->addHours(2));
+
             File::deleteDirectory($extractPath);
             File::delete($zipPath);
 
@@ -112,6 +134,8 @@ class ProcessUpdateJob implements ShouldQueue
             // ذخیره وضعیت موفقیت
             Cache::put('update_status', 'success', now()->addHours(24));
             Cache::put('update_version', $newVersion, now()->addHours(24));
+            Cache::put('update_progress', 100, now()->addHours(2));
+            Cache::put('update_step', 'کامل شد', now()->addHours(2));
             Cache::forget('update_processing');
 
         } catch (Exception $e) {
@@ -122,6 +146,7 @@ class ProcessUpdateJob implements ShouldQueue
             // ذخیره خطا
             Cache::put('update_status', 'error', now()->addHours(24));
             Cache::put('update_error', $e->getMessage(), now()->addHours(24));
+            Cache::put('update_error_details', $e->getTraceAsString(), now()->addHours(24));
             Cache::forget('update_processing');
 
             throw $e;

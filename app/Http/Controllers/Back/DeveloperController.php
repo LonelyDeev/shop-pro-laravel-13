@@ -281,26 +281,61 @@ class DeveloperController extends Controller
         $status = Cache::get('update_status');
         $error = Cache::get('update_error');
         $version = Cache::get('update_version');
+        $step = Cache::get('update_step');
+        $jobId = Cache::get('update_job_id');
 
         if ($status === 'success') {
             return response()->json([
                 'status' => 'success',
                 'version' => $version,
-                'message' => 'بروزرسانی با موفقیت انجام شد'
+                'message' => 'بروزرسانی با موفقیت انجام شد',
+                'step' => 'کامل شد'
             ]);
         }
 
         if ($status === 'error') {
             return response()->json([
                 'status' => 'error',
-                'message' => $error ?? 'خطای ناشناخته'
+                'message' => $error ?? 'خطای ناشناخته',
+                'details' => Cache::get('update_error_details'),
+                'step' => 'خطا'
             ]);
         }
 
         if ($isProcessing) {
+            $messages = [
+                0 => 'در حال آماده‌سازی...',
+                10 => 'بررسی اطلاعات آپدیت...',
+                20 => 'شروع دانلود فایل...',
+                30 => 'در حال دانلود فایل (۳۰%)...',
+                40 => 'در حال دانلود فایل (۴۰%)...',
+                50 => 'در حال دانلود فایل (۵۰%)...',
+                60 => 'در حال دانلود فایل (۶۰%)...',
+                70 => 'در حال دانلود فایل (۷۰%)...',
+                80 => 'در حال دانلود فایل (۸۰%)...',
+                90 => 'در حال استخراج فایل...',
+                95 => 'در حال نصب فایل‌ها...',
+                98 => 'در حال پاکسازی...',
+                99 => 'در حال نهایی‌سازی...',
+            ];
+
+            $message = $messages[$progress] ?? 'در حال بروزرسانی...';
+
             return response()->json([
                 'status' => 'processing',
-                'progress' => $progress
+                'progress' => $progress,
+                'message' => $message,
+                'step' => $step ?? $message,
+                'job_id' => $jobId
+            ]);
+        }
+
+        // اگر Job در صف است ولی هنوز شروع نشده
+        if (Cache::get('update_queued', false)) {
+            return response()->json([
+                'status' => 'waiting',
+                'message' => 'در انتظار شروع بروزرسانی...',
+                'job_id' => $jobId
             ]);
         }
 
