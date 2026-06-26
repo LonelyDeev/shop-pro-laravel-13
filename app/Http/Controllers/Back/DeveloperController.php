@@ -130,55 +130,73 @@ class DeveloperController extends Controller
     {
         $currentVersion = config('app.version', '1.0.0');
 
-        // 1. دریافت اطلاعات دانلود از پنل
-        $response = Http::get($this->panelUrl . '/check-update', [
-            'token' => $this->updateCode,
-            'version' => $currentVersion
+        // 1. دریافت اطلاعات از پنل
+        $response = Http::timeout(30)->get($this->panelUrl . '/check-update', [
+            'token'   => $this->updateCode,
+            'version' => $currentVersion,
         ]);
 
         if (!$response->successful() || !$response->json('update_available')) {
             return response()->json(['status' => 'error', 'message' => 'نسخه جدیدی یافت نشد یا دسترسی غیرمجاز است.'], 403);
         }
 
-        $data = $response->json();
+        $data        = $response->json();
         $downloadUrl = $data['download_url'];
-        $newVersion = $data['version'];
+        $newVersion  = $data['version'];
+        $checksum    = $data['checksum'] ?? null; // اگه پنل sha256 بده
 
-        // 2. دانلود فایل ZIP
-        $zipPath = storage_path('app/temp/update-' . $newVersion . '.zip');
-        File::ensureDirectoryExists(dirname($zipPath));
+        $zipPath     = storage_path('app/temp/update-' . $newVersion . '.zip');
+        $extractPath = storage_path('app/temp/extract-' . $newVersion);
+        $backupPath  = storage_path('app/backups/backup-' . $currentVersion . '-' . time());
 
-        $downloadResponse = Http::sink($zipPath)->get($downloadUrl);
+        try {
+            File::ensureDirectoryExists(dirname($zipPath));
 
-        if (!$downloadResponse->successful()) {
-            return response()->json(['status' => 'error', 'message' => 'خطا در دانلود فایل آپدیت.'], 500);
-        }
+            // 2. دانلود فایل
+            $downloadResponse = Http::timeout(300)->sink($zipPath)->get($downloadUrl);
+            if (!$downloadResponse->successful()) {
+                throw new \Exception('خطا در دانلود فایل آپدیت.');
+            }
 
-        // 3. استخراج فایل‌ها (با احتیاط)
-        $zip = new ZipArchive();
-        if ($zip->open($zipPath) === true) {
-            // فرض بر این است که فایل‌ها در روت زیپ هستند یا در یک پوشه اصلی
-            // بهتر است فایل‌ها را در یک پوشه موقت اکسترکت کرده و سپس جایگزین کنید
-            $extractPath = storage_path('app/temp/extract');
+            // 2.1 بررسی صحت فایل (اختیاری ولی توصیه‌شده)
+            if ($checksum && hash_file('sha256', $zipPath) !== $checksum) {
+                throw new \Exception('فایل دانلود شده معتبر نیست (checksum mismatch).');
+            }
+
+            // 3. استخراج
+            $zip = new ZipArchive();
+            if ($zip->open($zipPath) !== true) {
+                throw new \Exception('خطا در باز کردن فایل ZIP.');
+            }
             File::ensureDirectoryExists($extractPath);
-
             $zip->extractTo($extractPath);
             $zip->close();
 
-            // کپی فایل‌ها به پوشه اصلی پروژه (به جز پوشه‌های حساس مثل .env یا storage)
-            // این بخش بسته به ساختار پروژه شما ممکن است نیاز به دقت بیشتری داشته باشد
-            $this->copyFiles($extractPath, base_path());
+            // 4. بکاپ گرفتن از فایل‌های فعلی قبل از رونویسی (برای Rollback)
+            File::ensureDirectoryExists($backupPath);
+            // فقط از فایل‌هایی که قراره تغییر کنن بکاپ بگیر
+            $this->copyFiles($extractPath, base_path(), $backupPath);
 
-            // پاکسازی
+            // 5. پاکسازی
             File::deleteDirectory($extractPath);
             File::delete($zipPath);
 
-            // بروزرسانی شماره نسخه در فایل کانفیگ یا دیتابیس (اختیاری)
-            // config(['app.version' => $newVersion]);
+            // 6. ذخیره دائمی نسخه جدید
+            $this->setVersion($newVersion);
+
+            // 7. پاک کردن OPcache
+            if (function_exists('opcache_reset')) {
+                opcache_reset();
+            }
 
             return response()->json(['status' => 'success', 'message' => "نسخه {$newVersion} با موفقیت نصب شد."]);
-        } else {
-            return response()->json(['status' => 'error', 'message' => 'خطا در باز کردن فایل ZIP.'], 500);
+
+        } catch (\Exception $e) {
+            // در صورت خطا، فایل‌های temp رو پاک کن
+            File::deleteDirectory($extractPath);
+            File::delete($zipPath);
+
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
     }
 
@@ -199,24 +217,60 @@ class DeveloperController extends Controller
         }
     }
 
-    private function copyFiles($source, $destination)
+    private function copyFiles($source, $destination, $backupPath = null)
     {
+        // مسیرهای نسبی که نباید رونویسی بشن
+        $excluded = [
+            '.env',
+            '.env.example',
+            '.git',
+            'storage',
+            'bootstrap/cache',
+            'vendor',
+            'node_modules',
+        ];
+
         $files = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($source),
+            new \RecursiveDirectoryIterator($source, \RecursiveDirectoryIterator::SKIP_DOTS),
             \RecursiveIteratorIterator::SELF_FIRST
         );
 
         foreach ($files as $file) {
-            if ($file->isDir()) {
-                File::makeDirectory($destination . DIRECTORY_SEPARATOR . $files->getSubPathName(), 0777, true, true);
-            } else {
-                // جلوگیری از رونویسی فایل‌های حیاتی مثل .env
-                $fileName = $file->getFilename();
-                if ($fileName === '.env' || $fileName === 'web.php') {
-                    continue;
+            $relativePath = $files->getSubPathName();
+
+            // بررسی استثناها بر اساس مسیر نسبی (نه فقط نام فایل)
+            foreach ($excluded as $ex) {
+                if ($relativePath === $ex || str_starts_with($relativePath, $ex . DIRECTORY_SEPARATOR)) {
+                    continue 2;
                 }
-                File::copy($file, $destination . DIRECTORY_SEPARATOR . $files->getSubPathName());
+            }
+
+            $targetPath = $destination . DIRECTORY_SEPARATOR . $relativePath;
+
+            if ($file->isDir()) {
+                File::ensureDirectoryExists($targetPath, 0755);
+            } else {
+                // بکاپ گرفتن از فایل فعلی قبل از رونویسی
+                if ($backupPath && File::exists($targetPath)) {
+                    $backupTarget = $backupPath . DIRECTORY_SEPARATOR . $relativePath;
+                    File::ensureDirectoryExists(dirname($backupTarget), 0755);
+                    File::copy($targetPath, $backupTarget);
+                }
+
+                File::ensureDirectoryExists(dirname($targetPath), 0755);
+                File::copy($file->getPathname(), $targetPath);
             }
         }
     }
+
+    private function setVersion($version)
+    {
+        // ساده‌ترین راه: ذخیره در یک فایل json
+        File::put(
+            storage_path('app/version.json'),
+            json_encode(['version' => $version])
+        );
+        // و در showUpdater این مقدار رو بخون به جای config
+    }
+
 }
