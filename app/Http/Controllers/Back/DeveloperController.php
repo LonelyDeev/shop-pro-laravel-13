@@ -20,7 +20,7 @@ class DeveloperController extends Controller
     public function __construct()
     {
         // این مقادیر را از تنظیمات یا .env بخوانید
-        $this->panelUrl =update_url();
+        $this->panelUrl ='https://update.webtpro.ir/api/v1/';
         $this->updateCode = env('SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN',config('self-update.updater_token'));
     }
     public function showSettings()
@@ -102,7 +102,7 @@ class DeveloperController extends Controller
         $currentVersion = config('app.version', '1.0.0'); // نسخه فعلی را از جایی بخوانید
         $versionInstalled =$currentVersion;
         // درخواست به پنل برای چک کردن نسخه جدید
-        $response = Http::get($this->panelUrl, [
+        $response = Http::get($this->panelUrl.'/check-update', [
             'token' => $this->updateCode,
             'version' => $currentVersion
         ]);
@@ -131,12 +131,12 @@ class DeveloperController extends Controller
         $currentVersion = config('app.version', '1.0.0');
 
         // 1. دریافت اطلاعات دانلود از پنل
-        $response = Http::get($this->panelUrl . '/api/update/check', [
+        $response = Http::get($this->panelUrl . '/check-update', [
             'token' => $this->updateCode,
             'version' => $currentVersion
         ]);
 
-        if (!$response->successful() || !$response->json('has_update')) {
+        if (!$response->successful() || !$response->json('update_available')) {
             return response()->json(['status' => 'error', 'message' => 'نسخه جدیدی یافت نشد یا دسترسی غیرمجاز است.'], 403);
         }
 

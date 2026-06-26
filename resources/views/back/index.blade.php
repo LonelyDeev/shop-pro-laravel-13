@@ -558,7 +558,7 @@
                             <div class="breadcrumb-wrapper col-12">
                                 <ol class="breadcrumb no-border">
                                     <li class="breadcrumb-item"><i class="feather icon-home"></i> مدیریت</li>
-                                    <li class="breadcrumb-item active">داشبورد</li>
+                                    <li class="breadcrumb-item active">داشبورد22222222222</li>
                                 </ol>
                             </div>
                         </div>
