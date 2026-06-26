@@ -9,9 +9,20 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\File;
+use ZipArchive;
 
 class DeveloperController extends Controller
 {
+    private $panelUrl;
+    private $updateCode;
+
+    public function __construct()
+    {
+        // این مقادیر را از تنظیمات یا .env بخوانید
+        $this->panelUrl =update_url();
+        $this->updateCode = env('SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN',config('self-update.updater_token'));
+    }
     public function showSettings()
     {
         $schedule_last_work = option('schedule_run');
@@ -86,59 +97,126 @@ class DeveloperController extends Controller
         return response('success');
     }
 
-    public function showUpdater(UpdaterManager $updater)
+    public function showUpdater()
     {
-        $token = config('self-update.updater_token');
+        $currentVersion = config('app.version', '1.0.0'); // نسخه فعلی را از جایی بخوانید
+        $versionInstalled =$currentVersion;
+        // درخواست به پنل برای چک کردن نسخه جدید
+        $response = Http::get($this->panelUrl, [
+            'token' => $this->updateCode,
+            'version' => $currentVersion
+        ]);
 
-        if (!$token) {
-            session()->put('toast-error', 'برای بروزرسانی نرم افزار لطفا شماره سفارش راست چین را وارد کنید.');
-            return redirect()->route('admin.developer.settings');
+        $isNewVersionAvailable = false;
+        $versionAvailable = $currentVersion;
+
+        if ($response->successful()) {
+            $data = $response->json();
+            if ($data['update_available']) {
+                $isNewVersionAvailable = true;
+                $versionAvailable = $data['version'];
+            }
         }
 
-        $isNewVersionAvailable = $updater->source()->isNewVersionAvailable();
-        dd($token);
-        $versionAvailable = $updater->source()->getVersionAvailable();
-        $versionInstalled = $updater->source()->getVersionInstalled();
-
         return view('back.developer.updater', compact(
+            'versionInstalled',
             'isNewVersionAvailable',
             'versionAvailable',
-            'versionInstalled'
+            'currentVersion' // متغیر ویو را اصلاح کردیم
         ));
     }
 
-    public function updateApplication(UpdaterManager $updater)
+    public function updateApplication(Request $request)
     {
-        $versionAvailable = $updater->source()->getVersionAvailable();
-        $versionInstalled = $updater->source()->getVersionInstalled();
+        $currentVersion = config('app.version', '1.0.0');
 
-        try {
-            Http::withHeaders([
-                'Accept'       => 'application/json',
-                'Content-Type' => 'application/json'
-            ])->get(config('general.api_url') . '/shop/update', [
-                'host'                => url('/') ?: config('app.url'),
-                'time'                => now(),
-                'script'              => 'shop',
-                'versionAvailable'    => $versionAvailable,
-                'versionInstalled'    => $versionInstalled,
-                'server_ip'           => request()->server('SERVER_ADDR'),
-                'updater_ip'          => request()->ip(),
-            ]);
-        } catch (Exception $e) {
-            // just continue
+        // 1. دریافت اطلاعات دانلود از پنل
+        $response = Http::get($this->panelUrl . '/api/update/check', [
+            'token' => $this->updateCode,
+            'version' => $currentVersion
+        ]);
+
+        if (!$response->successful() || !$response->json('has_update')) {
+            return response()->json(['status' => 'error', 'message' => 'نسخه جدیدی یافت نشد یا دسترسی غیرمجاز است.'], 403);
         }
 
+        $data = $response->json();
+        $downloadUrl = $data['download_url'];
+        $newVersion = $data['version'];
 
-        Artisan::call('updater:update');
+        // 2. دانلود فایل ZIP
+        $zipPath = storage_path('app/temp/update-' . $newVersion . '.zip');
+        File::ensureDirectoryExists(dirname($zipPath));
 
-        return response('success');
+        $downloadResponse = Http::sink($zipPath)->get($downloadUrl);
+
+        if (!$downloadResponse->successful()) {
+            return response()->json(['status' => 'error', 'message' => 'خطا در دانلود فایل آپدیت.'], 500);
+        }
+
+        // 3. استخراج فایل‌ها (با احتیاط)
+        $zip = new ZipArchive();
+        if ($zip->open($zipPath) === true) {
+            // فرض بر این است که فایل‌ها در روت زیپ هستند یا در یک پوشه اصلی
+            // بهتر است فایل‌ها را در یک پوشه موقت اکسترکت کرده و سپس جایگزین کنید
+            $extractPath = storage_path('app/temp/extract');
+            File::ensureDirectoryExists($extractPath);
+
+            $zip->extractTo($extractPath);
+            $zip->close();
+
+            // کپی فایل‌ها به پوشه اصلی پروژه (به جز پوشه‌های حساس مثل .env یا storage)
+            // این بخش بسته به ساختار پروژه شما ممکن است نیاز به دقت بیشتری داشته باشد
+            $this->copyFiles($extractPath, base_path());
+
+            // پاکسازی
+            File::deleteDirectory($extractPath);
+            File::delete($zipPath);
+
+            // بروزرسانی شماره نسخه در فایل کانفیگ یا دیتابیس (اختیاری)
+            // config(['app.version' => $newVersion]);
+
+            return response()->json(['status' => 'success', 'message' => "نسخه {$newVersion} با موفقیت نصب شد."]);
+        } else {
+            return response()->json(['status' => 'error', 'message' => 'خطا در باز کردن فایل ZIP.'], 500);
+        }
     }
 
     public function updaterAfter()
     {
-        Artisan::call('updater:after');
+        try {
+            // کش‌ها را پاک کنید
+            Artisan::call('cache:clear');
+            Artisan::call('config:clear');
+            Artisan::call('view:clear');
 
-        return response('success');
+            // اگر مایگریشن جدیدی دارید اجرا کنید
+            // Artisan::call('migrate', ['--force' => true]);
+
+            return response()->json(['status' => 'success', 'message' => 'دستورات پس از بروزرسانی با موفقیت اجرا شدند.']);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 'error', 'message' => 'خطا در اجرای دستورات: ' . $e->getMessage()], 500);
+        }
+    }
+
+    private function copyFiles($source, $destination)
+    {
+        $files = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($source),
+            \RecursiveIteratorIterator::SELF_FIRST
+        );
+
+        foreach ($files as $file) {
+            if ($file->isDir()) {
+                File::makeDirectory($destination . DIRECTORY_SEPARATOR . $files->getSubPathName(), 0777, true, true);
+            } else {
+                // جلوگیری از رونویسی فایل‌های حیاتی مثل .env
+                $fileName = $file->getFilename();
+                if ($fileName === '.env' || $fileName === 'web.php') {
+                    continue;
+                }
+                File::copy($file, $destination . DIRECTORY_SEPARATOR . $files->getSubPathName());
+            }
+        }
     }
 }

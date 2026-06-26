@@ -69,7 +69,6 @@ final class UpdaterManager implements UpdaterContract
      */
     public function getDefaultSourceRepository()
     {
-        dd($this->app['config']['self-update']['repository_types']['http']);
         return $this->app['config']['self-update']['default'];
     }
 
