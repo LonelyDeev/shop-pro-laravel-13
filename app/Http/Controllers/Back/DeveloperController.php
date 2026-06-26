@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Back;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\ProcessUpdateJob;
 use Carbon\Carbon;
 use Codedge\Updater\UpdaterManager;
 use Exception;
