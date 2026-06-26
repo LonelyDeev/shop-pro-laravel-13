@@ -581,6 +581,8 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
         Route::get('developer/updater', [DeveloperController::class, 'showUpdater'])->name('developer.showUpdater');
         Route::post('developer/updater', [DeveloperController::class, 'updateApplication'])->name('developer.updateApplication');
         Route::post('developer/updaterAfter', [DeveloperController::class, 'updaterAfter'])->name('developer.updaterAfter');
+        Route::get('/developer/update-status', [DeveloperController::class, 'updateStatus'])->name('developer.updateStatus');
+        Route::get('/developer/check-update', [DeveloperController::class, 'checkUpdate'])->name('developer.checkUpdate');
     });
 
 

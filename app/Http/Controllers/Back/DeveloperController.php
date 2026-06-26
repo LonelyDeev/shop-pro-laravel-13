@@ -273,4 +273,67 @@ class DeveloperController extends Controller
             json_encode(['version' => $version])
         );
     }
+
+    public function updateStatus()
+    {
+        $isProcessing = Cache::get('update_processing', false);
+        $progress = Cache::get('update_progress', 0);
+        $status = Cache::get('update_status');
+        $error = Cache::get('update_error');
+        $version = Cache::get('update_version');
+
+        if ($status === 'success') {
+            return response()->json([
+                'status' => 'success',
+                'version' => $version,
+                'message' => 'بروزرسانی با موفقیت انجام شد'
+            ]);
+        }
+
+        if ($status === 'error') {
+            return response()->json([
+                'status' => 'error',
+                'message' => $error ?? 'خطای ناشناخته'
+            ]);
+        }
+
+        if ($isProcessing) {
+            return response()->json([
+                'status' => 'processing',
+                'progress' => $progress
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'idle'
+        ]);
+    }
+
+    public function checkUpdate()
+    {
+        $currentVersion = $this->getVersion();
+
+        try {
+            $response = Http::timeout(30)->get($this->panelUrl, [
+                'token' => $this->updateCode,
+                'version' => $currentVersion
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                return response()->json([
+                    'update_available' => $data['update_available'] ?? false,
+                    'version' => $data['version'] ?? null,
+                    'changelog' => $data['changelog'] ?? null
+                ]);
+            }
+        } catch (Exception $e) {
+            // خطا در ارتباط
+        }
+
+        return response()->json([
+            'update_available' => false,
+            'error' => 'خطا در ارتباط با سرور'
+        ]);
+    }
 }
