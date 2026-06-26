@@ -20,6 +20,7 @@ class ProcessUpdateJob implements ShouldQueue
 
     public $timeout = 3600;
     public $tries = 1;
+    public $maxExceptions = 1;
 
     protected $panelUrl;
     protected $updateCode;
@@ -70,7 +71,6 @@ class ProcessUpdateJob implements ShouldQueue
             Cache::put('update_step', 'شروع دانلود فایل', now()->addHours(2));
             Cache::put('update_progress', 10, now()->addHours(2));
 
-            // دانلود با استفاده از cURL برای نمایش پیشرفت دقیق
             $this->downloadFileWithProgress($downloadUrl, $zipPath);
 
             // 3. بررسی صحت فایل
@@ -126,13 +126,22 @@ class ProcessUpdateJob implements ShouldQueue
             Artisan::call('config:clear');
             Artisan::call('view:clear');
 
-            // موفقیت
+            // موفقیت - پاک کردن تمام فلگ‌ها
             Cache::put('update_status', 'success', now()->addHours(24));
             Cache::put('update_version', $newVersion, now()->addHours(24));
             Cache::put('update_progress', 100, now()->addHours(2));
             Cache::put('update_step', 'کامل شد ✅', now()->addHours(2));
+
+            // پاک کردن تمام فلگ‌های وضعیت
             Cache::forget('update_processing');
             Cache::forget('update_queued');
+            Cache::forget('update_job_dispatched');
+            Cache::forget('update_job_id');
+
+            \Log::info('Update completed successfully', ['version' => $newVersion]);
+
+            // حذف Job از صف
+            $this->delete();
 
         } catch (Exception $e) {
             // پاکسازی در صورت خطا
@@ -147,10 +156,20 @@ class ProcessUpdateJob implements ShouldQueue
             Cache::put('update_status', 'error', now()->addHours(24));
             Cache::put('update_error', $e->getMessage(), now()->addHours(24));
             Cache::put('update_error_details', $e->getTraceAsString(), now()->addHours(24));
+
+            // پاک کردن تمام فلگ‌های وضعیت
             Cache::forget('update_processing');
             Cache::forget('update_queued');
+            Cache::forget('update_job_dispatched');
+            Cache::forget('update_job_id');
 
-            throw $e;
+            \Log::error('Update failed', ['error' => $e->getMessage()]);
+
+            // حذف Job از صف
+            $this->delete();
+
+            // جلوگیری از retry
+            $this->fail($e);
         }
     }
 
@@ -172,13 +191,11 @@ class ProcessUpdateJob implements ShouldQueue
         curl_setopt($ch, CURLOPT_NOPROGRESS, false);
         curl_setopt($ch, CURLOPT_PROGRESSFUNCTION, function ($resource, $downloadSize, $downloaded, $uploadSize, $uploaded) {
             if ($downloadSize > 0) {
-                // محاسبه درصد (از 10 تا 85 درصد)
                 $percent = 10 + round(($downloaded / $downloadSize) * 75);
                 $percent = min($percent, 84);
 
                 Cache::put('update_progress', $percent, now()->addHours(2));
 
-                // ذخیره مرحله با حجم دانلود شده
                 $downloadedMB = round($downloaded / 1024 / 1024, 1);
                 $totalMB = round($downloadSize / 1024 / 1024, 1);
                 Cache::put('update_step', "در حال دانلود فایل ({$downloadedMB} MB از {$totalMB} MB)...", now()->addHours(2));
@@ -199,7 +216,6 @@ class ProcessUpdateJob implements ShouldQueue
             throw new Exception('خطا در دانلود فایل: کد وضعیت ' . $httpCode);
         }
 
-        // بررسی وجود فایل
         if (!File::exists($path) || File::size($path) === 0) {
             throw new Exception('فایل دانلود شده خالی یا وجود ندارد.');
         }
@@ -249,7 +265,6 @@ class ProcessUpdateJob implements ShouldQueue
                 File::copy($file->getPathname(), $targetPath);
             }
 
-            // به‌روزرسانی پیشرفت نصب (از 92 تا 95 درصد)
             $processedFiles++;
             if ($totalFiles > 0) {
                 $installProgress = 92 + round(($processedFiles / $totalFiles) * 3);

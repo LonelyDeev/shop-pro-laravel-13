@@ -146,7 +146,7 @@ class DeveloperController extends Controller
 
     public function updateApplication(Request $request)
     {
-        // بررسی اینکه آیا آپدیت در حال اجراست یا قبلاً در صف قرار گرفته
+        // بررسی اینکه آیا آپدیت در حال اجراست
         if (Cache::get('update_processing', false)) {
             return response()->json([
                 'status' => 'error',
@@ -172,7 +172,7 @@ class DeveloperController extends Controller
 
         $currentVersion = $this->getVersion();
 
-        // 1. دریافت اطلاعات از پنل برای تایید وجود آپدیت
+        // دریافت اطلاعات از پنل برای تایید وجود آپدیت
         $response = Http::timeout(30)->get($this->panelUrl, [
             'token' => $this->updateCode,
             'version' => $currentVersion,
@@ -187,16 +187,15 @@ class DeveloperController extends Controller
 
         $data = $response->json();
         $newVersion = $data['version'];
-        $downloadUrl = $data['download_url'];
 
-        // ذخیره اطلاعات آپدیت در کش برای استفاده در Job
+        // ذخیره اطلاعات آپدیت در کش
         Cache::put('update_processing', true, now()->addHours(2));
         Cache::put('update_queued', true, now()->addHours(2));
         Cache::put('update_status', 'queued', now()->addHours(2));
         Cache::put('update_progress', 0, now()->addHours(2));
         Cache::put('update_step', 'در حال قرار گرفتن در صف...', now()->addHours(2));
         Cache::put('update_version', $newVersion, now()->addHours(2));
-        Cache::put('update_job_dispatched', true, now()->addHours(2)); // جلوگیری از ارسال مجدد
+        Cache::put('update_job_dispatched', true, now()->addHours(2));
         Cache::forget('update_error');
         Cache::forget('update_error_details');
 
@@ -224,7 +223,85 @@ class DeveloperController extends Controller
             ], 500);
         }
     }
+
+    public function updateStatus()
+    {
+        $isProcessing = Cache::get('update_processing', false);
+        $progress = Cache::get('update_progress', 0);
+        $status = Cache::get('update_status');
+        $error = Cache::get('update_error');
+        $version = Cache::get('update_version');
+        $step = Cache::get('update_step');
+        $jobId = Cache::get('update_job_id');
+
+        // وضعیت موفقیت
+        if ($status === 'success') {
+            return response()->json([
+                'status' => 'success',
+                'version' => $version,
+                'message' => 'بروزرسانی با موفقیت انجام شد',
+                'step' => 'کامل شد ✅',
+                'progress' => 100
+            ]);
+        }
+
+        // وضعیت خطا
+        if ($status === 'error') {
+            return response()->json([
+                'status' => 'error',
+                'message' => $error ?? 'خطای ناشناخته',
+                'details' => Cache::get('update_error_details'),
+                'step' => 'خطا ❌',
+                'progress' => $progress
+            ]);
+        }
+
+        // وضعیت در حال پردازش
+        if ($isProcessing) {
+            return response()->json([
+                'status' => 'processing',
+                'progress' => $progress,
+                'message' => $step ?? 'در حال بروزرسانی...',
+                'step' => $step ?? 'در حال بروزرسانی...',
+                'job_id' => $jobId
+            ]);
+        }
+
+        // اگر Job در صف است ولی هنوز شروع نشده
+        if (Cache::get('update_queued', false)) {
+            return response()->json([
+                'status' => 'waiting',
+                'message' => 'در انتظار شروع بروزرسانی...',
+                'step' => 'در انتظار شروع',
+                'progress' => 0,
+                'job_id' => $jobId
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'idle'
+        ]);
+    }
+
     public function updaterAfter()
+    {
+        try {
+            Artisan::call('cache:clear');
+            Artisan::call('config:clear');
+            Artisan::call('view:clear');
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'دستورات پس از بروزرسانی با موفقیت اجرا شدند.'
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'خطا در اجرای دستورات: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+/*    public function updaterAfter()
     {
         try {
             // کش‌ها را پاک کنید
@@ -245,7 +322,7 @@ class DeveloperController extends Controller
                 'message' => 'خطا در اجرای دستورات: ' . $e->getMessage()
             ], 500);
         }
-    }
+    }*/
 
     // متدهای کمکی
     private function getVersion()
@@ -309,66 +386,7 @@ class DeveloperController extends Controller
         );
     }
 
-    public function updateStatus()
-    {
-        $isProcessing = Cache::get('update_processing', false);
-        $progress = Cache::get('update_progress', 0);
-        $status = Cache::get('update_status');
-        $error = Cache::get('update_error');
-        $version = Cache::get('update_version');
-        $step = Cache::get('update_step');
-        $jobId = Cache::get('update_job_id');
 
-        // وضعیت موفقیت
-        if ($status === 'success') {
-            Cache::forget('update_job_dispatched'); // پاک کردن فلگ
-            return response()->json([
-                'status' => 'success',
-                'version' => $version,
-                'message' => 'بروزرسانی با موفقیت انجام شد',
-                'step' => 'کامل شد ✅',
-                'progress' => 100
-            ]);
-        }
-
-        // وضعیت خطا
-        if ($status === 'error') {
-            Cache::forget('update_job_dispatched'); // پاک کردن فلگ
-            return response()->json([
-                'status' => 'error',
-                'message' => $error ?? 'خطای ناشناخته',
-                'details' => Cache::get('update_error_details'),
-                'step' => 'خطا ❌',
-                'progress' => $progress
-            ]);
-        }
-
-        // وضعیت در حال پردازش
-        if ($isProcessing) {
-            return response()->json([
-                'status' => 'processing',
-                'progress' => $progress,
-                'message' => $step ?? 'در حال بروزرسانی...',
-                'step' => $step ?? 'در حال بروزرسانی...',
-                'job_id' => $jobId
-            ]);
-        }
-
-        // اگر Job در صف است ولی هنوز شروع نشده
-        if (Cache::get('update_queued', false)) {
-            return response()->json([
-                'status' => 'waiting',
-                'message' => 'در انتظار شروع بروزرسانی...',
-                'step' => 'در انتظار شروع',
-                'progress' => 0,
-                'job_id' => $jobId
-            ]);
-        }
-
-        return response()->json([
-            'status' => 'idle'
-        ]);
-    }
 
     public function checkUpdate()
     {
@@ -397,4 +415,25 @@ class DeveloperController extends Controller
             'error' => 'خطا در ارتباط با سرور'
         ]);
     }
+
+    public function resetUpdate()
+    {
+        Cache::forget('update_processing');
+        Cache::forget('update_queued');
+        Cache::forget('update_job_dispatched');
+        Cache::forget('update_status');
+        Cache::forget('update_progress');
+        Cache::forget('update_step');
+        Cache::forget('update_version');
+        Cache::forget('update_error');
+        Cache::forget('update_error_details');
+        Cache::forget('update_job_id');
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'وضعیت بروزرسانی با موفقیت ریست شد.'
+        ]);
+    }
+
+
 }
