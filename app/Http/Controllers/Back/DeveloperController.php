@@ -146,12 +146,28 @@ class DeveloperController extends Controller
 
     public function updateApplication(Request $request)
     {
-        // بررسی اینکه آیا آپدیت در حال اجراست
+        // بررسی اینکه آیا آپدیت در حال اجراست یا قبلاً در صف قرار گرفته
         if (Cache::get('update_processing', false)) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'آپدیت دیگری در حال اجراست. لطفاً صبر کنید.'
             ], 429);
+        }
+
+        // بررسی اینکه آیا Job قبلاً به صف ارسال شده
+        if (Cache::get('update_job_dispatched', false)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'درخواست بروزرسانی قبلاً به صف ارسال شده است. لطفاً منتظر بمانید.'
+            ], 429);
+        }
+
+        // بررسی وضعیت موفقیت قبلی
+        if (Cache::get('update_status') === 'success') {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'آپدیت قبلاً با موفقیت انجام شده است.'
+            ], 400);
         }
 
         $currentVersion = $this->getVersion();
@@ -180,21 +196,34 @@ class DeveloperController extends Controller
         Cache::put('update_progress', 0, now()->addHours(2));
         Cache::put('update_step', 'در حال قرار گرفتن در صف...', now()->addHours(2));
         Cache::put('update_version', $newVersion, now()->addHours(2));
+        Cache::put('update_job_dispatched', true, now()->addHours(2)); // جلوگیری از ارسال مجدد
         Cache::forget('update_error');
         Cache::forget('update_error_details');
 
         // ارسال Job به صف
-        $job = new ProcessUpdateJob($this->panelUrl, $this->updateCode, $currentVersion);
-        $jobId = dispatch($job);
-        Cache::put('update_job_id', $jobId, now()->addHours(2));
-        return response()->json([
-            'status' => 'queued',
-            'message' => 'درخواست بروزرسانی در صف قرار گرفت. لطفاً منتظر بمانید...',
-            'version' => $newVersion,
-            'job_id' => $jobId
-        ]);
-    }
+        try {
+            $job = new ProcessUpdateJob($this->panelUrl, $this->updateCode, $currentVersion);
+            $jobId = dispatch($job);
+            Cache::put('update_job_id', $jobId, now()->addHours(2));
 
+            return response()->json([
+                'status' => 'queued',
+                'message' => 'درخواست بروزرسانی در صف قرار گرفت. لطفاً منتظر بمانید...',
+                'version' => $newVersion,
+                'job_id' => $jobId
+            ]);
+        } catch (Exception $e) {
+            // در صورت خطا، کش را پاک کن
+            Cache::forget('update_processing');
+            Cache::forget('update_queued');
+            Cache::forget('update_job_dispatched');
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'خطا در ارسال درخواست: ' . $e->getMessage()
+            ], 500);
+        }
+    }
     public function updaterAfter()
     {
         try {
@@ -292,6 +321,7 @@ class DeveloperController extends Controller
 
         // وضعیت موفقیت
         if ($status === 'success') {
+            Cache::forget('update_job_dispatched'); // پاک کردن فلگ
             return response()->json([
                 'status' => 'success',
                 'version' => $version,
@@ -303,6 +333,7 @@ class DeveloperController extends Controller
 
         // وضعیت خطا
         if ($status === 'error') {
+            Cache::forget('update_job_dispatched'); // پاک کردن فلگ
             return response()->json([
                 'status' => 'error',
                 'message' => $error ?? 'خطای ناشناخته',
