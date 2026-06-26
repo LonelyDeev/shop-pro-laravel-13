@@ -20,8 +20,8 @@ class DeveloperController extends Controller
     public function __construct()
     {
         // این مقادیر را از تنظیمات یا .env بخوانید
-        $this->panelUrl ='https://update.webtpro.ir/api/v1/';
-        $this->updateCode = env('SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN',config('self-update.updater_token'));
+        $this->panelUrl ='https://update.webtpro.ir/api/v1';
+        $this->updateCode =env('SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN',config('self-update.updater_token'));
     }
     public function showSettings()
     {
