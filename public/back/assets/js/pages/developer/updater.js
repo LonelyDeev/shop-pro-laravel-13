@@ -128,18 +128,18 @@ function startUpdate() {
                 buttonsStyling: false,
                 onBeforeOpen: function() {
                     Swal.showLoading()
-                    timerInterval = setInterval(function() {
+                   /* timerInterval = setInterval(function() {
                         Swal.getContent().querySelector('strong')
                             .textContent = Math.round((Swal.getTimerLeft() / 1000) + 1)
-                    }, 100)
+                    }, 100)*/
                 },
                 onClose: function() {
                     clearInterval(timerInterval)
                 }
             }).then(function(result) {
-                if (result.dismiss === Swal.DismissReason.timer) {
+              /*  if (result.dismiss === Swal.DismissReason.timer) {
                     location.reload();
-                }
+                }*/
             });
         },
         cache: false,
