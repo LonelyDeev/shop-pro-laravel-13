@@ -174,18 +174,24 @@ class DeveloperController extends Controller
         $downloadUrl = $data['download_url'];
 
         // ذخیره اطلاعات آپدیت در کش برای استفاده در Job
-        Cache::put('update_pending_version', $newVersion, now()->addHours(2));
         Cache::put('update_processing', true, now()->addHours(2));
-        Cache::put('update_status', 'processing', now()->addHours(2));
+        Cache::put('update_queued', true, now()->addHours(2));
+        Cache::put('update_status', 'queued', now()->addHours(2));
+        Cache::put('update_progress', 0, now()->addHours(2));
+        Cache::put('update_step', 'در حال قرار گرفتن در صف...', now()->addHours(2));
+        Cache::put('update_version', $newVersion, now()->addHours(2));
         Cache::forget('update_error');
+        Cache::forget('update_error_details');
 
         // ارسال Job به صف
-        ProcessUpdateJob::dispatch($this->panelUrl, $this->updateCode, $currentVersion);
-
+        $job = new ProcessUpdateJob($this->panelUrl, $this->updateCode, $currentVersion);
+        $jobId = dispatch($job);
+        Cache::put('update_job_id', $jobId, now()->addHours(2));
         return response()->json([
-            'status' => 'started',
-            'message' => 'آپدیت در پس‌زمینه شروع شد. صفحه را رفرش کنید تا وضعیت را ببینید.',
-            'version' => $newVersion
+            'status' => 'queued',
+            'message' => 'درخواست بروزرسانی در صف قرار گرفت. لطفاً منتظر بمانید...',
+            'version' => $newVersion,
+            'job_id' => $jobId
         ]);
     }
 
@@ -284,48 +290,35 @@ class DeveloperController extends Controller
         $step = Cache::get('update_step');
         $jobId = Cache::get('update_job_id');
 
+        // وضعیت موفقیت
         if ($status === 'success') {
             return response()->json([
                 'status' => 'success',
                 'version' => $version,
                 'message' => 'بروزرسانی با موفقیت انجام شد',
-                'step' => 'کامل شد'
+                'step' => 'کامل شد ✅',
+                'progress' => 100
             ]);
         }
 
+        // وضعیت خطا
         if ($status === 'error') {
             return response()->json([
                 'status' => 'error',
                 'message' => $error ?? 'خطای ناشناخته',
                 'details' => Cache::get('update_error_details'),
-                'step' => 'خطا'
+                'step' => 'خطا ❌',
+                'progress' => $progress
             ]);
         }
 
+        // وضعیت در حال پردازش
         if ($isProcessing) {
-            $messages = [
-                0 => 'در حال آماده‌سازی...',
-                10 => 'بررسی اطلاعات آپدیت...',
-                20 => 'شروع دانلود فایل...',
-                30 => 'در حال دانلود فایل (۳۰%)...',
-                40 => 'در حال دانلود فایل (۴۰%)...',
-                50 => 'در حال دانلود فایل (۵۰%)...',
-                60 => 'در حال دانلود فایل (۶۰%)...',
-                70 => 'در حال دانلود فایل (۷۰%)...',
-                80 => 'در حال دانلود فایل (۸۰%)...',
-                90 => 'در حال استخراج فایل...',
-                95 => 'در حال نصب فایل‌ها...',
-                98 => 'در حال پاکسازی...',
-                99 => 'در حال نهایی‌سازی...',
-            ];
-
-            $message = $messages[$progress] ?? 'در حال بروزرسانی...';
-
             return response()->json([
                 'status' => 'processing',
                 'progress' => $progress,
-                'message' => $message,
-                'step' => $step ?? $message,
+                'message' => $step ?? 'در حال بروزرسانی...',
+                'step' => $step ?? 'در حال بروزرسانی...',
                 'job_id' => $jobId
             ]);
         }
@@ -335,6 +328,8 @@ class DeveloperController extends Controller
             return response()->json([
                 'status' => 'waiting',
                 'message' => 'در انتظار شروع بروزرسانی...',
+                'step' => 'در انتظار شروع',
+                'progress' => 0,
                 'job_id' => $jobId
             ]);
         }

@@ -1,6 +1,5 @@
 <?php
 
-
 namespace App\Jobs;
 
 use Illuminate\Bus\Queueable;
@@ -19,7 +18,7 @@ class ProcessUpdateJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $timeout = 3600; // 1 ساعت
+    public $timeout = 3600;
     public $tries = 1;
 
     protected $panelUrl;
@@ -45,7 +44,7 @@ class ProcessUpdateJob implements ShouldQueue
 
             // 1. دریافت اطلاعات از پنل
             Cache::put('update_step', 'دریافت اطلاعات آپدیت', now()->addHours(2));
-            Cache::put('update_progress', 10, now()->addHours(2));
+            Cache::put('update_progress', 5, now()->addHours(2));
 
             $response = Http::timeout(60)->get($this->panelUrl, [
                 'token' => $this->updateCode,
@@ -67,32 +66,24 @@ class ProcessUpdateJob implements ShouldQueue
 
             File::ensureDirectoryExists(dirname($zipPath));
 
-            // 2. دانلود فایل با timeout بیشتر
-
+            // 2. دانلود فایل با نمایش پیشرفت
             Cache::put('update_step', 'شروع دانلود فایل', now()->addHours(2));
-            Cache::put('update_progress', 20, now()->addHours(2));
+            Cache::put('update_progress', 10, now()->addHours(2));
 
-            $downloadResponse = Http::timeout(600)
-                ->sink($zipPath)
-                ->withOptions([
-                    'connect_timeout' => 60,
-                    'read_timeout' => 600,
-                ])
-                ->get($downloadUrl);
+            // دانلود با استفاده از cURL برای نمایش پیشرفت دقیق
+            $this->downloadFileWithProgress($downloadUrl, $zipPath);
 
-            if (!$downloadResponse->successful()) {
-                throw new Exception('خطا در دانلود فایل آپدیت.');
-            }
+            // 3. بررسی صحت فایل
+            Cache::put('update_step', 'بررسی صحت فایل', now()->addHours(2));
+            Cache::put('update_progress', 85, now()->addHours(2));
 
-            // 2.1 بررسی صحت فایل
             if ($checksum && hash_file('sha256', $zipPath) !== $checksum) {
                 throw new Exception('فایل دانلود شده معتبر نیست (checksum mismatch).');
             }
 
-            // 3. استخراج
-
+            // 4. استخراج
             Cache::put('update_step', 'در حال استخراج فایل...', now()->addHours(2));
-            Cache::put('update_progress', 90, now()->addHours(2));
+            Cache::put('update_progress', 88, now()->addHours(2));
 
             $zip = new ZipArchive();
             if ($zip->open($zipPath) !== true) {
@@ -102,54 +93,115 @@ class ProcessUpdateJob implements ShouldQueue
             $zip->extractTo($extractPath);
             $zip->close();
 
-            // 4. بکاپ گرفتن
+            // 5. بکاپ گرفتن و نصب
             Cache::put('update_step', 'در حال نصب فایل‌ها...', now()->addHours(2));
-            Cache::put('update_progress', 95, now()->addHours(2));
+            Cache::put('update_progress', 92, now()->addHours(2));
 
             File::ensureDirectoryExists($backupPath);
             $this->copyFiles($extractPath, base_path(), $backupPath);
 
-            // 5. پاکسازی
-
-            Cache::put('update_step', 'در حال نهایی‌سازی...', now()->addHours(2));
-            Cache::put('update_progress', 98, now()->addHours(2));
+            // 6. پاکسازی
+            Cache::put('update_step', 'در حال پاکسازی فایل‌های موقت...', now()->addHours(2));
+            Cache::put('update_progress', 96, now()->addHours(2));
 
             File::deleteDirectory($extractPath);
             File::delete($zipPath);
 
-            // 6. ذخیره دائمی نسخه جدید
+            // 7. ذخیره دائمی نسخه جدید
+            Cache::put('update_step', 'ذخیره نسخه جدید', now()->addHours(2));
+            Cache::put('update_progress', 97, now()->addHours(2));
+
             $this->setVersion($newVersion);
 
-            // 7. پاک کردن OPcache
+            // 8. پاک کردن OPcache
             if (function_exists('opcache_reset')) {
                 opcache_reset();
             }
 
-            // 8. اجرای دستورات پس از آپدیت (به جای updaterAfter)
+            // 9. اجرای دستورات پس از آپدیت
+            Cache::put('update_step', 'اجرای دستورات پس از بروزرسانی', now()->addHours(2));
+            Cache::put('update_progress', 98, now()->addHours(2));
+
             Artisan::call('cache:clear');
             Artisan::call('config:clear');
             Artisan::call('view:clear');
-            // Artisan::call('migrate', ['--force' => true]);
 
-            // ذخیره وضعیت موفقیت
+            // موفقیت
             Cache::put('update_status', 'success', now()->addHours(24));
             Cache::put('update_version', $newVersion, now()->addHours(24));
             Cache::put('update_progress', 100, now()->addHours(2));
-            Cache::put('update_step', 'کامل شد', now()->addHours(2));
+            Cache::put('update_step', 'کامل شد ✅', now()->addHours(2));
             Cache::forget('update_processing');
+            Cache::forget('update_queued');
 
         } catch (Exception $e) {
             // پاکسازی در صورت خطا
-            File::deleteDirectory($extractPath ?? '');
-            File::delete($zipPath ?? '');
+            if ($extractPath && File::exists($extractPath)) {
+                File::deleteDirectory($extractPath);
+            }
+            if ($zipPath && File::exists($zipPath)) {
+                File::delete($zipPath);
+            }
 
             // ذخیره خطا
             Cache::put('update_status', 'error', now()->addHours(24));
             Cache::put('update_error', $e->getMessage(), now()->addHours(24));
             Cache::put('update_error_details', $e->getTraceAsString(), now()->addHours(24));
             Cache::forget('update_processing');
+            Cache::forget('update_queued');
 
             throw $e;
+        }
+    }
+
+    /**
+     * دانلود فایل با نمایش پیشرفت
+     */
+    private function downloadFileWithProgress($url, $path)
+    {
+        $fp = fopen($path, 'wb');
+        if (!$fp) {
+            throw new Exception('خطا در ایجاد فایل موقت.');
+        }
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_FILE, $fp);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 600);
+        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0');
+        curl_setopt($ch, CURLOPT_NOPROGRESS, false);
+        curl_setopt($ch, CURLOPT_PROGRESSFUNCTION, function ($resource, $downloadSize, $downloaded, $uploadSize, $uploaded) {
+            if ($downloadSize > 0) {
+                // محاسبه درصد (از 10 تا 85 درصد)
+                $percent = 10 + round(($downloaded / $downloadSize) * 75);
+                $percent = min($percent, 84);
+
+                Cache::put('update_progress', $percent, now()->addHours(2));
+
+                // ذخیره مرحله با حجم دانلود شده
+                $downloadedMB = round($downloaded / 1024 / 1024, 1);
+                $totalMB = round($downloadSize / 1024 / 1024, 1);
+                Cache::put('update_step', "در حال دانلود فایل ({$downloadedMB} MB از {$totalMB} MB)...", now()->addHours(2));
+            }
+        });
+
+        $result = curl_exec($ch);
+        $error = curl_error($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        fclose($fp);
+
+        if ($result === false) {
+            throw new Exception('خطا در دانلود فایل: ' . $error);
+        }
+
+        if ($httpCode !== 200) {
+            throw new Exception('خطا در دانلود فایل: کد وضعیت ' . $httpCode);
+        }
+
+        // بررسی وجود فایل
+        if (!File::exists($path) || File::size($path) === 0) {
+            throw new Exception('فایل دانلود شده خالی یا وجود ندارد.');
         }
     }
 
@@ -169,6 +221,9 @@ class ProcessUpdateJob implements ShouldQueue
             new \RecursiveDirectoryIterator($source, \RecursiveDirectoryIterator::SKIP_DOTS),
             \RecursiveIteratorIterator::SELF_FIRST
         );
+
+        $totalFiles = iterator_count($files);
+        $processedFiles = 0;
 
         foreach ($files as $file) {
             $relativePath = $files->getSubPathName();
@@ -192,6 +247,13 @@ class ProcessUpdateJob implements ShouldQueue
 
                 File::ensureDirectoryExists(dirname($targetPath), 0755);
                 File::copy($file->getPathname(), $targetPath);
+            }
+
+            // به‌روزرسانی پیشرفت نصب (از 92 تا 95 درصد)
+            $processedFiles++;
+            if ($totalFiles > 0) {
+                $installProgress = 92 + round(($processedFiles / $totalFiles) * 3);
+                Cache::put('update_progress', min($installProgress, 95), now()->addHours(2));
             }
         }
     }
