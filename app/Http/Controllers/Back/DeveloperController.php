@@ -20,7 +20,7 @@ class DeveloperController extends Controller
     public function __construct()
     {
         // این مقادیر را از تنظیمات یا .env بخوانید
-        $this->panelUrl ='https://update.webtpro.ir/api/v1';
+        $this->panelUrl ='https://update.webtpro.ir/api/v1/check-update';
         $this->updateCode =env('SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN',config('self-update.updater_token'));
     }
     public function showSettings()
@@ -99,105 +99,92 @@ class DeveloperController extends Controller
 
     public function showUpdater()
     {
-        $currentVersion = config('app.version', '1.0.0'); // نسخه فعلی را از جایی بخوانید
-        $versionInstalled =$currentVersion;
-        // درخواست به پنل برای چک کردن نسخه جدید
-        $response = Http::get($this->panelUrl.'/check-update', [
-            'token' => $this->updateCode,
-            'version' => $currentVersion
-        ]);
+        // خواندن نسخه از فایل
+        $currentVersion = $this->getVersion();
+        $versionInstalled = $currentVersion;
 
+        // دریافت وضعیت آپدیت
+        $isProcessing = Cache::get('update_processing', false);
+        $updateStatus = Cache::get('update_status');
+        $updateError = Cache::get('update_error');
+        $newVersion = Cache::get('update_version');
+
+        // درخواست به پنل برای چک کردن نسخه جدید
         $isNewVersionAvailable = false;
         $versionAvailable = $currentVersion;
 
-        if ($response->successful()) {
-            $data = $response->json();
-            if ($data['update_available']) {
-                $isNewVersionAvailable = true;
-                $versionAvailable = $data['version'];
+        try {
+            $response = Http::timeout(30)->get($this->panelUrl, [
+                'token' => $this->updateCode,
+                'version' => $currentVersion
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                if ($data['update_available'] ?? false) {
+                    $isNewVersionAvailable = true;
+                    $versionAvailable = $data['version'];
+                }
             }
+        } catch (Exception $e) {
+            // خطا در ارتباط با پنل
         }
 
         return view('back.developer.updater', compact(
             'versionInstalled',
             'isNewVersionAvailable',
             'versionAvailable',
-            'currentVersion' // متغیر ویو را اصلاح کردیم
+            'currentVersion',
+            'isProcessing',
+            'updateStatus',
+            'updateError',
+            'newVersion'
         ));
     }
 
     public function updateApplication(Request $request)
     {
-        $currentVersion = config('app.version', '1.0.0');
+        // بررسی اینکه آیا آپدیت در حال اجراست
+        if (Cache::get('update_processing', false)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'آپدیت دیگری در حال اجراست. لطفاً صبر کنید.'
+            ], 429);
+        }
 
-        // 1. دریافت اطلاعات از پنل
-        $response = Http::timeout(30)->get($this->panelUrl . '/check-update', [
-            'token'   => $this->updateCode,
+        $currentVersion = $this->getVersion();
+
+        // 1. دریافت اطلاعات از پنل برای تایید وجود آپدیت
+        $response = Http::timeout(30)->get($this->panelUrl, [
+            'token' => $this->updateCode,
             'version' => $currentVersion,
         ]);
 
         if (!$response->successful() || !$response->json('update_available')) {
-            return response()->json(['status' => 'error', 'message' => 'نسخه جدیدی یافت نشد یا دسترسی غیرمجاز است.'], 403);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'نسخه جدیدی یافت نشد یا دسترسی غیرمجاز است.'
+            ], 403);
         }
 
-        $data        = $response->json();
+        $data = $response->json();
+        $newVersion = $data['version'];
         $downloadUrl = $data['download_url'];
-        $newVersion  = $data['version'];
-        $checksum    = $data['checksum'] ?? null; // اگه پنل sha256 بده
 
-        $zipPath     = storage_path('app/temp/update-' . $newVersion . '.zip');
-        $extractPath = storage_path('app/temp/extract-' . $newVersion);
-        $backupPath  = storage_path('app/backups/backup-' . $currentVersion . '-' . time());
+        // ذخیره اطلاعات آپدیت در کش برای استفاده در Job
+        Cache::put('update_pending_version', $newVersion, now()->addHours(2));
+        Cache::put('update_processing', true, now()->addHours(2));
+        Cache::put('update_status', 'processing', now()->addHours(2));
+        Cache::forget('update_error');
 
-        try {
-            File::ensureDirectoryExists(dirname($zipPath));
+        // ارسال Job به صف
+        ProcessUpdateJob::dispatch($this->panelUrl, $this->updateCode, $currentVersion);
 
-            // 2. دانلود فایل
-            $downloadResponse = Http::timeout(300)->sink($zipPath)->get($downloadUrl);
-            if (!$downloadResponse->successful()) {
-                throw new \Exception('خطا در دانلود فایل آپدیت.');
-            }
-
-            // 2.1 بررسی صحت فایل (اختیاری ولی توصیه‌شده)
-            if ($checksum && hash_file('sha256', $zipPath) !== $checksum) {
-                throw new \Exception('فایل دانلود شده معتبر نیست (checksum mismatch).');
-            }
-
-            // 3. استخراج
-            $zip = new ZipArchive();
-            if ($zip->open($zipPath) !== true) {
-                throw new \Exception('خطا در باز کردن فایل ZIP.');
-            }
-            File::ensureDirectoryExists($extractPath);
-            $zip->extractTo($extractPath);
-            $zip->close();
-
-            // 4. بکاپ گرفتن از فایل‌های فعلی قبل از رونویسی (برای Rollback)
-            File::ensureDirectoryExists($backupPath);
-            // فقط از فایل‌هایی که قراره تغییر کنن بکاپ بگیر
-            $this->copyFiles($extractPath, base_path(), $backupPath);
-
-            // 5. پاکسازی
-            File::deleteDirectory($extractPath);
-            File::delete($zipPath);
-
-            // 6. ذخیره دائمی نسخه جدید
-            $this->setVersion($newVersion);
-
-            // 7. پاک کردن OPcache
-            if (function_exists('opcache_reset')) {
-                opcache_reset();
-            }
-
-            return response()->json(['status' => 'success', 'message' => "نسخه {$newVersion} با موفقیت نصب شد."]);
-
-        } catch (\Exception $e) {
-            // در صورت خطا، فایل‌های temp رو پاک کن
-            File::deleteDirectory($extractPath);
-            File::delete($zipPath);
-
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
-        }
+        return response()->json([
+            'status' => 'started',
+            'message' => 'آپدیت در پس‌زمینه شروع شد. صفحه را رفرش کنید تا وضعیت را ببینید.',
+            'version' => $newVersion
+        ]);
     }
 
     public function updaterAfter()
@@ -211,15 +198,31 @@ class DeveloperController extends Controller
             // اگر مایگریشن جدیدی دارید اجرا کنید
             // Artisan::call('migrate', ['--force' => true]);
 
-            return response()->json(['status' => 'success', 'message' => 'دستورات پس از بروزرسانی با موفقیت اجرا شدند.']);
-        } catch (\Exception $e) {
-            return response()->json(['status' => 'error', 'message' => 'خطا در اجرای دستورات: ' . $e->getMessage()], 500);
+            return response()->json([
+                'status' => 'success',
+                'message' => 'دستورات پس از بروزرسانی با موفقیت اجرا شدند.'
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'خطا در اجرای دستورات: ' . $e->getMessage()
+            ], 500);
         }
+    }
+
+    // متدهای کمکی
+    private function getVersion()
+    {
+        $versionFile = storage_path('app/version.json');
+        if (File::exists($versionFile)) {
+            $content = json_decode(File::get($versionFile), true);
+            return $content['version'] ?? config('app.version', '1.0.0');
+        }
+        return config('app.version', '1.0.0');
     }
 
     private function copyFiles($source, $destination, $backupPath = null)
     {
-        // مسیرهای نسبی که نباید رونویسی بشن
         $excluded = [
             '.env',
             '.env.example',
@@ -238,7 +241,6 @@ class DeveloperController extends Controller
         foreach ($files as $file) {
             $relativePath = $files->getSubPathName();
 
-            // بررسی استثناها بر اساس مسیر نسبی (نه فقط نام فایل)
             foreach ($excluded as $ex) {
                 if ($relativePath === $ex || str_starts_with($relativePath, $ex . DIRECTORY_SEPARATOR)) {
                     continue 2;
@@ -250,7 +252,6 @@ class DeveloperController extends Controller
             if ($file->isDir()) {
                 File::ensureDirectoryExists($targetPath, 0755);
             } else {
-                // بکاپ گرفتن از فایل فعلی قبل از رونویسی
                 if ($backupPath && File::exists($targetPath)) {
                     $backupTarget = $backupPath . DIRECTORY_SEPARATOR . $relativePath;
                     File::ensureDirectoryExists(dirname($backupTarget), 0755);
@@ -265,12 +266,9 @@ class DeveloperController extends Controller
 
     private function setVersion($version)
     {
-        // ساده‌ترین راه: ذخیره در یک فایل json
         File::put(
             storage_path('app/version.json'),
             json_encode(['version' => $version])
         );
-        // و در showUpdater این مقدار رو بخون به جای config
     }
-
 }
