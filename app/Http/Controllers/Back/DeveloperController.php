@@ -9,6 +9,7 @@ use Codedge\Updater\UpdaterManager;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Cache;
@@ -148,108 +149,69 @@ class DeveloperController extends Controller
 
     public function updateApplication(Request $request)
     {
-        // 1. بررسی کامل وضعیت
-        $processing = Cache::get('update_processing', false);
-        $dispatched = Cache::get('update_job_dispatched', false);
-        $status = Cache::get('update_status');
-        $jobId = Cache::get('update_job_id');
+        // استفاده از Lock اتمیک — فقط یک درخواست می‌تواند وارد شود
+        $lock = Cache::lock('update_in_progress', 1200); // 20 دقیقه
 
-        // 2. بررسی اینکه آیا Job قبلی هنوز در دیتابیس وجود دارد
-        $existingJob = null;
-        if ($jobId) {
-            // اگر از Redis یا Database استفاده می‌کنید
-            // در صورت استفاده از Database Queue
-            $existingJob = DB::table('jobs')
-                ->where('id', $jobId)
-                ->whereIn('reserved', [0, 1]) // 0: pending, 1: reserved
-                ->first();
-        }
-
-        // 3. اگر Job در حال پردازش است یا در صف است یا با موفقیت انجام شده
-        if ($processing || $dispatched || $status === 'success' || $existingJob) {
+        if (!$lock->get()) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'یک درخواست بروزرسانی قبلاً ثبت شده است. لطفاً صبر کنید.',
-                'job_id' => $jobId,
-                'status' => $status ?? 'processing'
+                'message' => 'آپدیت دیگری در حال اجراست. لطفاً صبر کنید.'
             ], 429);
         }
 
-        // 4. اگر Job قبلی با خطا مواجه شده، باید ریست شود
-        if ($status === 'error') {
-            // اجازه شروع مجدد پس از ریست
-            if (!$request->has('force') || !$request->force) {
+        try {
+            $currentVersion = $this->getVersion();
+
+            // بررسی وضعیت موفقیت قبلی
+            if (Cache::get('update_status') === 'success') {
+                $lock->release();
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'بروزرسانی قبلی با خطا مواجه شد. برای شروع مجدد از پارامتر force=true استفاده کنید.'
+                    'message' => 'آپدیت قبلاً با موفقیت انجام شده است.'
                 ], 400);
             }
 
-            // پاک کردن وضعیت خطا
-            Cache::forget('update_status');
+            // دریافت اطلاعات از پنل
+            $response = Http::timeout(30)->get($this->panelUrl, [
+                'token' => $this->updateCode,
+                'version' => $currentVersion,
+            ]);
+
+            if (!$response->successful() || !$response->json('update_available')) {
+                $lock->release();
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'نسخه جدیدی یافت نشد یا دسترسی غیرمجاز است.'
+                ], 403);
+            }
+
+            $data = $response->json();
+            $newVersion = $data['version'];
+
+            // تنظیم فلگ‌ها
+            Cache::put('update_processing', true, now()->addHours(2));
+            Cache::put('update_status', 'queued', now()->addHours(2));
+            Cache::put('update_progress', 0, now()->addHours(2));
+            Cache::put('update_step', 'در حال قرار گرفتن در صف...', now()->addHours(2));
+            Cache::put('update_version', $newVersion, now()->addHours(2));
             Cache::forget('update_error');
             Cache::forget('update_error_details');
-        }
 
-        // 5. دریافت اطلاعات از پنل
-        $currentVersion = $this->getVersion();
-        $response = Http::timeout(30)->get($this->panelUrl, [
-            'token' => $this->updateCode,
-            'version' => $currentVersion,
-        ]);
-
-        if (!$response->successful() || !$response->json('update_available')) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'نسخه جدیدی یافت نشد یا دسترسی غیرمجاز است.'
-            ], 403);
-        }
-
-        $data = $response->json();
-        $newVersion = $data['version'];
-
-        // 6. ذخیره اطلاعات در Cache
-        Cache::put('update_processing', true, now()->addHours(2));
-        Cache::put('update_queued', true, now()->addHours(2));
-        Cache::put('update_status', 'queued', now()->addHours(2));
-        Cache::put('update_progress', 0, now()->addHours(2));
-        Cache::put('update_step', 'در حال قرار گرفتن در صف...', now()->addHours(2));
-        Cache::put('update_version', $newVersion, now()->addHours(2));
-        Cache::put('update_job_dispatched', true, now()->addHours(2));
-        Cache::put('update_job_dispatched_time', now(), now()->addHours(2));
-        Cache::forget('update_error');
-        Cache::forget('update_error_details');
-
-        try {
+            // ارسال فقط یک Job
             $job = new ProcessUpdateJob($this->panelUrl, $this->updateCode, $currentVersion);
-            $jobId = dispatch($job);
+            dispatch($job);
 
-            // ذخیره Job ID در دیتابیس برای بررسی بعدی
-            Cache::put('update_job_id', $jobId, now()->addHours(2));
-
-            // همچنین می‌توانید در دیتابیس ذخیره کنید
-            DB::table('update_jobs')->insert([
-                'job_id' => $jobId,
-                'version' => $newVersion,
-                'status' => 'queued',
-                'created_at' => now(),
-                'updated_at' => now()
-            ]);
+            // آزاد کردن lock — Job داخل صف است و دیگر نیازی به lock نیست
+            $lock->release();
 
             return response()->json([
                 'status' => 'queued',
-                'message' => 'درخواست بروزرسانی در صف قرار گرفت. لطفاً منتظر بمانید...',
-                'version' => $newVersion,
-                'job_id' => $jobId
+                'message' => 'درخواست بروزرسانی در صف قرار گرفت.',
+                'version' => $newVersion
             ]);
-        } catch (Exception $e) {
-            // در صورت خطا، کش را پاک کن
-            Cache::forget('update_processing');
-            Cache::forget('update_queued');
-            Cache::forget('update_job_dispatched');
-            Cache::forget('update_status');
-            Cache::forget('update_version');
 
+        } catch (Exception $e) {
+            $lock->release();
             return response()->json([
                 'status' => 'error',
                 'message' => 'خطا در ارسال درخواست: ' . $e->getMessage()
