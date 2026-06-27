@@ -104,7 +104,7 @@ class DeveloperController extends Controller
         // خواندن نسخه از فایل
         $currentVersion = $this->getVersion();
         $versionInstalled = $currentVersion;
-
+        $description=null;
         // دریافت وضعیت آپدیت
         $isProcessing = Cache::get('update_processing', false);
         $updateStatus = Cache::get('update_status');
@@ -125,6 +125,7 @@ class DeveloperController extends Controller
                 $data = $response->json();
                 if ($data['update_available'] ?? false) {
                     $isNewVersionAvailable = true;
+                    $description=$data['description'];
                     $versionAvailable = $data['version'];
                 }
             }
@@ -140,7 +141,8 @@ class DeveloperController extends Controller
             'isProcessing',
             'updateStatus',
             'updateError',
-            'newVersion'
+            'newVersion',
+            'description'
         ));
     }
 
@@ -385,7 +387,6 @@ class DeveloperController extends Controller
             json_encode(['version' => $version])
         );
     }
-
 
 
     public function checkUpdate()

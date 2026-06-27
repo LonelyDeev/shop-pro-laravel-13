@@ -1,5 +1,76 @@
 @extends('back.layouts.master')
+@push('styles')
+    <style>
+        .update-description-card{
+            border: 1px solid #e3e1fc !important;
+        }
+        .update-description-card h5{
+            font-size: 1rem;
+            color: #4C4993;
+        }
+        .update-description {
+            font-size: 14px;
+            line-height: 1.8;
+        }
 
+        .update-description ul {
+            padding-right: 0;
+        }
+
+        .update-description ul li {
+            padding: 5px 0;
+            border-bottom: 1px solid #f1f1f1;
+        }
+
+        .update-description ul li:last-child {
+            border-bottom: none;
+        }
+        .update-description ul li i{
+            margin: 6px;
+            color: #4C4993;
+        }
+        .update-description .badge {
+            font-size: 11px;
+            padding: 4px 8px;
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-right: 20px;
+        }
+
+        .timeline-item:last-child .timeline-line {
+            display: none;
+        }
+
+        .timeline-marker {
+            width: 16px;
+            height: 16px;
+            min-width: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 2px;
+        }
+
+        .timeline-content {
+            padding-right: 15px;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .avatar-sm {
+            width: 32px;
+            height: 32px;
+        }
+    </style>
+@endpush
 @section('content')
 
     <div class="app-content content">
@@ -44,6 +115,50 @@
                                         <i class="feather icon-check mr-1 align-middle"></i>
                                         <span>نسخه {{ $versionAvailable }} موجود است و هم اکنون میتوانید نرم افزار را بروزرسانی کنید.</span>
                                     </div>
+
+                                    <!-- نمایش توضیحات و تغییرات -->
+                                    @if(!empty($description))
+                                        <div class="card mb-4 border-primary update-description-card">
+                                            <div class="card-header alert alert-primary p-1 m-0">
+                                                <h5 class="mb-0">
+                                                    <i class="feather icon-git-merge mr-2"></i>
+                                                    تغییرات نسخه {{ $versionAvailable }}
+                                                </h5>
+                                            </div>
+                                            <div class="card-body p-0">
+                                                <div class="update-description ">
+                                                    @php
+                                                        // تبدیل توضیحات به لیست اگر با خط جدید جدا شده باشد
+                                                        $lines = explode("\n", trim($description));
+                                                        $hasList = false;
+                                                        foreach ($lines as $line) {
+                                                            if (preg_match('/^[\s]*[-*•]/', $line)) {
+                                                                $hasList = true;
+                                                                break;
+                                                            }
+                                                        }
+                                                    @endphp
+
+                                                    @if($hasList)
+                                                        <ul class="list-unstyled mb-0 ml-2">
+                                                            @foreach($lines as $line)
+                                                                @if(trim($line))
+                                                                    <li class="d-flex align-items-start">
+                                                                        <i class="feather icon-check-circle "></i>
+                                                                        <span>{{ trim(preg_replace('/^[\s]*[-*•]\s*/', '', $line)) }}</span>
+                                                                    </li>
+                                                                @endif
+                                                            @endforeach
+                                                        </ul>
+                                                    @else
+                                                        <div class="p-3 bg-light rounded">
+                                                            {!! nl2br(e($description)) !!}
+                                                        </div>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endif
 
                                     <button id="update-application" type="button" class="btn btn-lg btn-success mb-1 waves-effect waves-light">
                                         <i class="feather icon-refresh-ccw mr-1"></i> بروزرسانی
