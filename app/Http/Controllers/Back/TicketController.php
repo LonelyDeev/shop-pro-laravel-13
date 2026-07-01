@@ -31,7 +31,7 @@ class TicketController extends Controller
 
     public function create()
     {
-        $users = User::where('id', '!=', auth()->user()->id)->get();
+        $users = User::where('id', '!=', auth('adminPanel')->user()->id)->get();
 
         return view('back.tickets.create', compact('users'));
     }

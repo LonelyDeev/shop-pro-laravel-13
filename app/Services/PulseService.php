@@ -100,7 +100,7 @@ class PulseService
 
         if (PHP_OS_FAMILY === 'Linux') {
             $load  = sys_getloadavg();
-            $cores = max(1, (int) @shell_exec('nproc 2>/dev/null'));
+            $cores = $this->getCpuCores();
             $cpu   = round(min(100, ($load[0] / $cores) * 100), 1);
 
             if (is_readable('/proc/meminfo')) {
@@ -415,5 +415,29 @@ class PulseService
         foreach (['pulse.system_metrics','pulse.slow_requests','pulse.slow_queries','pulse.exceptions','pulse.queue_jobs'] as $k) {
             Cache::forget($k);
         }
+    }
+
+    protected function getCpuCores(): int
+    {
+        // روش ۱: استفاده از nproc (اگر shell_exec موجود باشد)
+        if (function_exists('shell_exec')) {
+            $nproc = @\shell_exec('nproc 2>/dev/null');
+            if ($nproc !== null && is_numeric(trim($nproc))) {
+                return (int) trim($nproc);
+            }
+        }
+
+        // روش ۲: خواندن مستقیم /proc/cpuinfo (نیازی به shell_exec ندارد)
+        if (is_readable('/proc/cpuinfo')) {
+            $cpuinfo = @file_get_contents('/proc/cpuinfo');
+            if ($cpuinfo !== false) {
+                $cores = preg_match_all('/^processor\s+:\s+\d+/m', $cpuinfo, $matches);
+                if ($cores > 0) {
+                    return $cores;
+                }
+            }
+        }
+
+        return 1;
     }
 }

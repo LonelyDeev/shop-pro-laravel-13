@@ -18,8 +18,8 @@ class SeoAuditController extends Controller
     {
         $this->authorize('seo.audit');
 
-      /*  $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
-        activity()->causedBy(auth()->user())->event('view')
+      /*  $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
+        activity()->causedBy(auth('adminPanel')->user())->event('view')
             ->withProperties(['action' => 'view_seo_audit', 'ip' => request()->ip()])
             ->log("مدیر {$adminName} صفحه آدیت سئو سایت را مشاهده کرد");*/
 

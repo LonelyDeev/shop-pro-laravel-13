@@ -265,9 +265,9 @@ class ProductController extends Controller
         $seoScore    = max(0, round((($totalChecks - $issueCount - $warnCount * 0.5) / $totalChecks) * 100));
 
         // لاگ
-/*        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+/*        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
         activity()
-            ->causedBy(auth()->user())
+            ->causedBy(auth('adminPanel')->user())
             ->event('view')
             ->withProperties(['action' => 'view_product', 'product_id' => $product->id, 'ip' => request()->ip()])
             ->log("مدیر {$adminName} صفحه محصول #{$product->id} را مشاهده کرد");*/
@@ -362,7 +362,7 @@ class ProductController extends Controller
 
 // ثبت لاگ تغییر قیمت محصولات
         if (!empty($updatedProducts)) {
-            $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+            $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
             $productCount = count($updatedProducts);
 
             $properties = [
@@ -391,7 +391,7 @@ class ProductController extends Controller
             $logMessage = "مدیر {$adminName} قیمت و موجودی {$productCount} محصول را ویرایش کرد";
 
             activity()
-                ->causedBy(auth()->user())
+                ->causedBy(auth('adminPanel')->user())
                 ->withProperties($properties)
                 ->log($logMessage);
         }
@@ -475,7 +475,7 @@ class ProductController extends Controller
         }
 
         // ========== ثبت لاگ ایجاد محصول ==========
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
         $productTitle = $product->title ?? "#{$product->id}";
 
         // جمع‌آوری اطلاعات محصول برای لاگ
@@ -508,7 +508,7 @@ class ProductController extends Controller
 
         activity()
             ->performedOn($product)
-            ->causedBy(auth()->user())
+            ->causedBy(auth('adminPanel')->user())
             ->event('created')
             ->withProperties($properties)
             ->log("مدیر {$adminName} محصول جدید «{$productTitle}» را ایجاد کرد");
@@ -732,7 +732,7 @@ class ProductController extends Controller
         }
 
         // ثبت لاگ واحد
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
         $productTitle = $product->title ?? "#{$product->id}";
 
         $properties = [
@@ -751,7 +751,7 @@ class ProductController extends Controller
 
         activity()
             ->performedOn($product)
-            ->causedBy(auth()->user())
+            ->causedBy(auth('adminPanel')->user())
             ->withProperties($properties)
             ->log($logMessage);
 
@@ -1830,7 +1830,7 @@ class ProductController extends Controller
                 'name' => $time . '.' . 'jpg',
                 'size' => $size,
                 'type' => 'jpg',
-                'user_id' => auth()->user()->id,
+                'user_id' => auth('adminPanel')->user()->id,
                 'url' => $url . $time . '.' . 'jpg',
                 'path' => $path . $time . '.' . 'jpg',
             ]);
@@ -2329,7 +2329,7 @@ class ProductController extends Controller
         $prices = $query->get();
         $affectedCount = $prices->count();
 
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
 
         // ذخیره اطلاعات تغییرات برای لاگ
         $oldPrices = [];
@@ -2422,7 +2422,7 @@ class ProductController extends Controller
         }
 
         activity()
-            ->causedBy(auth()->user())
+            ->causedBy(auth('adminPanel')->user())
             ->event('update_prices_group')
             ->withProperties([
                 'action' => 'update_prices_group',
@@ -2547,7 +2547,7 @@ class ProductController extends Controller
      */
     private function logProductActivity($action, $product, $oldValues = null, $newValues = null, $extraData = [])
     {
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
         $productTitle = $product->title ?? $product->name ?? "#{$product->id}";
 
         $properties = array_merge([
@@ -2606,7 +2606,7 @@ class ProductController extends Controller
 
         activity()
             ->performedOn($product)
-            ->causedBy(auth()->user())
+            ->causedBy(auth('adminPanel')->user())
             ->withProperties($properties)
             ->log($logMessage);
     }

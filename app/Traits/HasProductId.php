@@ -10,7 +10,7 @@ trait HasProductId
     protected static function bootHasProductId()
     {
         // لاگ بنویس تا ببینی چندبار اجرا می‌شود
-        \Illuminate\Support\Facades\Log::info('bootHasProductId called for: ' . static::class);
+        //\Illuminate\Support\Facades\Log::info('bootHasProductId called for: ' . static::class);
 
         static::creating(function ($model) {
             \Illuminate\Support\Facades\Log::info('creating event fired for: ' . $model->id ?? 'new');

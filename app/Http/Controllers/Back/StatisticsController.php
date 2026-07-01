@@ -24,11 +24,11 @@ class StatisticsController extends Controller
     {
         $this->authorize('statistics.viewsList');
 
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
 
         $views = Viewer::latest();
 
-        if (auth()->user()->level != 'creator') {
+        if (auth('adminPanel')->user()->level != 'creator') {
             $views = $views->whereNull('user_id')->orWhere(function ($query) {
                 $query->whereHas('user', function ($q1) {
                     $q1->where('level', '!=', 'creator');
@@ -40,7 +40,7 @@ class StatisticsController extends Controller
         $views = $views->paginate(20);
 
         activity()
-            ->causedBy(auth()->user())
+            ->causedBy(auth('adminPanel')->user())
             ->event('view')
             ->withProperties([
                 'action' => 'view_views_list',
@@ -56,10 +56,10 @@ class StatisticsController extends Controller
     {
         $this->authorize('statistics.views');
 
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
 
         activity()
-            ->causedBy(auth()->user())
+            ->causedBy(auth('adminPanel')->user())
             ->event('view')
             ->withProperties([
                 'action' => 'view_statistics_views',
@@ -74,13 +74,13 @@ class StatisticsController extends Controller
     {
         $this->authorize('statistics.viewers');
 
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
 
         $viewers = Viewer::latest()->whereDate('created_at', now())->get()->unique('user_id');
         $viewersCount = $viewers->count();
 
         activity()
-            ->causedBy(auth()->user())
+            ->causedBy(auth('adminPanel')->user())
             ->event('view')
             ->withProperties([
                 'action' => 'view_viewers_list',
@@ -97,10 +97,10 @@ class StatisticsController extends Controller
     {
         $this->authorize('statistics.orders');
 
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
 
         activity()
-            ->causedBy(auth()->user())
+            ->causedBy(auth('adminPanel')->user())
             ->event('view')
             ->withProperties([
                 'action' => 'view_statistics_orders',
@@ -115,10 +115,10 @@ class StatisticsController extends Controller
     {
         $this->authorize('statistics.product');
 
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
 
         activity()
-            ->causedBy(auth()->user())
+            ->causedBy(auth('adminPanel')->user())
             ->event('view')
             ->withProperties([
                 'action' => 'view_statistics_products',
@@ -205,9 +205,9 @@ class StatisticsController extends Controller
             ->paginate(50);
 
         // ثبت لاگ
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
         activity()
-            ->causedBy(auth()->user())
+            ->causedBy(auth('adminPanel')->user())
             ->event('export')
             ->withProperties([
                 'action'        => 'filter_product_statistics',
@@ -229,10 +229,10 @@ class StatisticsController extends Controller
     {
         $this->authorize('statistics.users');
 
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
 
         activity()
-            ->causedBy(auth()->user())
+            ->causedBy(auth('adminPanel')->user())
             ->event('view')
             ->withProperties([
                 'action' => 'view_statistics_users',
@@ -247,13 +247,13 @@ class StatisticsController extends Controller
     {
         $this->authorize('statistics.sms');
 
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
 
         $sms = Sms::latest()->paginate(20);
         $smsCount = $sms->total();
 
         activity()
-            ->causedBy(auth()->user())
+            ->causedBy(auth('adminPanel')->user())
             ->event('view')
             ->withProperties([
                 'action' => 'view_sms_log',

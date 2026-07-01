@@ -501,6 +501,7 @@
                                                             </div>
 
                                                             <div id="product-prices-div" class="product-prices-div">
+
                                                                 @if ($product->isPhysical())
                                                                     @foreach ($product->prices as $price)
                                                                         @include(

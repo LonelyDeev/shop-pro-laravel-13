@@ -18,13 +18,15 @@ class ProcessUpdateJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public $tries = 2;
+    public $backoff = [60];
+    public $maxExceptions = 2;
     public $timeout = 3600;
-    public $tries = 1;
-    public $maxExceptions = 1;
 
     protected $panelUrl;
     protected $updateCode;
     protected $currentVersion;
+
 
     public function __construct($panelUrl, $updateCode, $currentVersion)
     {

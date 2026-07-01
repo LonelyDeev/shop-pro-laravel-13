@@ -26,7 +26,7 @@ class ReviewController extends Controller
 
     public function destroy(Review $review)
     {
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
         $productTitle = $review->product->title ?? "#{$review->product_id}";
         $reviewExcerpt = mb_substr($review->body, 0, 50);
 
@@ -36,7 +36,7 @@ class ReviewController extends Controller
         // ثبت لاگ حذف نظر
         activity()
             ->performedOn($review->product)
-            ->causedBy(auth()->user())
+            ->causedBy(auth('adminPanel')->user())
             ->event('deleted')
             ->withProperties([
                 'action' => 'delete_review',
@@ -110,7 +110,7 @@ class ReviewController extends Controller
         $review->product->refreshRating();
 
         // ثبت لاگ ویرایش نظر
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
         $productTitle = $review->product->title ?? "#{$review->product_id}";
         $reviewExcerpt = mb_substr($review->body, 0, 50);
 
@@ -163,7 +163,7 @@ class ReviewController extends Controller
         if (!empty($oldData)) {
             activity()
                 ->performedOn($review->product)
-                ->causedBy(auth()->user())
+                ->causedBy(auth('adminPanel')->user())
                 ->event('updated')
                 ->withProperties([
                     'action' => 'update_review',

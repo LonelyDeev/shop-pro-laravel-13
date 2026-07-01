@@ -41,7 +41,9 @@ class Carrier extends Model
     // اسکوپ برای فیلتر بر اساس فروشنده
     public function scopeForCurrentSeller($query, $sellerId = null)
     {
-        return $query->where('seller_id', seller()->id);
+        $sellerId = $sellerId ?? seller()->id;
+
+        return $query->where('seller_id', $sellerId);
     }
     /**
      * فقط روش‌های ارسال عمومی (بدون فروشنده)

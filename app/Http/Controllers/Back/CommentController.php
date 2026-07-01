@@ -45,7 +45,7 @@ class CommentController extends Controller
 
     public function show(Comment $comment)
     {
-        if (auth()->user()->can('posts.comments') || auth()->user()->can('products.comments')) {
+        if (auth('adminPanel')->user()->can('posts.comments') || auth('adminPanel')->user()->can('products.comments')) {
             return view('back.comments.show', compact('comment'))->render();
         } else {
             abort(403);
@@ -54,14 +54,14 @@ class CommentController extends Controller
 
     public function destroy(Comment $comment)
     {
-        if (!auth()->user()->can('posts.comments') || !auth()->user()->can('products.comments')) {
+        if (!auth('adminPanel')->user()->can('posts.comments') || !auth('adminPanel')->user()->can('products.comments')) {
             abort(403);
         }
 
         $commentText = mb_substr($comment->body ?? '', 0, 50);
         $commentType = $comment->commentable_type === Product::class ? 'محصول' : 'مقاله';
         $commentableTitle = $comment->commentable->title ?? $comment->commentable->name ?? 'نامشخص';
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
 
         $comment->delete();
 
@@ -69,7 +69,7 @@ class CommentController extends Controller
 
         activity()
             ->performedOn($comment)
-            ->causedBy(auth()->user())
+            ->causedBy(auth('adminPanel')->user())
             ->withProperties([
                 'action' => 'delete_comment',
                 'comment_text' => $commentText,
@@ -82,7 +82,7 @@ class CommentController extends Controller
 
     public function update(Comment $comment, Request $request)
     {
-        if (!auth()->user()->can('posts.comments') || !auth()->user()->can('products.comments')) {
+        if (!auth('adminPanel')->user()->can('posts.comments') || !auth('adminPanel')->user()->can('products.comments')) {
             abort(403);
         }
 
@@ -126,7 +126,7 @@ class CommentController extends Controller
         if ($description) {
             activity()
                 ->performedOn($comment)
-                ->causedBy(auth()->user())
+                ->causedBy(auth('adminPanel')->user())
                 ->withProperties([
                     'action' => 'update_comment',
                     'old_body' => $oldBody,
@@ -142,7 +142,7 @@ class CommentController extends Controller
 
             $reply = $comment->commentable->comments()->create([
                 'body'       => $request->replay,
-                'admin_id'   => auth()->user()->id,
+                'admin_id'   => auth('adminPanel')->user()->id,
                 'status'     => 'accepted',
                 'comment_id' => $comment->id,
             ]);
@@ -151,7 +151,7 @@ class CommentController extends Controller
 
             activity()
                 ->performedOn($comment)
-                ->causedBy(auth()->user())
+                ->causedBy(auth('adminPanel')->user())
                 ->withProperties([
                     'action' => 'reply_to_comment',
                     'reply_id' => $reply->id,
@@ -179,7 +179,7 @@ class CommentController extends Controller
 
     public function reply(Request $request, Comment $comment)
     {
-        if (!auth()->user()->can('posts.comments') || !auth()->user()->can('products.comments')) {
+        if (!auth('adminPanel')->user()->can('posts.comments') || !auth()->user()->can('products.comments')) {
             abort(403);
         }
 

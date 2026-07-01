@@ -140,7 +140,7 @@ class Post extends Model
             return true;
         }
 
-        if (auth()->check() && auth()->user()->can('posts')) {
+        if (auth()->check() && auth('adminPanel')->user()->can('posts')) {
             return true;
         }
 

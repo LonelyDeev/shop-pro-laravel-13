@@ -1,551 +1,12 @@
 @extends('back.layouts.master')
 @push('styles')
-    <style>
-        /* ===================================
-   Dashboard Improved Styles
-   =================================== */
+    <link rel="stylesheet" type="text/css" href="{{asset('back/assets/css/pages/dashboard.css')}}">
 
-        /* ----- Welcome Header Card ----- */
-        .welcome-header-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 16px;
-            border: none;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .welcome-header-card::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='80' cy='20' r='40' fill='rgba(255,255,255,0.05)'/><circle cx='20' cy='80' r='30' fill='rgba(255,255,255,0.04)'/></svg>");
-            pointer-events: none;
-        }
-
-        .welcome-header-card .card-body {
-            position: relative;
-            z-index: 1;
-        }
-
-        .welcome-date-box {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(10px);
-            border-radius: 14px;
-            padding: 16px 20px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        /* ----- Stats Cards ----- */
-        .stat-card {
-            border-radius: 16px;
-            border: none;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-4px);
-        }
-
-        .stat-card.users-card {
-            box-shadow: 0 4px 24px rgba(102, 126, 234, 0.15);
-        }
-
-        .stat-card.users-card:hover {
-            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.25);
-        }
-
-        .stat-card.products-card {
-            box-shadow: 0 4px 24px rgba(253, 160, 133, 0.15);
-        }
-
-        .stat-card.products-card:hover {
-            box-shadow: 0 8px 32px rgba(253, 160, 133, 0.25);
-        }
-
-        .stat-card.orders-card {
-            box-shadow: 0 4px 24px rgba(67, 233, 123, 0.15);
-        }
-
-        .stat-card.orders-card:hover {
-            box-shadow: 0 8px 32px rgba(67, 233, 123, 0.25);
-        }
-
-        .stat-icon-circle {
-            width: 64px;
-            height: 64px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 12px;
-        }
-
-        .stat-icon-circle.users-icon {
-            background: linear-gradient(135deg, #4fc3f7, #00bcd4);
-            box-shadow: 0 4px 20px rgba(79, 195, 247, 0.4);
-        }
-
-        .stat-icon-circle.products-icon {
-            background: linear-gradient(135deg, #f6d365, #fda085);
-            box-shadow: 0 4px 20px rgba(246, 211, 101, 0.4);
-        }
-
-        .stat-icon-circle.orders-icon {
-            background: linear-gradient(135deg, #43e97b, #38f9d7);
-            box-shadow: 0 4px 20px rgba(67, 233, 123, 0.4);
-        }
-
-        /* ----- Statistics Card Tabs ----- */
-        .statistics-card {
-            border-radius: 16px;
-            border: none;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-        }
-
-        .custom-tab-nav {
-            background: #f8f9fc;
-            border-radius: 12px;
-            padding: 6px;
-            margin-bottom: 16px;
-        }
-
-        .custom-tab-nav .nav-link {
-            border-radius: 10px;
-            font-size: 13px;
-            font-weight: 600;
-            color: #666;
-            transition: all 0.2s;
-        }
-
-        .custom-tab-nav .nav-link:hover {
-            background: rgba(102, 126, 234, 0.1);
-            color: #667eea;
-        }
-
-        .custom-tab-nav .nav-link.active {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: #fff;
-        }
-
-        /* ----- Stats Summary Boxes ----- */
-        .stat-summary-box {
-            border-radius: 12px;
-            padding: 14px 16px;
-            text-align: center;
-        }
-
-        .stat-summary-box.small {
-            padding: 12px;
-        }
-
-        .stat-summary-box.total {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-        }
-
-        .stat-summary-box.avg {
-            background: linear-gradient(135deg, #4fc3f7, #00bcd4);
-        }
-
-        .stat-summary-box.success {
-            background: linear-gradient(135deg, #43e97b, #38f9d7);
-        }
-
-        .stat-summary-box.fail {
-            background: linear-gradient(135deg, #ff6b6b, #ee0979);
-        }
-
-        .stat-summary-box small {
-            color: rgba(255, 255, 255, 0.85);
-            font-size: 11px;
-        }
-
-        .stat-summary-box p {
-            color: #fff;
-            font-weight: 700;
-            margin-bottom: 0;
-        }
-
-        .stat-summary-box.small p {
-            font-size: 16px;
-        }
-
-        /* ----- Section Cards ----- */
-        .section-card {
-            border-radius: 16px;
-            border: none;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-            overflow: hidden;
-            margin-bottom: 16px;
-        }
-
-        .section-card .card-header {
-            border: none;
-            padding: 16px 20px;
-        }
-
-        .section-card .card-header h4 {
-            margin-bottom: 0;
-        }
-
-        /* ----- Card Header Gradients ----- */
-        .header-gradient-purple {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-        }
-
-        .header-gradient-orange {
-            background: linear-gradient(135deg, #f6d365, #fda085);
-        }
-
-        .header-gradient-pink {
-            background: linear-gradient(135deg, #a18cd1, #fbc2eb);
-        }
-
-        .header-gradient-green {
-            background: linear-gradient(135deg, #43e97b, #38f9d7);
-        }
-
-        .header-gradient-blue {
-            background: linear-gradient(135deg, #4fc3f7, #00bcd4);
-        }
-
-        .header-gradient-red {
-            background: linear-gradient(135deg, #ff6b6b, #ee0979);
-        }
-
-        /* ----- Tables ----- */
-        .modern-table {
-            font-size: 14px;
-        }
-
-        .modern-table thead tr {
-            background: #f8f9fc;
-        }
-
-        .modern-table thead th {
-            padding: 14px 20px;
-            font-weight: 700;
-            color: #555;
-            border-bottom: 2px solid #eee;
-        }
-
-        .modern-table tbody tr {
-            transition: background 0.15s;
-        }
-
-        .modern-table tbody tr:hover {
-            background: #f8f9fc;
-        }
-
-        .modern-table tbody td {
-            padding: 12px 20px;
-            vertical-align: middle;
-        }
-
-        /* ----- Badges & Pills ----- */
-        .pill-badge {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            width: max-content;
-            display: block;
-        }
-
-        .pill-badge.success {
-            background: rgba(67, 233, 123, 0.15);
-            color: #43e97b;
-        }
-
-        .pill-badge.danger {
-            background: rgba(255, 107, 107, 0.15);
-            color: #ff6b6b;
-        }
-
-        .pill-badge.warning {
-            background: rgba(255, 159, 67, 0.15);
-            color: #ff9f43;
-        }
-
-        .pill-badge.info {
-            background: rgba(79, 195, 247, 0.15);
-            color: #4fc3f7;
-        }
-
-        .pill-badge.purple {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: #fff;
-        }
-
-        .pill-badge.orange {
-            background: linear-gradient(135deg, #f6d365, #fda085);
-            color: #fff;
-        }
-
-        .pill-badge.pink {
-            background: linear-gradient(135deg, #a18cd1, #fbc2eb);
-            color: #fff;
-        }
-
-        /* ----- Buttons ----- */
-        .modern-btn {
-            border: none;
-            border-radius: 8px;
-            padding: 6px 16px;
-            font-size: 12px;
-            font-weight: 600;
-            transition: all 0.2s;
-            display: block;
-            width: max-content;
-        }
-
-        .modern-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-
-        .modern-btn-purple {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: #fff;
-        }
-
-        .modern-btn-orange {
-            background: linear-gradient(135deg, #f6d365, #fda085);
-            color: #fff;
-        }
-
-        .modern-btn-blue {
-            background: linear-gradient(135deg, #4fc3f7, #00bcd4);
-            color: #fff;
-        }
-
-        .modern-btn-green {
-            background: linear-gradient(135deg, #43e97b, #38f9d7);
-            color: #fff;
-        }
-
-        /* ----- List Items ----- */
-        .modern-list-item {
-            border: none;
-            border-bottom: 1px solid #f0f0f0;
-            padding: 14px 18px;
-            transition: background 0.15s;
-        }
-
-        .modern-list-item:hover {
-            background: #f8f9fc;
-        }
-
-        .modern-list-item:last-child {
-            border-bottom: none;
-        }
-
-        /* ----- Avatar Images ----- */
-        .avatar-bordered {
-            border: 2px solid;
-            border-radius: 50%;
-        }
-
-        .avatar-bordered.green {
-            border-color: #43e97b;
-        }
-
-        .avatar-bordered.blue {
-            border-color: #4fc3f7;
-        }
-
-        .avatar-bordered.orange {
-            border-color: #f6d365;
-        }
-
-        .avatar-bordered.purple {
-            border-color: #667eea;
-        }
-
-        /* ----- Empty States ----- */
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: #aaa;
-        }
-
-        .empty-state i {
-            opacity: 0.4;
-            margin-bottom: 12px;
-        }
-
-        .empty-state p {
-            color: #aaa;
-            margin-bottom: 0;
-        }
-
-        /* ----- Sidebar Cards ----- */
-        .sidebar-card {
-            border-radius: 16px;
-            border: none;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-            overflow: hidden;
-            margin-bottom: 16px;
-        }
-
-        .sidebar-card .card-header {
-            border: none;
-            padding: 14px 18px;
-        }
-
-        .sidebar-card .card-header h5 {
-            font-size: 15px;
-            margin-bottom: 0;
-        }
-
-        .sidebar-card .card-body {
-            padding: 0;
-        }
-
-        /* ----- Chart Cards ----- */
-        .chart-card {
-            border-radius: 16px;
-            border: none;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-            overflow: hidden;
-            margin-bottom: 16px;
-        }
-
-        .chart-card .card-header {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border: none;
-            padding: 16px;
-        }
-
-        .chart-card .card-header .avatar {
-            width: 50px;
-            height: 50px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .chart-card .card-content {
-            padding: 12px;
-        }
-
-        /* ----- Status Text ----- */
-        .status-text {
-            font-size: 11px;
-            font-weight: 600;
-            padding: 3px 10px;
-            border-radius: 15px;
-            display: inline-block;
-        }
-
-        .status-text.success {
-            background: rgba(67, 233, 123, 0.15);
-            color: #43e97b;
-        }
-
-        .status-text.warning {
-            background: rgba(255, 159, 67, 0.15);
-            color: #ff9f43;
-        }
-
-        .status-text.danger {
-            background: rgba(255, 107, 107, 0.15);
-            color: #ff6b6b;
-        }
-
-        /* ----- Product Thumbnail ----- */
-        .product-thumb {
-            width: 50px;
-            height: 50px;
-            object-fit: cover;
-            border-radius: 10px;
-        }
-
-        .product-thumb.purple-border {
-            border: 2px solid #a18cd1;
-        }
-
-        .product-thumb.orange-border {
-            border: 2px solid #f6d365;
-        }
-
-        /* ----- Links ----- */
-        .modern-link {
-            color: #667eea;
-            font-weight: 600;
-            text-decoration: none;
-            transition: color 0.2s;
-        }
-
-        .modern-link:hover {
-            color: #764ba2;
-            text-decoration: none;
-        }
-
-        .modern-link.orange {
-            color: #fda085;
-        }
-
-        .modern-link.orange:hover {
-            color: #f6d365;
-        }
-
-        .modern-link.blue {
-            color: #4fc3f7;
-        }
-
-        .modern-link.blue:hover {
-            color: #00bcd4;
-        }
-
-        /* ----- Card Footer ----- */
-        .modern-card-footer {
-            background: #f8f9fc;
-            border-top: 1px solid #eee;
-            padding: 12px 20px;
-        }
-
-        /* ----- Online Badge ----- */
-        .online-badge {
-            background: rgba(67, 233, 123, 0.15);
-            color: #43e97b;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 10px;
-            font-weight: 600;
-        }
-
-        /* ----- Responsive Adjustments ----- */
-        @media (max-width: 768px) {
-            .stat-icon-circle {
-                width: 50px;
-                height: 50px;
-            }
-
-            .stat-icon-circle i {
-                font-size: 22px;
-            }
-
-            .stat-card h2 {
-                font-size: 24px;
-            }
-
-            .modern-table {
-                font-size: 12px;
-            }
-
-            .modern-table thead th,
-            .modern-table tbody td {
-                padding: 10px 12px;
-            }
-        }
-
-    </style>
 @endpush
+
 @section('content')
 
-    <div class="app-content content">
+    <div class="app-content content d-wrap">
         <div class="content-overlay"></div>
         <div class="header-navbar-shadow"></div>
         <div class="content-wrapper">
@@ -568,286 +29,235 @@
 
             <div class="content-body">
 
-                {{-- ===== Welcome Header ===== --}}
-                <div class="card mb-2 welcome-header-card">
-                    <div class="card-body p-3">
-                        <div class="row align-items-center">
-                            <div class="col-md-8">
-                                <h2 class="text-white font-weight-bold mb-1">
-                                    <i class="feather icon-grid mr-2"></i> داشبورد مدیریت
-                                </h2>
-                                <p class="text-white mb-0" style="opacity: 0.85;">خوش آمدید! آمار و اطلاعات کسب‌وکار خود را دنبال کنید.</p>
-                            </div>
-                            <div class="col-md-4 text-left">
-                                <div class="welcome-date-box">
-                                    <p class="text-white mb-0" style="font-size: 12px; opacity: 0.8;">تاریخ امروز</p>
-                                    <p class="text-white font-weight-bold mb-0" style="font-size: 18px;">{{ jdate()->format('d F Y') }}</p>
-                                </div>
-                            </div>
+                {{-- ═══ Banner ═══ --}}
+                <div class="d-banner mb-2">
+                    <div>
+                        <h2 class="d-banner-title">
+                            <i class="feather icon-grid"></i> داشبورد مدیریت
+                        </h2>
+                        <p class="d-banner-sub">خوش آمدید — آمار و اطلاعات کسب‌وکار خود را دنبال کنید.</p>
+                    </div>
+                    <div class="d-date-chip">
+                        <i class="feather icon-calendar"></i>
+                        <div>
+                            <span class="d-date-chip-label">تاریخ امروز</span>
+                            <span class="d-date-chip-value">{{ jdate()->format('d F Y') }}</span>
                         </div>
                     </div>
                 </div>
 
-                {{-- ===== Stats Cards Row ===== --}}
-                <div class="row mb-2">
-                    @can('users.index')
-                        <div class="col-lg-4 col-md-4 col-sm-6 mb-2">
-                            <div class="card text-center stat-card users-card">
-                                <div class="card-content">
-                                    <div class="card-body p-3">
-                                        <div class="stat-icon-circle users-icon">
-                                            <i class="feather icon-users" style="font-size: 28px; color: #fff;"></i>
-                                        </div>
-                                        <h2 class="text-bold-700 mb-1" style="font-size: 32px; color: #667eea;">{{ number_format($users_count) }}</h2>
-                                        <p class="mb-0 text-muted" style="font-size: 14px; font-weight: 600;">کاربران</p>
-                                    </div>
+                <div class="">
+
+                    {{-- ═══ Stat Cards ═══ --}}
+                    <div class="d-stats-row">
+                        @can('users.index')
+                            <div class="d-stat d-stat--blue">
+                                <div class="d-stat-icon d-stat-icon--blue">
+                                    <i class="feather icon-users"></i>
+                                </div>
+                                <div>
+                                    <div class="d-stat-value">{{ number_format($users_count) }}</div>
+                                    <div class="d-stat-label">کل کاربران</div>
                                 </div>
                             </div>
-                        </div>
-                    @endcan
+                        @endcan
 
-                    @can('products.index')
-                        <div class="col-lg-4 col-md-4 col-sm-6 mb-2">
-                            <div class="card text-center stat-card products-card">
-                                <div class="card-content">
-                                    <div class="card-body p-3">
-                                        <div class="stat-icon-circle products-icon">
-                                            <i class="feather icon-shopping-cart" style="font-size: 28px; color: #fff;"></i>
-                                        </div>
-                                        <h2 class="text-bold-700 mb-1" style="font-size: 32px; color: #fda085;">{{ number_format($products_count) }}</h2>
-                                        <p class="mb-0 text-muted" style="font-size: 14px; font-weight: 600;">محصولات</p>
-                                    </div>
+                        @can('products.index')
+                            <div class="d-stat d-stat--amber">
+                                <div class="d-stat-icon d-stat-icon--amber">
+                                    <i class="feather icon-shopping-cart"></i>
+                                </div>
+                                <div>
+                                    <div class="d-stat-value">{{ number_format($products_count) }}</div>
+                                    <div class="d-stat-label">محصولات فعال</div>
                                 </div>
                             </div>
-                        </div>
-                    @endcan
-
-                    @can('orders.index')
-                        <div class="col-lg-4 col-md-4 col-sm-6 mb-2">
-                            <div class="card text-center stat-card orders-card">
-                                <div class="card-content">
-                                    <div class="card-body p-3">
-                                        <div class="stat-icon-circle orders-icon">
-                                            <i class="feather icon-briefcase" style="font-size: 28px; color: #fff;"></i>
-                                        </div>
-                                        <h2 class="text-bold-700 mb-1" style="font-size: 32px; color: #43e97b;">{{ number_format($orders_count) }}</h2>
-                                        <p class="mb-0 text-muted" style="font-size: 14px; font-weight: 600;">سفارشات</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    @endcan
-                </div>
-
-                <div class="row">
-                    {{-- ===== Main Content (Left) ===== --}}
-                    <div class="col-md-8">
+                        @endcan
 
                         @can('orders.index')
-                            {{-- Statistics Card with Tabs --}}
-                            <section class="card mb-2 statistics-card" id="statistics-card">
-                                <div class="card-content">
-                                    <div class="card-body p-2">
-                                        {{-- Custom Tab Navigation --}}
-                                        <ul class="nav nav-tabs custom-tab-nav" id="orderstab" role="tablist">
-                                            <li class="nav-item flex-grow-1" role="presentation">
-                                                <a class="nav-link text-center py-2" data-toggle="tab" href="#order-values" role="tab" aria-controls="order-values" aria-selected="true">
-                                                    <i class="feather icon-dollar-sign mr-1"></i> ارزش
-                                                </a>
-                                            </li>
-                                            <li class="nav-item flex-grow-1" role="presentation">
-                                                <a class="nav-link text-center py-2" data-toggle="tab" href="#order-counts" role="tab" aria-controls="order-counts" aria-selected="false">
-                                                    <i class="feather icon-shopping-bag mr-1"></i> تعداد
-                                                </a>
-                                            </li>
-                                            <li class="nav-item flex-grow-1" role="presentation">
-                                                <a class="nav-link text-center py-2" data-toggle="tab" href="#order-users" role="tab" aria-controls="order-users" aria-selected="false">
-                                                    <i class="feather icon-users mr-1"></i> کاربران
-                                                </a>
-                                            </li>
-                                            <li class="nav-item flex-grow-1" role="presentation">
-                                                <a class="nav-link text-center py-2" data-toggle="tab" href="#order-products" role="tab" aria-controls="order-products" aria-selected="false">
-                                                    <i class="feather icon-package mr-1"></i> محصولات
-                                                </a>
-                                            </li>
-                                        </ul>
+                            <div class="d-stat d-stat--green">
+                                <div class="d-stat-icon d-stat-icon--green">
+                                    <i class="feather icon-briefcase"></i>
+                                </div>
+                                <div>
+                                    <div class="d-stat-value">{{ number_format($orders_count) }}</div>
+                                    <div class="d-stat-label">سفارشات</div>
+                                </div>
+                            </div>
+                        @endcan
+                    </div>
 
-                                        <div class="tab-content" id="myTabContent">
-                                            <div class="tab-pane fade show active" id="order-values" role="tabpanel" aria-labelledby="value">
-                                                @include('back.statistics.orders.filter-tabs')
-                                                <div id="order-values-chart" class="chart-area" style="min-height: 445px;" data-min-height="445px" data-action="{{ route('admin.statistics.orderValues') }}"></div>
-                                                <div class="row mt-3">
-                                                    <div class="col-md-4 mb-2">
-                                                        <div class="stat-summary-box total">
-                                                            <small class="text-white">کل سفارشات</small>
-                                                            <p class="text-white font-weight-bold mb-0" style="font-size: 18px;"><span class="orders-total"></span></p>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-4 mb-2">
-                                                        <div class="stat-summary-box avg">
-                                                            <small class="text-white">میانگین سفارشات</small>
-                                                            <p class="text-white font-weight-bold mb-0" style="font-size: 18px;"><span class="orders-avg"></span></p>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-4 mb-2">
-                                                        <div class="stat-summary-box success">
-                                                            <small class="text-white">سفارشات موفق</small>
-                                                            <p class="text-white font-weight-bold mb-0" style="font-size: 18px;"><span class="orders-success"></span></p>
-                                                        </div>
-                                                    </div>
+                    {{-- ═══ Main Two-Column Grid ═══ --}}
+                    <div class="d-grid">
+
+                        {{-- ── Left/Main column ── --}}
+                        <div>
+
+                            @can('orders.index')
+                                {{-- Statistics Tabs Card --}}
+                                <div class="d-card" id="statistics-card">
+
+                                    {{-- Tab Nav --}}
+                                    <div class="d-tabs" id="orderstab" role="tablist">
+                                        <button class="d-tab active" data-toggle="tab" data-target="#order-values" role="tab" type="button">
+                                            <i class="feather icon-dollar-sign"></i> ارزش
+                                        </button>
+                                        <button class="d-tab" data-toggle="tab" data-target="#order-counts" role="tab" type="button">
+                                            <i class="feather icon-shopping-bag"></i> تعداد
+                                        </button>
+                                        <button class="d-tab" data-toggle="tab" data-target="#order-users" role="tab" type="button">
+                                            <i class="feather icon-users"></i> کاربران
+                                        </button>
+                                        <button class="d-tab" data-toggle="tab" data-target="#order-products" role="tab" type="button">
+                                            <i class="feather icon-package"></i> محصولات
+                                        </button>
+                                    </div>
+
+                                    <div class="tab-content">
+                                        {{-- Value Tab --}}
+                                        <div class="tab-pane fade show active" id="order-values" role="tabpanel">
+                                            @include('back.statistics.orders.filter-tabs')
+                                            <div id="order-values-chart" class="chart-area" style="min-height:445px;" data-min-height="445px" data-action="{{ route('admin.statistics.orderValues') }}"></div>
+                                            <div class="d-chart-stats">
+                                                <div class="d-chart-stat">
+                                                    <div class="d-chart-stat-val d-chart-stat-val--blue"><span class="orders-total"></span></div>
+                                                    <div class="d-chart-stat-lbl">کل سفارشات</div>
+                                                </div>
+                                                <div class="d-chart-stat">
+                                                    <div class="d-chart-stat-val d-chart-stat-val--amber"><span class="orders-avg"></span></div>
+                                                    <div class="d-chart-stat-lbl">میانگین</div>
+                                                </div>
+                                                <div class="d-chart-stat">
+                                                    <div class="d-chart-stat-val d-chart-stat-val--green"><span class="orders-success"></span></div>
+                                                    <div class="d-chart-stat-lbl">موفق</div>
                                                 </div>
                                             </div>
+                                        </div>
 
-                                            <div class="tab-pane fade" id="order-counts" role="tabpanel" aria-labelledby="count">
-                                                @include('back.statistics.orders.filter-tabs')
-                                                <div id="order-counts-chart" class="chart-area" style="min-height: 445px;" data-min-height="445px" data-action="{{ route('admin.statistics.orderCounts') }}"></div>
-                                                <div class="row mt-3">
-                                                    <div class="col-md-3 mb-2">
-                                                        <div class="stat-summary-box small total">
-                                                            <small class="text-white">کل</small>
-                                                            <p class="text-white font-weight-bold mb-0" style="font-size: 16px;"><span class="orders-total"></span></p>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3 mb-2">
-                                                        <div class="stat-summary-box small avg">
-                                                            <small class="text-white">میانگین</small>
-                                                            <p class="text-white font-weight-bold mb-0" style="font-size: 16px;"><span class="orders-avg"></span></p>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3 mb-2">
-                                                        <div class="stat-summary-box small success">
-                                                            <small class="text-white">موفق</small>
-                                                            <p class="text-white font-weight-bold mb-0" style="font-size: 16px;"><span class="orders-success"></span></p>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3 mb-2">
-                                                        <div class="stat-summary-box small fail">
-                                                            <small class="text-white">ناموفق</small>
-                                                            <p class="text-white font-weight-bold mb-0" style="font-size: 16px;"><span class="orders-fail"></span></p>
-                                                        </div>
-                                                    </div>
+                                        {{-- Count Tab --}}
+                                        <div class="tab-pane fade" id="order-counts" role="tabpanel">
+                                            @include('back.statistics.orders.filter-tabs')
+                                            <div id="order-counts-chart" class="chart-area" style="min-height:445px;" data-min-height="445px" data-action="{{ route('admin.statistics.orderCounts') }}"></div>
+                                            <div class="d-chart-stats d-chart-stats--4">
+                                                <div class="d-chart-stat">
+                                                    <div class="d-chart-stat-val d-chart-stat-val--blue"><span class="orders-total"></span></div>
+                                                    <div class="d-chart-stat-lbl">کل</div>
+                                                </div>
+                                                <div class="d-chart-stat">
+                                                    <div class="d-chart-stat-val d-chart-stat-val--amber"><span class="orders-avg"></span></div>
+                                                    <div class="d-chart-stat-lbl">میانگین</div>
+                                                </div>
+                                                <div class="d-chart-stat">
+                                                    <div class="d-chart-stat-val d-chart-stat-val--green"><span class="orders-success"></span></div>
+                                                    <div class="d-chart-stat-lbl">موفق</div>
+                                                </div>
+                                                <div class="d-chart-stat">
+                                                    <div class="d-chart-stat-val d-chart-stat-val--red"><span class="orders-fail"></span></div>
+                                                    <div class="d-chart-stat-lbl">ناموفق</div>
                                                 </div>
                                             </div>
+                                        </div>
 
-                                            <div class="tab-pane fade" id="order-users" role="tabpanel" aria-labelledby="user">
-                                                @include('back.statistics.orders.filter-tabs')
-                                                <div id="order-users-chart" class="chart-area" style="min-height: 445px;" data-min-height="445px" data-action="{{ route('admin.statistics.orderUsers') }}"></div>
-                                                <div class="row mt-3">
-                                                    <div class="col-md-3 mb-2">
-                                                        <div class="stat-summary-box small total">
-                                                            <small class="text-white">کل</small>
-                                                            <p class="text-white font-weight-bold mb-0" style="font-size: 16px;"><span class="orders-total"></span></p>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3 mb-2">
-                                                        <div class="stat-summary-box small avg">
-                                                            <small class="text-white">میانگین</small>
-                                                            <p class="text-white font-weight-bold mb-0" style="font-size: 16px;"><span class="orders-avg"></span></p>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3 mb-2">
-                                                        <div class="stat-summary-box small success">
-                                                            <small class="text-white">موفق</small>
-                                                            <p class="text-white font-weight-bold mb-0" style="font-size: 16px;"><span class="orders-success"></span></p>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3 mb-2">
-                                                        <div class="stat-summary-box small fail">
-                                                            <small class="text-white">ناموفق</small>
-                                                            <p class="text-white font-weight-bold mb-0" style="font-size: 16px;"><span class="orders-fail"></span></p>
-                                                        </div>
-                                                    </div>
+                                        {{-- Users Tab --}}
+                                        <div class="tab-pane fade" id="order-users" role="tabpanel">
+                                            @include('back.statistics.orders.filter-tabs')
+                                            <div id="order-users-chart" class="chart-area" style="min-height:445px;" data-min-height="445px" data-action="{{ route('admin.statistics.orderUsers') }}"></div>
+                                            <div class="d-chart-stats d-chart-stats--4">
+                                                <div class="d-chart-stat">
+                                                    <div class="d-chart-stat-val d-chart-stat-val--blue"><span class="orders-total"></span></div>
+                                                    <div class="d-chart-stat-lbl">کل</div>
+                                                </div>
+                                                <div class="d-chart-stat">
+                                                    <div class="d-chart-stat-val d-chart-stat-val--amber"><span class="orders-avg"></span></div>
+                                                    <div class="d-chart-stat-lbl">میانگین</div>
+                                                </div>
+                                                <div class="d-chart-stat">
+                                                    <div class="d-chart-stat-val d-chart-stat-val--green"><span class="orders-success"></span></div>
+                                                    <div class="d-chart-stat-lbl">موفق</div>
+                                                </div>
+                                                <div class="d-chart-stat">
+                                                    <div class="d-chart-stat-val d-chart-stat-val--red"><span class="orders-fail"></span></div>
+                                                    <div class="d-chart-stat-lbl">ناموفق</div>
                                                 </div>
                                             </div>
+                                        </div>
 
-                                            <div class="tab-pane fade" id="order-products" role="tabpanel" aria-labelledby="product">
-                                                @include('back.statistics.orders.filter-tabs')
-                                                <div id="order-products-chart" class="chart-area" style="min-height: 445px;" data-min-height="445px" data-action="{{ route('admin.statistics.orderProducts') }}"></div>
-                                                <div class="row mt-3">
-                                                    <div class="col-md-3 mb-2">
-                                                        <div class="stat-summary-box small total">
-                                                            <small class="text-white">کل</small>
-                                                            <p class="text-white font-weight-bold mb-0" style="font-size: 16px;"><span class="orders-total"></span></p>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3 mb-2">
-                                                        <div class="stat-summary-box small avg">
-                                                            <small class="text-white">میانگین</small>
-                                                            <p class="text-white font-weight-bold mb-0" style="font-size: 16px;"><span class="orders-avg"></span></p>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3 mb-2">
-                                                        <div class="stat-summary-box small success">
-                                                            <small class="text-white">موفق</small>
-                                                            <p class="text-white font-weight-bold mb-0" style="font-size: 16px;"><span class="orders-success"></span></p>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3 mb-2">
-                                                        <div class="stat-summary-box small fail">
-                                                            <small class="text-white">ناموفق</small>
-                                                            <p class="text-white font-weight-bold mb-0" style="font-size: 16px;"><span class="orders-fail"></span></p>
-                                                        </div>
-                                                    </div>
+                                        {{-- Products Tab --}}
+                                        <div class="tab-pane fade" id="order-products" role="tabpanel">
+                                            @include('back.statistics.orders.filter-tabs')
+                                            <div id="order-products-chart" class="chart-area" style="min-height:445px;" data-min-height="445px" data-action="{{ route('admin.statistics.orderProducts') }}"></div>
+                                            <div class="d-chart-stats d-chart-stats--4">
+                                                <div class="d-chart-stat">
+                                                    <div class="d-chart-stat-val d-chart-stat-val--blue"><span class="orders-total"></span></div>
+                                                    <div class="d-chart-stat-lbl">کل</div>
+                                                </div>
+                                                <div class="d-chart-stat">
+                                                    <div class="d-chart-stat-val d-chart-stat-val--amber"><span class="orders-avg"></span></div>
+                                                    <div class="d-chart-stat-lbl">میانگین</div>
+                                                </div>
+                                                <div class="d-chart-stat">
+                                                    <div class="d-chart-stat-val d-chart-stat-val--green"><span class="orders-success"></span></div>
+                                                    <div class="d-chart-stat-lbl">موفق</div>
+                                                </div>
+                                                <div class="d-chart-stat">
+                                                    <div class="d-chart-stat-val d-chart-stat-val--red"><span class="orders-fail"></span></div>
+                                                    <div class="d-chart-stat-lbl">ناموفق</div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            </section>
 
-                            {{-- Latest Orders --}}
-                            <section class="card mb-2 section-card">
-                                <div class="card-header header-gradient-purple d-flex align-items-center justify-content-between">
-                                    <h4 class="card-title text-white mb-0">
-                                        <i class="feather icon-shopping-bag mr-2"></i> آخرین سفارشات
-                                    </h4>
-                                    <div class="heading-elements">
-                                        <ul class="list-inline mb-0">
-                                            <li><a data-action="collapse"><i class="feather icon-chevron-down text-white"></i></a></li>
-                                            <li><a data-action="expand"><i class="feather icon-maximize text-white"></i></a></li>
-                                        </ul>
+                                {{-- Latest Orders --}}
+                                <div class="d-card">
+                                    <div class="d-card-head">
+                                        <h4 class="d-card-head-title">
+                                            <i class="feather icon-shopping-bag"></i> آخرین سفارشات
+                                        </h4>
+                                        <div class="heading-elements">
+                                            <ul class="list-inline mb-0">
+                                                <li><a data-action="collapse"><i class="feather icon-chevron-down" style="color:var(--d-muted)"></i></a></li>
+                                                <li><a data-action="expand"><i class="feather icon-maximize" style="color:var(--d-muted)"></i></a></li>
+                                            </ul>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="card-content">
-                                    @if (count($orders))
-                                        <div class="card-body p-0">
+                                    <div class="card-content">
+                                        @if(count($orders))
                                             <div class="table-responsive">
-                                                <table class="table mb-0 modern-table">
+                                                <table class="d-table">
                                                     <thead>
                                                     <tr>
                                                         <th>ردیف</th>
                                                         <th>شماره سفارش</th>
                                                         <th>تاریخ ثبت</th>
-                                                        <th class="text-center">قیمت کل</th>
+                                                        <th>قیمت کل</th>
                                                         <th>وضعیت</th>
-                                                        <th class="text-center">عملیات</th>
+                                                        <th>عملیات</th>
                                                     </tr>
                                                     </thead>
                                                     <tbody>
                                                     @foreach($orders as $order)
+                                                        @php
+                                                            $sc = match($order->status) {
+                                                                'paid'     => 'success',
+                                                                'unpaid'   => 'danger',
+                                                                'canceled' => 'warning',
+                                                                default    => 'info',
+                                                            };
+                                                        @endphp
                                                         <tr>
-                                                            <td>{{ $loop->iteration }}</td>
-                                                            <td>
-                                                                <span class="pill-badge purple">#{{ $order->id }}</span>
-                                                            </td>
-                                                            <td>
-                                                                <i class="feather icon-calendar mr-1 text-muted"></i>
+                                                            <td style="color:var(--d-muted)">{{ $loop->iteration }}</td>
+                                                            <td><span class="d-order-id">#{{ $order->id }}</span></td>
+                                                            <td style="color:var(--d-muted)">
                                                                 {{ jdate($order->created_at)->format('%d %B %Y') }}
                                                             </td>
-                                                            <td class="text-center">
-                                                                <span class="pill-badge success">{{ trans('messages.currency.prefix') . number_format($order->price) . trans('messages.currency.suffix') }}</span>
+                                                            <td style="font-weight:600;">
+                                                                {{ trans('messages.currency.prefix') . number_format($order->price) . trans('messages.currency.suffix') }}
                                                             </td>
+                                                            <td><span class="d-badge d-badge--{{ $sc }}">{{ $order->statusText() }}</span></td>
                                                             <td>
-                                                                @php
-                                                                    if($order->status=="paid"){ $statusClass="success"; }
-                                                                    elseif($order->status=="unpaid"){ $statusClass="danger"; }
-                                                                    elseif($order->status=="canceled"){ $statusClass="warning"; }
-                                                                @endphp
-                                                                <span class="pill-badge {{ $statusClass }}">{{ $order->statusText() }}</span>
-                                                            </td>
-                                                            <td class="text-center">
-                                                                <a href="{{ route('admin.orders.show', ['order' => $order]) }}" class="modern-btn modern-btn-purple">
-                                                                    <i class="feather icon-eye mr-1"></i> مشاهده
+                                                                <a href="{{ route('admin.orders.show', ['order' => $order]) }}" class="d-btn">
+                                                                    <i class="feather icon-eye"></i> مشاهده
                                                                 </a>
                                                             </td>
                                                         </tr>
@@ -855,91 +265,78 @@
                                                     </tbody>
                                                 </table>
                                             </div>
-                                        </div>
-                                        <div class="modern-card-footer">
-                                            <a href="{{ route('admin.orders.index') }}" class="modern-link">
-                                                مشاهده همه <i class="fa fa-angle-left"></i>
+                                            <a href="{{ route('admin.orders.index') }}" class="d-card-footer">
+                                                <i class="feather icon-list" style="font-size:14px"></i> مشاهده همه سفارشات
                                             </a>
-                                        </div>
-                                    @else
-                                        <div class="card-body empty-state">
-                                            <i class="feather icon-inbox fa-3x text-muted mb-3"></i>
-                                            <p class="text-muted mb-0">چیزی برای نمایش وجود ندارد!</p>
-                                        </div>
-                                    @endif
-                                </div>
-                            </section>
-                        @endcan
-
-                        @can('products.index')
-                            {{-- Best Selling Products --}}
-                            <section class="card mb-2 section-card">
-                                <div class="card-header header-gradient-orange d-flex align-items-center justify-content-between">
-                                    <h4 class="card-title text-white mb-0">
-                                        <i class="feather icon-trending-up mr-2"></i> پرفروش‌ترین محصولات
-                                    </h4>
-                                    <div class="heading-elements">
-                                        <ul class="list-inline mb-0">
-                                            <li><a data-action="collapse"><i class="feather icon-chevron-down text-white"></i></a></li>
-                                            <li><a data-action="expand"><i class="feather icon-maximize text-white"></i></a></li>
-                                        </ul>
+                                        @else
+                                            <div class="d-empty">
+                                                <i class="feather icon-inbox"></i>
+                                                <p>چیزی برای نمایش وجود ندارد!</p>
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
-                                <div class="card-content">
-                                    @if (count($sale_products))
-                                        <div class="card-body p-0">
+                            @endcan
+
+                            @can('products.index')
+                                {{-- Best Selling Products --}}
+                                <div class="d-card">
+                                    <div class="d-card-head">
+                                        <h4 class="d-card-head-title">
+                                            <i class="feather icon-trending-up icon--amber"></i> پرفروش‌ترین محصولات
+                                        </h4>
+                                        <div class="heading-elements">
+                                            <ul class="list-inline mb-0">
+                                                <li><a data-action="collapse"><i class="feather icon-chevron-down" style="color:var(--d-muted)"></i></a></li>
+                                                <li><a data-action="expand"><i class="feather icon-maximize" style="color:var(--d-muted)"></i></a></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="card-content">
+                                        @if(count($sale_products))
                                             <div class="table-responsive">
-                                                <table class="table mb-0 modern-table">
+                                                <table class="d-table">
                                                     <thead>
                                                     <tr>
                                                         <th>ID</th>
                                                         <th>تصویر</th>
                                                         <th>عنوان محصول</th>
                                                         <th>تاریخ ایجاد</th>
-                                                        <th class="text-center">موجودی</th>
-                                                        <th class="text-center">فروش</th>
-                                                        <th class="text-center">وضعیت</th>
+                                                        <th>موجودی</th>
+                                                        <th>فروش</th>
+                                                        <th>وضعیت</th>
                                                     </tr>
                                                     </thead>
                                                     <tbody>
                                                     @foreach($sale_products as $product)
                                                         <tr>
-                                                            <td>
-                                                                <span style="color: #999; font-size: 13px;">#{{ $product->id }}</span>
-                                                            </td>
+                                                            <td style="color:var(--d-muted);font-size:12px">#{{ $product->id }}</td>
                                                             <td>
                                                                 <a target="_blank" href="{{ route('front.products.show', ['product' => $product]) }}">
-                                                                    <img class="product-thumb orange-border" src="{{ $product->image ? asset($product->image) : asset('/empty.svg') }}" alt="{{ $product->title }}">
+                                                                    <img class="d-product-thumb" src="{{ $product->image ? asset($product->image) : asset('/empty.svg') }}" alt="{{ $product->title }}">
                                                                 </a>
                                                             </td>
                                                             <td>
-                                                                <a target="_blank" href="{{ route('front.products.show', ['product' => $product]) }}" class="modern-link">
+                                                                <a target="_blank" href="{{ route('front.products.show', ['product' => $product]) }}" style="text-decoration:none;font-weight:500;">
                                                                     {{ $product->title }}
                                                                 </a>
                                                             </td>
+                                                            <td style="color:var(--d-muted)">{{ jdate($product->created_at)->format('%d %B %Y') }}</td>
+                                                            <td><span class="d-badge d-badge--info">{{ $product->prices()->sum('stock') }}</span></td>
+                                                            <td><span class="d-badge d-badge--purple">{{ $product->sell }}</span></td>
                                                             <td>
-                                                                <i class="feather icon-calendar mr-1 text-muted"></i>
-                                                                {{ jdate($product->created_at)->format('%d %B %Y') }}
-                                                            </td>
-                                                            <td class="text-center">
-                                                                <span class="pill-badge info">{{ $product->prices()->sum('stock') }}</span>
-                                                            </td>
-                                                            <td class="text-center">
-                                                                <span class="pill-badge orange">{{ $product->sell }}</span>
-                                                            </td>
-                                                            <td class="text-center">
-                                                                <div style="display: inline-flex; flex-direction: column; gap: 4px;">
+                                                                <div style="display:flex;flex-direction:column;gap:4px;">
                                                                     @if($product->isPublished())
-                                                                        <span class="status-text success">منتشر شده</span>
+                                                                        <span class="d-status d-status--success">منتشر شده</span>
                                                                     @else
-                                                                        <span class="status-text danger">پیش‌نویس</span>
+                                                                        <span class="d-status d-status--danger">پیش‌نویس</span>
                                                                     @endif
-                                                                    @if($product->status=="Accept")
-                                                                        <span class="status-text success">تایید شده</span>
-                                                                    @elseif($product->status=="Waiting")
-                                                                        <span class="status-text warning">در انتظار</span>
-                                                                    @elseif($product->status=="Reject")
-                                                                        <span class="status-text danger">رد شده</span>
+                                                                    @if($product->status === 'Accept')
+                                                                        <span class="d-status d-status--success">تایید شده</span>
+                                                                    @elseif($product->status === 'Waiting')
+                                                                        <span class="d-status d-status--warning">در انتظار</span>
+                                                                    @elseif($product->status === 'Reject')
+                                                                        <span class="d-status d-status--danger">رد شده</span>
                                                                     @endif
                                                                 </div>
                                                             </td>
@@ -948,84 +345,73 @@
                                                     </tbody>
                                                 </table>
                                             </div>
-                                        </div>
-                                    @else
-                                        <div class="card-body empty-state">
-                                            <i class="feather icon-package fa-3x text-muted mb-3"></i>
-                                            <p class="text-muted mb-0">چیزی برای نمایش وجود ندارد!</p>
-                                        </div>
-                                    @endif
-                                </div>
-                            </section>
-
-                            {{-- Most Viewed Products --}}
-                            <section class="card mb-2 section-card">
-                                <div class="card-header header-gradient-pink d-flex align-items-center justify-content-between">
-                                    <h4 class="card-title text-white mb-0">
-                                        <i class="feather icon-eye mr-2"></i> پربازدیدترین محصولات
-                                    </h4>
-                                    <div class="heading-elements">
-                                        <ul class="list-inline mb-0">
-                                            <li><a data-action="collapse"><i class="feather icon-chevron-down text-white"></i></a></li>
-                                            <li><a data-action="expand"><i class="feather icon-maximize text-white"></i></a></li>
-                                        </ul>
+                                        @else
+                                            <div class="d-empty">
+                                                <i class="feather icon-package"></i>
+                                                <p>چیزی برای نمایش وجود ندارد!</p>
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
-                                <div class="card-content">
-                                    @if (count($view_products))
-                                        <div class="card-body p-0">
+
+                                {{-- Most Viewed Products --}}
+                                <div class="d-card">
+                                    <div class="d-card-head">
+                                        <h4 class="d-card-head-title">
+                                            <i class="feather icon-eye icon--purple"></i> پربازدیدترین محصولات
+                                        </h4>
+                                        <div class="heading-elements">
+                                            <ul class="list-inline mb-0">
+                                                <li><a data-action="collapse"><i class="feather icon-chevron-down" style="color:var(--d-muted)"></i></a></li>
+                                                <li><a data-action="expand"><i class="feather icon-maximize" style="color:var(--d-muted)"></i></a></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="card-content">
+                                        @if(count($view_products))
                                             <div class="table-responsive">
-                                                <table class="table mb-0 modern-table">
+                                                <table class="d-table">
                                                     <thead>
                                                     <tr>
                                                         <th>ID</th>
                                                         <th>تصویر</th>
                                                         <th>عنوان محصول</th>
                                                         <th>تاریخ ایجاد</th>
-                                                        <th class="text-center">موجودی</th>
-                                                        <th class="text-center">بازدید</th>
-                                                        <th class="text-center">وضعیت</th>
+                                                        <th>موجودی</th>
+                                                        <th>بازدید</th>
+                                                        <th>وضعیت</th>
                                                     </tr>
                                                     </thead>
                                                     <tbody>
                                                     @foreach($view_products as $product)
                                                         <tr>
-                                                            <td>
-                                                                <span style="color: #999; font-size: 13px;">#{{ $product->id }}</span>
-                                                            </td>
+                                                            <td style="color:var(--d-muted);font-size:12px">#{{ $product->id }}</td>
                                                             <td>
                                                                 <a target="_blank" href="{{ route('front.products.show', ['product' => $product]) }}">
-                                                                    <img class="product-thumb purple-border" src="{{ $product->image ? asset($product->image) : asset('/empty.svg') }}" alt="{{ $product->title }}">
+                                                                    <img class="d-product-thumb" src="{{ $product->image ? asset($product->image) : asset('/empty.svg') }}" alt="{{ $product->title }}">
                                                                 </a>
                                                             </td>
                                                             <td>
-                                                                <a target="_blank" href="{{ route('front.products.show', ['product' => $product]) }}" class="modern-link orange">
+                                                                <a target="_blank" href="{{ route('front.products.show', ['product' => $product]) }}" style="text-decoration:none;font-weight:500;">
                                                                     {{ $product->title }}
                                                                 </a>
                                                             </td>
+                                                            <td style="color:var(--d-muted)">{{ jdate($product->created_at)->format('%d %B %Y') }}</td>
+                                                            <td><span class="d-badge d-badge--info">{{ $product->prices()->sum('stock') }}</span></td>
+                                                            <td><span class="d-badge d-badge--purple">{{ $product->view }}</span></td>
                                                             <td>
-                                                                <i class="feather icon-calendar mr-1 text-muted"></i>
-                                                                {{ jdate($product->created_at)->format('%d %B %Y') }}
-                                                            </td>
-                                                            <td class="text-center">
-                                                                <span class="pill-badge info">{{ $product->prices()->sum('stock') }}</span>
-                                                            </td>
-                                                            <td class="text-center">
-                                                                <span class="pill-badge pink">{{ $product->view }}</span>
-                                                            </td>
-                                                            <td class="text-center">
-                                                                <div style="display: inline-flex; flex-direction: column; gap: 4px;">
+                                                                <div style="display:flex;flex-direction:column;gap:4px;">
                                                                     @if($product->isPublished())
-                                                                        <span class="status-text success">منتشر شده</span>
+                                                                        <span class="d-status d-status--success">منتشر شده</span>
                                                                     @else
-                                                                        <span class="status-text danger">پیش‌نویس</span>
+                                                                        <span class="d-status d-status--danger">پیش‌نویس</span>
                                                                     @endif
-                                                                    @if($product->status=="Accept")
-                                                                        <span class="status-text success">تایید شده</span>
-                                                                    @elseif($product->status=="Waiting")
-                                                                        <span class="status-text warning">در انتظار</span>
-                                                                    @elseif($product->status=="Reject")
-                                                                        <span class="status-text danger">رد شده</span>
+                                                                    @if($product->status === 'Accept')
+                                                                        <span class="d-status d-status--success">تایید شده</span>
+                                                                    @elseif($product->status === 'Waiting')
+                                                                        <span class="d-status d-status--warning">در انتظار</span>
+                                                                    @elseif($product->status === 'Reject')
+                                                                        <span class="d-status d-status--danger">رد شده</span>
                                                                     @endif
                                                                 </div>
                                                             </td>
@@ -1034,291 +420,277 @@
                                                     </tbody>
                                                 </table>
                                             </div>
+                                        @else
+                                            <div class="d-empty">
+                                                <i class="feather icon-package"></i>
+                                                <p>چیزی برای نمایش وجود ندارد!</p>
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endcan
+
+                        </div>{{-- /main column --}}
+
+                        {{-- ── Right Sidebar column ── --}}
+                        <div>
+
+                            @can('statistics.users')
+                                {{-- Weekly Views Chart --}}
+                                <div class="d-card">
+                                    <div class="d-chart-head">
+                                        <div class="d-chart-head-icon">
+                                            <i class="feather icon-eye"></i>
                                         </div>
+                                        <p class="d-chart-head-title">بازدیدهای این هفته</p>
+                                    </div>
+                                    <div class="card-content">
+                                        <div id="line-area-chart-1"></div>
+                                    </div>
+                                </div>
+
+                                {{-- Weekly Visitors Chart --}}
+                                <div class="d-card">
+                                    <div class="d-chart-head">
+                                        <div class="d-chart-head-icon d-chart-head-icon--red">
+                                            <i class="feather icon-user" style="color:var(--d-red)"></i>
+                                        </div>
+                                        <p class="d-chart-head-title">بازدیدکنندگان این هفته</p>
+                                    </div>
+                                    <div class="card-content">
+                                        <div id="line-area-chart-3"></div>
+                                    </div>
+                                </div>
+                            @endcan
+
+                            @can('comments.index')
+                                {{-- Latest Reviews --}}
+                                <div class="d-card">
+                                    <div class="d-card-head">
+                                        <h5 class="d-card-head-title">
+                                            <i class="feather icon-message-square icon--green"></i> آخرین دیدگاه‌ها
+                                        </h5>
+                                        <a href="{{ route('admin.reviews.index') }}" class="d-card-action">
+                                            مشاهده همه <i class="feather icon-arrow-left" style="font-size:12px"></i>
+                                        </a>
+                                    </div>
+                                    @if(count($reviews))
+                                        @foreach($reviews as $review)
+                                            @php
+                                                $rs = match($review->status) {
+                                                    'pending'  => ['warning', 'منتظر تایید'],
+                                                    'accepted' => ['success', 'منتشر شده'],
+                                                    default    => ['danger', 'تایید نشده'],
+                                                };
+                                            @endphp
+                                            <div class="d-list-item">
+                                                <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+                                                    <a target="_blank" href="{{ route('admin.users.show', ['user' => $review->user]) }}">
+                                                        <img class="d-avatar-img" src="{{ $review->user->imageUrl }}" alt="Avatar">
+                                                    </a>
+                                                    <div style="flex:1;min-width:0;">
+                                                        <a class="d-comment-name" target="_blank" href="{{ route('admin.users.show', ['user' => $review->user]) }}">
+                                                            {{ $review->user->first_name ? $review->user->fullname : $review->user->username }}
+                                                        </a>
+                                                        <div class="d-comment-time">{{ jdate($review->created_at)->ago() }}</div>
+                                                    </div>
+                                                    <span class="d-badge d-badge--{{ $rs[0] }}">{{ $rs[1] }}</span>
+                                                </div>
+                                                <div class="d-comment-body">{{ short_content($review->body, 20, false) }}</div>
+                                            </div>
+                                        @endforeach
                                     @else
-                                        <div class="card-body empty-state">
-                                            <i class="feather icon-package fa-3x text-muted mb-3"></i>
-                                            <p class="text-muted mb-0">چیزی برای نمایش وجود ندارد!</p>
+                                        <div class="d-empty">
+                                            <i class="feather icon-message-square"></i>
+                                            <p>هنوز دیدگاهی ثبت نشده است.</p>
+                                        </div>
+                                    @endif
+                                    <a href="{{ route('admin.reviews.index') }}" class="d-card-footer">
+                                        <i class="feather icon-message-square" style="font-size:14px"></i> مشاهده همه دیدگاه‌ها
+                                    </a>
+                                </div>
+
+                                {{-- Latest Questions --}}
+                                <div class="d-card">
+                                    <div class="d-card-head">
+                                        <h5 class="d-card-head-title">
+                                            <i class="feather icon-help-circle icon--blue"></i> آخرین پرسش‌ها
+                                        </h5>
+                                        <a href="{{ route('admin.comments.products') }}" class="d-card-action">
+                                            مشاهده همه <i class="feather icon-arrow-left" style="font-size:12px"></i>
+                                        </a>
+                                    </div>
+                                    @if(count($questions))
+                                        @foreach($questions as $question)
+                                            @php
+                                                $qs = match($question->status) {
+                                                    'pending'  => ['warning', 'منتظر تایید'],
+                                                    'accepted' => ['success', 'منتشر شده'],
+                                                    default    => ['danger', 'تایید نشده'],
+                                                };
+                                            @endphp
+                                            <div class="d-list-item">
+                                                <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+                                                    <a target="_blank" href="{{ route('admin.users.show', ['user' => $question->user]) }}">
+                                                        <img class="d-avatar-img" src="{{ $question->user->imageUrl }}" alt="Avatar">
+                                                    </a>
+                                                    <div style="flex:1;min-width:0;">
+                                                        <a class="d-comment-name" target="_blank" href="{{ route('admin.users.show', ['user' => $question->user]) }}">
+                                                            {{ $question->user->first_name ? $question->user->fullname : $question->user->username }}
+                                                        </a>
+                                                        <div class="d-comment-time">{{ jdate($question->created_at)->ago() }}</div>
+                                                    </div>
+                                                    <span class="d-badge d-badge--{{ $qs[0] }}">{{ $qs[1] }}</span>
+                                                </div>
+                                                <div class="d-comment-body">{{ $question->body }}</div>
+                                                @if($question->product())
+                                                    <div style="margin-top:6px;">
+                                                        <a target="_blank" href="{{ route('front.products.show', ['product' => $question->product()]) }}" class="d-card-action" style="font-size:11px;">
+                                                            <i class="feather icon-external-link" style="font-size:11px"></i> نمایش محصول
+                                                        </a>
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        @endforeach
+                                    @else
+                                        <div class="d-empty">
+                                            <i class="feather icon-help-circle"></i>
+                                            <p>هنوز پرسشی ثبت نشده است.</p>
+                                        </div>
+                                    @endif
+                                    <a href="{{ route('admin.comments.products') }}" class="d-card-footer">
+                                        <i class="feather icon-help-circle" style="font-size:14px"></i> مشاهده همه پرسش‌ها
+                                    </a>
+                                </div>
+                            @endcan
+
+                            @can('statistics.users')
+                                {{-- Active Sellers --}}
+                                <div class="d-card">
+                                    <div class="d-card-head">
+                                        <h5 class="d-card-head-title">
+                                            <i class="feather icon-briefcase icon--amber"></i> فروشندگان فعال
+                                        </h5>
+                                    </div>
+                                    @if(count($active_sellers))
+                                        @foreach($active_sellers as $active_seller)
+                                            <div class="d-user-item">
+                                                <img class="d-avatar-img" src="{{ $active_seller->seller->imageUrl }}" alt="{{ $active_seller->seller->business_name }}">
+                                                <div style="flex:1;min-width:0;">
+                                                    <div class="d-user-name">{{ $active_seller->seller->business_name }}</div>
+                                                    <div class="d-user-meta">
+                                                        @if(in_array(jdate($active_seller->created_at)->ago(), ['0 ثانیه پیش', '1 ثانیه پیش']))
+                                                            <span class="d-online">آنلاین</span>
+                                                        @else
+                                                            {{ jdate($active_seller->created_at)->ago() }}
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                                <a target="_blank" href="{{ route('admin.sellers.show', ['seller' => $active_seller->seller]) }}" class="d-btn">
+                                                    <i class="feather icon-user"></i>
+                                                </a>
+                                            </div>
+                                        @endforeach
+                                    @else
+                                        <div class="d-empty">
+                                            <i class="feather icon-briefcase"></i>
+                                            <p>چیزی برای نمایش وجود ندارد.</p>
                                         </div>
                                     @endif
                                 </div>
-                            </section>
-                        @endcan
 
-                    </div>{{-- /col-md-8 --}}
-
-                    {{-- ===== Sidebar (Right) ===== --}}
-                    <div class="col-md-4">
-
-                        @can('statistics.users')
-                            {{-- Weekly Views Chart --}}
-                            <div class="chart-card">
-                                <div class="card-header header-gradient-purple d-flex flex-column align-items-center pb-0">
-                                    <div class="avatar">
-                                        <div class="avatar-content">
-                                            <i class="feather icon-eye text-white font-medium-5"></i>
-                                        </div>
+                                {{-- Active Users --}}
+                                <div class="d-card">
+                                    <div class="d-card-head">
+                                        <h5 class="d-card-head-title">
+                                            <i class="feather icon-users icon--blue"></i> مشتریان فعال
+                                        </h5>
                                     </div>
-                                    <p class="text-white mb-0 mt-2" style="font-weight: 600;">بازدیدهای این هفته</p>
-                                </div>
-                                <div class="card-content">
-                                    <div id="line-area-chart-1"></div>
-                                </div>
-                            </div>
-
-                            {{-- Weekly Visitors Chart --}}
-                            <div class="chart-card">
-                                <div class="card-header header-gradient-red d-flex flex-column align-items-center pb-0">
-                                    <div class="avatar">
-                                        <div class="avatar-content">
-                                            <i class="feather icon-user text-white font-medium-5"></i>
+                                    @if(count($active_users))
+                                        @foreach($active_users as $active_user)
+                                            <div class="d-user-item">
+                                                <img class="d-avatar-img" src="{{ $active_user->user->imageUrl }}" alt="{{ $active_user->user->username }}">
+                                                <div style="flex:1;min-width:0;">
+                                                    <div class="d-user-name">
+                                                        {{ $active_user->user->first_name ? $active_user->user->fullname : $active_user->user->username }}
+                                                    </div>
+                                                    <div class="d-user-meta">
+                                                        @if(in_array(jdate($active_user->created_at)->ago(), ['0 ثانیه پیش', '1 ثانیه پیش']))
+                                                            <span class="d-online">آنلاین</span>
+                                                        @else
+                                                            {{ jdate($active_user->created_at)->ago() }}
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                                <a target="_blank" href="{{ route('admin.users.show', ['user' => $active_user->user]) }}" class="d-btn">
+                                                    <i class="feather icon-user"></i>
+                                                </a>
+                                            </div>
+                                        @endforeach
+                                    @else
+                                        <div class="d-empty">
+                                            <i class="feather icon-users"></i>
+                                            <p>چیزی برای نمایش وجود ندارد.</p>
                                         </div>
-                                    </div>
-                                    <p class="text-white mb-0 mt-2" style="font-weight: 600;">بازدیدکنندگان این هفته</p>
+                                    @endif
                                 </div>
-                                <div class="card-content">
-                                    <div id="line-area-chart-3"></div>
-                                </div>
-                            </div>
-                        @endcan
+                            @endcan
 
-                        @can('comments.index')
-                            {{-- Latest Reviews --}}
-                            <div class="sidebar-card">
-                                <div class="card-header header-gradient-green d-flex align-items-center justify-content-between">
-                                    <h5 class="card-title text-white mb-0">
-                                        <i class="feather icon-message-square mr-2"></i> آخرین دیدگاه‌ها
-                                    </h5>
-                                    <a href="{{ route('admin.reviews.index') }}" class="card-link text-white" style="font-size: 12px; font-weight: 600; text-decoration: none;">
-                                        مشاهده همه <i class="fa fa-angle-left"></i>
-                                    </a>
-                                </div>
-                                <div class="card-body">
-                                    <ul class="list-group list-group-flush">
-                                        @if(count($reviews))
-                                            @foreach($reviews as $review)
-                                                <li class="modern-list-item">
-                                                    <div class="d-flex align-items-start flex-wrap">
-                                                        <div class="d-flex align-items-center">
-                                                            <a target="_blank" href="{{ route('admin.users.show', ['user' => $review->user]) }}" class="avatar flex-shrink-0 me-3">
-                                                                <img width="40" src="{{ $review->user->imageUrl }}" alt="Avatar" class="rounded-circle avatar-bordered green">
-                                                            </a>
-                                                            <div class="me-2">
-                                                                <h6 class="mb-0" style="font-size: 13px;">
-                                                                    <a target="_blank" href="{{ route('admin.users.show', ['user' => $review->user]) }}" class="modern-link" style="color: #555;">
-                                                                        {{ $review->user->first_name ? $review->user->fullname : $review->user->username }}
-                                                                    </a>
-                                                                </h6>
-                                                                <small class="text-muted" style="font-size: 11px;">
-                                                                    {{ jdate($review->created_at) }} ({{ jdate($review->created_at)->ago() }})
-                                                                </small>
-                                                            </div>
-                                                        </div>
-                                                        <div class="ms-auto w-100 text-right">
-                                                            @if($review->status == 'pending')
-                                                                <span class="status-text warning">منتظر تایید</span>
-                                                            @elseif($review->status == 'accepted')
-                                                                <span class="status-text success">منتشر شده</span>
-                                                            @else
-                                                                <span class="status-text danger">تایید نشده</span>
-                                                            @endif
-                                                        </div>
-                                                        <div class="w-100 font-13 mt-2" style="color: #666; font-size: 13px; line-height: 1.6;">
-                                                            {{ short_content($review->body, 20, false) }}
-                                                        </div>
-                                                    </div>
-                                                </li>
-                                            @endforeach
-                                        @else
-                                            <li class="modern-list-item text-center py-4">
-                                                <i class="feather icon-message-square fa-2x d-block mb-2" style="opacity: 0.4;"></i>
-                                                <span style="color: #aaa;">هنوز دیدگاهی ثبت نشده است.</span>
-                                            </li>
-                                        @endif
-                                    </ul>
-                                </div>
-                            </div>
+                        </div>{{-- /sidebar column --}}
 
-                            {{-- Latest Questions --}}
-                            <div class="sidebar-card">
-                                <div class="card-header header-gradient-blue d-flex align-items-center justify-content-between">
-                                    <h5 class="card-title text-white mb-0">
-                                        <i class="feather icon-help-circle mr-2"></i> آخرین پرسش‌ها
-                                    </h5>
-                                    <a href="{{ route('admin.comments.products') }}" class="card-link text-white" style="font-size: 12px; font-weight: 600; text-decoration: none;">
-                                        مشاهده همه <i class="fa fa-angle-left"></i>
-                                    </a>
-                                </div>
-                                <div class="card-body">
-                                    <ul class="list-group list-group-flush">
-                                        @if(count($questions))
-                                            @foreach($questions as $question)
-                                                <li class="modern-list-item">
-                                                    <div class="d-flex align-items-start flex-wrap">
-                                                        <div class="d-flex align-items-center">
-                                                            <a target="_blank" href="{{ route('admin.users.show', ['user' => $question->user]) }}" class="avatar flex-shrink-0 me-3">
-                                                                <img width="40" src="{{ $question->user->imageUrl }}" alt="Avatar" class="rounded-circle avatar-bordered blue">
-                                                            </a>
-                                                            <div class="me-2">
-                                                                <h6 class="mb-0" style="font-size: 13px;">
-                                                                    <a target="_blank" href="{{ route('admin.users.show', ['user' => $question->user]) }}" class="modern-link" style="color: #555;">
-                                                                        {{ $question->user->first_name ? $question->user->fullname : $question->user->username }}
-                                                                    </a>
-                                                                </h6>
-                                                                <small class="text-muted" style="font-size: 11px;">
-                                                                    {{ jdate($question->created_at) }} ({{ jdate($question->created_at)->ago() }})
-                                                                </small>
-                                                            </div>
-                                                        </div>
-                                                        <div class="ms-auto w-100 text-right">
-                                                            @if($question->status == 'pending')
-                                                                <span class="status-text warning">منتظر تایید</span>
-                                                            @elseif($question->status == 'accepted')
-                                                                <span class="status-text success">منتشر شده</span>
-                                                            @else
-                                                                <span class="status-text danger">تایید نشده</span>
-                                                            @endif
-                                                        </div>
-                                                        <div class="w-100 font-13 mt-2" style="color: #666; font-size: 13px; line-height: 1.6;">
-                                                            {{ $question->body }}
-                                                            @if($question->product())
-                                                                <div class="blockquote-footer mt-2" style="font-size: 12px;">
-                                                                    <a target="_blank" href="{{ route('front.products.show', ['product' => $question->product()]) }}" class="modern-link blue">
-                                                                        <i class="feather icon-external-link mr-1"></i> نمایش محصول
-                                                                    </a>
-                                                                </div>
-                                                            @endif
-                                                        </div>
-                                                    </div>
-                                                </li>
-                                            @endforeach
-                                        @else
-                                            <li class="modern-list-item text-center py-4">
-                                                <i class="feather icon-help-circle fa-2x d-block mb-2" style="opacity: 0.4;"></i>
-                                                <span style="color: #aaa;">هنوز پرسشی ثبت نشده است.</span>
-                                            </li>
-                                        @endif
-                                    </ul>
-                                </div>
-                            </div>
-                        @endcan
-
-                        @can('statistics.users')
-                            {{-- Active Sellers --}}
-                            <div class="sidebar-card">
-                                <div class="card-header header-gradient-orange d-flex align-items-center justify-content-between">
-                                    <h5 class="card-title text-white mb-0">
-                                        <i class="feather icon-store mr-2"></i> آخرین فروشندگان فعال
-                                    </h5>
-                                </div>
-                                <div class="card-body">
-                                    <ul class="list-unstyled mb-0">
-                                        @if(count($active_sellers))
-                                            @foreach($active_sellers as $active_seller)
-                                                <li class="modern-list-item">
-                                                    <div class="d-flex justify-content-between">
-                                                        <div class="d-flex align-items-center">
-                                                            <div class="avatar flex-shrink-0 me-3">
-                                                                <img width="40" src="{{ $active_seller->seller->imageUrl }}" alt="{{ $active_seller->seller->first_name ? $active_seller->seller->fullname : $active_seller->seller->username }}" class="rounded-circle avatar-bordered orange">
-                                                            </div>
-                                                            <div class="me-2">
-                                                                <h6 class="mb-0" style="font-size: 13px; font-weight: 600;">{{ $active_seller->seller->business_name }}</h6>
-                                                                <small class="text-muted" style="font-size: 11px;">
-                                                                    @if(jdate($active_seller->created_at)->ago()=="0 ثانیه پیش" or jdate($active_seller->created_at)->ago()=="1 ثانیه پیش")
-                                                                        <span class="online-badge">آنلاین</span>
-                                                                    @else
-                                                                        {{ jdate($active_seller->created_at)->ago() }}
-                                                                    @endif
-                                                                </small>
-                                                            </div>
-                                                        </div>
-                                                        <div class="ms-auto">
-                                                            <a target="_blank" href="{{ route('admin.sellers.show', ['seller' => $active_seller->seller]) }}" class="modern-btn modern-btn-orange">
-                                                                <i class="fa fa-user m-0"></i>
-                                                            </a>
-                                                        </div>
-                                                    </div>
-                                                </li>
-                                            @endforeach
-                                        @else
-                                            <li class="text-center py-4 empty-state">
-                                                <i class="feather icon-store fa-2x d-block mb-2"></i>
-                                                <span>چیزی برای نمایش وجود ندارد.</span>
-                                            </li>
-                                        @endif
-                                    </ul>
-                                </div>
-                            </div>
-
-                            {{-- Active Users --}}
-                            <div class="sidebar-card">
-                                <div class="card-header header-gradient-purple d-flex align-items-center justify-content-between">
-                                    <h5 class="card-title text-white mb-0">
-                                        <i class="feather icon-users mr-2"></i> آخرین مشتریان فعال
-                                    </h5>
-                                </div>
-                                <div class="card-body">
-                                    <ul class="list-unstyled mb-0">
-                                        @if(count($active_users))
-                                            @foreach($active_users as $active_user)
-                                                <li class="modern-list-item">
-                                                    <div class="d-flex justify-content-between">
-                                                        <div class="d-flex align-items-center">
-                                                            <div class="avatar flex-shrink-0 me-3">
-                                                                <img width="40" src="{{ $active_user->user->imageUrl }}" alt="{{ $active_user->user->first_name ? $active_user->user->fullname : $active_user->user->username }}" class="rounded-circle avatar-bordered purple">
-                                                            </div>
-                                                            <div class="me-2">
-                                                                <h6 class="mb-0" style="font-size: 13px; font-weight: 600;">{{ $active_user->user->first_name ? $active_user->user->fullname : $active_user->user->username }}</h6>
-                                                                <small class="text-muted" style="font-size: 11px;">
-                                                                    @if(jdate($active_user->created_at)->ago()=="0 ثانیه پیش" or jdate($active_user->created_at)->ago()=="1 ثانیه پیش")
-                                                                        <span class="online-badge">آنلاین</span>
-                                                                    @else
-                                                                        {{ jdate($active_user->created_at)->ago() }}
-                                                                    @endif
-                                                                </small>
-                                                            </div>
-                                                        </div>
-                                                        <div class="ms-auto">
-                                                            <a target="_blank" href="{{ route('admin.users.show', ['user' => $active_user->user]) }}" class="modern-btn modern-btn-purple">
-                                                                <i class="fa fa-user m-0"></i>
-                                                            </a>
-                                                        </div>
-                                                    </div>
-                                                </li>
-                                            @endforeach
-                                        @else
-                                            <li class="text-center py-4 empty-state">
-                                                <i class="feather icon-users fa-2x d-block mb-2"></i>
-                                                <span>چیزی برای نمایش وجود ندارد.</span>
-                                            </li>
-                                        @endif
-                                    </ul>
-                                </div>
-                            </div>
-                        @endcan
-
-                    </div>{{-- /col-md-4 --}}
-                </div>{{-- /row --}}
-
+                    </div>{{-- /d-grid --}}
+                </div>{{-- /d-body --}}
             </div>{{-- /content-body --}}
         </div>{{-- /content-wrapper --}}
-    </div>{{-- /app-content --}}
+    </div>{{-- /d-wrap --}}
 
 @endsection
 
 @include('back.partials.plugins', ['plugins' => ['apexcharts', 'persian-datepicker']])
 
-@push('styles')
-    <link rel="stylesheet" href="{{ asset('back/assets/css/improved-dashboard.css') }}">
-@endpush
-
 @push('scripts')
-    <script src="{{ asset('back/app-assets/vendors/js/charts/apexcharts.min.js') }}"></script>
+
+    {{-- Tab switching — replaces Bootstrap tab toggling for d-tab buttons --}}
+    <script>
+        document.querySelectorAll('[data-toggle="tab"]').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                // deactivate siblings
+                btn.closest('[role="tablist"]').querySelectorAll('.d-tab').forEach(function(t) {
+                    t.classList.remove('active');
+                });
+                btn.classList.add('active');
+
+                // hide all panes
+                document.querySelectorAll('.tab-pane').forEach(function(p) {
+                    p.classList.remove('show', 'active');
+                });
+
+                // show target
+                var target = document.querySelector(btn.dataset.target);
+                if (target) {
+                    target.classList.add('show', 'active');
+                }
+            });
+
+            $('li.nav-link[data-period="monthly"]').click();
+        });
+
+        document.addEventListener("DOMContentLoaded", function() {
+            setTimeout(function() {
+                const element = document.querySelector('li.nav-link[data-period="monthly"]');
+                if (element) {
+                    element.click();
+                }
+            }, 300); // ۳۰۰ میلی‌ثانیه تأخیر
+        });
+    </script>
+
     <script>
         @php
             $data   = viewers_data(7);
             $labels = array_keys($data);
             $views  = array_values($data);
+
         @endphp
 
         var viewerChartLabels = [{!! array_to_string($labels) !!}];
@@ -1333,6 +705,7 @@
         var ipChartLabels = [{!! array_to_string($labels) !!}];
         var ipChartData   = [{!! array_to_string($views) !!}];
     </script>
+
     <script src="{{ asset('back/assets/js/pages/statistics/orders.js') }}?v=2"></script>
     <script src="{{ asset('back/assets/js/pages/dashboard-ecommerce.js') }}"></script>
 @endpush

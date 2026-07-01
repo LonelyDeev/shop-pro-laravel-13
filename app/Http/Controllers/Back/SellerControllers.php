@@ -117,7 +117,7 @@ class SellerControllers extends Controller
         }
         $notifications=NotificationManage::whereIn('id',$users_notification_ids)->where('private','seller')->get();
 
-        $sellerCarriers = Carrier::detectLang()->forCurrentSeller()->latest()->paginate(20);
+        $sellerCarriers = Carrier::detectLang()->forCurrentSeller($seller->id)->latest()->paginate(20);
 
         return view('back.sellers.show', compact('seller','provinces','categories','products','variants','orders','notifications','sellerCarriers'));
     }

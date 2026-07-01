@@ -50,7 +50,7 @@ class SettingController extends Controller
         ]);
 
         $allChanges = [];
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
 
         // ========== 1. بررسی تغییرات فایل‌ها (آپلود) ==========
         $fileInputs = [
@@ -171,7 +171,7 @@ class SettingController extends Controller
             $logMessage .= implode('، ', $changeDetails);
 
             activity()
-                ->causedBy(auth()->user())
+                ->causedBy(auth('adminPanel')->user())
                 ->withProperties([
                     'action' => 'تنظیمات اطلاعات کلی سایت را به‌روزرسانی کرد',
                     'changes' => $allChanges,
@@ -282,7 +282,7 @@ class SettingController extends Controller
 
         $socials = $request->all();
         $allChanges = [];
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
 
         // دریافت لیست شبکه‌های اجتماعی از کانفیگ
         $socialsList = config('front.socials', []);
@@ -323,7 +323,7 @@ class SettingController extends Controller
             }
 
             activity()
-                ->causedBy(auth()->user())
+                ->causedBy(auth('adminPanel')->user())
                 ->withProperties([
                     'action' => 'تنظیمات شبکه‌های اجتماعی را به‌روزرسانی کرد',
                     'changes' => $allChanges,
@@ -463,7 +463,7 @@ class SettingController extends Controller
 
         // ثبت لاگ کامل
         if (!empty($allChanges)) {
-            $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+            $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
 
             // ساخت متن لاگ کامل
             $logDetails = [];
@@ -504,7 +504,7 @@ class SettingController extends Controller
             $fullLogMessage = "مدیر {$adminName} تنظیمات درگاه‌های پرداخت را به‌روزرسانی کرد: " . implode('; ', $logDetails);
 
             activity()
-                ->causedBy(auth()->user())
+                ->causedBy(auth('adminPanel')->user())
                 ->withProperties([
                     'action' => 'تنظیمات درگاه‌های پرداخت را به‌روزرسانی کرد',
                     'changes' => $allChanges,
@@ -536,7 +536,7 @@ class SettingController extends Controller
         ];
 
         $allChanges = [];
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
 
         // ========== 1. بررسی تغییرات تنظیمات env ==========
         $env = $request->only($env_options);
@@ -685,7 +685,7 @@ class SettingController extends Controller
             }
 
             activity()
-                ->causedBy(auth()->user())
+                ->causedBy(auth('adminPanel')->user())
                 ->withProperties([
                     'action' => 'تنظیمات عمومی سایت را به‌روزرسانی کرد',
                     'changes' => $allChanges,
@@ -772,7 +772,7 @@ class SettingController extends Controller
         ];
 
         $allChanges = [];
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
 
         // بررسی تغییرات در تنظیمات اصلی (sms_panel_provider, admin_mobile_number, etc.)
         $sms = $request->except($except);
@@ -816,7 +816,7 @@ class SettingController extends Controller
             $logMessage = "مدیر {$adminName} تنظیمات پیامک را به‌روزرسانی کرد: " . implode('، ', $changeTexts);
 
             activity()
-                ->causedBy(auth()->user())
+                ->causedBy(auth('adminPanel')->user())
                 ->withProperties([
                     'action' => 'update_sms_settings',
                     'changes' => $allChanges,

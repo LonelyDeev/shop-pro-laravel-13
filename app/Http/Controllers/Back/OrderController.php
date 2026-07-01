@@ -146,11 +146,11 @@ class OrderController extends Controller
         $this->authorize('orders.view');
 
         $orders = Order::paid()->whereIn('id', $request->ids)->get();
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
         $orderIds = implode('، ', $request->ids);
 
         activity()
-            ->causedBy(auth()->user())
+            ->causedBy(auth('adminPanel')->user())
             ->event('export')
             ->withProperties([
                 'action' => 'print_shipping_forms',
@@ -169,11 +169,11 @@ class OrderController extends Controller
         $this->authorize('orders.view');
 
         $orders = Order::paid()->whereIn('id', $request->ids)->get();
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
         $orderIds = implode('، ', $request->ids);
 
         activity()
-            ->causedBy(auth()->user())
+            ->causedBy(auth('adminPanel')->user())
             ->event('export')
             ->withProperties([
                 'action' => 'print_shipping_forms_min',
@@ -192,11 +192,11 @@ class OrderController extends Controller
         $this->authorize('orders.view');
 
         $orders = Order::paid()->whereIn('id', $request->ids)->get();
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
         $orderIds = implode('، ', $request->ids);
 
         activity()
-            ->causedBy(auth()->user())
+            ->causedBy(auth('adminPanel')->user())
             ->event('export')
             ->withProperties([
                 'action' => 'print_orders',
@@ -214,11 +214,11 @@ class OrderController extends Controller
     {
         $this->authorize('orders.view');
         $id_seller = $request->seller_id;
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
 
         activity()
             ->performedOn($order)
-            ->causedBy(auth()->user())
+            ->causedBy(auth('adminPanel')->user())
             ->event('export')
             ->withProperties([
                 'action' => 'print_order',
@@ -239,7 +239,7 @@ class OrderController extends Controller
             'status' => 'required',
         ]);
 
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
         $oldStatus = $order->shipping_status;
         $newStatus = $request->status;
 
@@ -254,7 +254,7 @@ class OrderController extends Controller
         // ثبت لاگ تغییر وضعیت ارسال
         activity()
             ->performedOn($order)
-            ->causedBy(auth()->user())
+            ->causedBy(auth('adminPanel')->user())
             ->event('updated')
             ->withProperties([
                 'action' => 'update_shipping_status',

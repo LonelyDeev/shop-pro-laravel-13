@@ -266,7 +266,7 @@ class Product extends Model
             return true;
         }
 
-        if (auth()->check() && auth()->user()->can('products')) {
+        if (auth()->check() && auth('adminPanel')->user()->can('products')) {
             return true;
         }
 

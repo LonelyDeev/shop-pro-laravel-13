@@ -225,7 +225,7 @@ class UserController extends Controller
             'ids'   => 'required|array',
             'ids.*' => [
                 Rule::exists('users', 'id')->where(function ($query) {
-                    $query->where('id', '!=', auth()->user()->id)->where('level', '!=', 'creator');
+                    $query->where('id', '!=', auth('adminPanel')->user()->id)->where('level', '!=', 'creator');
                 })
             ]
         ]);
@@ -271,7 +271,7 @@ class UserController extends Controller
 
     public function updateProfile(Request $request)
     {
-        $user = auth()->user();
+        $user = auth('adminPanel')->user();
 
         $this->validate($request, [
             'first_name' => 'required|string|max:191',
@@ -310,7 +310,7 @@ class UserController extends Controller
         $user->save();
 
         if ($request->password) {
-            DB::table('sessions')->where('user_id', auth()->user()->id)->delete();
+            DB::table('sessions')->where('user_id', auth('adminPanel')->user()->id)->delete();
         }
 
 

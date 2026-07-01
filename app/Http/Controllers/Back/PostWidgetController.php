@@ -93,7 +93,7 @@ class PostWidgetController extends Controller
         Validator::make($request->options, $key['rules'])->validate();
 
         $allChanges = [];
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
         $widgetTitle = $widget->title;
 
         // ========== 1. بررسی تغییرات فیلدهای اصلی ==========
@@ -219,7 +219,7 @@ class PostWidgetController extends Controller
 
             activity()
                 ->performedOn($widget)
-                ->causedBy(auth()->user())
+                ->causedBy(auth('adminPanel')->user())
                 ->withProperties([
                     'action' => 'ابزارک  صفحه اصلی مقالات را ویرایش کرد',
                     'widget_title' => $widgetTitle,
@@ -232,7 +232,7 @@ class PostWidgetController extends Controller
             // اگر تغییری نکرده بود
 /*            activity()
                 ->performedOn($widget)
-                ->causedBy(auth()->user())
+                ->causedBy(auth('adminPanel')->user())
                 ->withProperties([
                     'action' => 'ابزارک  صفحه اصلی مقالات',
                     'widget_title' => $widgetTitle,

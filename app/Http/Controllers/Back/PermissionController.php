@@ -27,7 +27,7 @@ class PermissionController extends Controller
             'permission.*' => 'exists:permissions,id'
         ]);
 
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
 
         // دریافت لیست دسترسی‌های قبلی فعال
         $oldActivePermissions = Permission::where('active', true)->get();
@@ -78,7 +78,7 @@ class PermissionController extends Controller
         // ثبت لاگ با performedOn برای تنظیم subject_type
         activity()
             ->performedOn($dummyPermission)  // اضافه شد - برای تنظیم subject_type
-            ->causedBy(auth()->user())
+            ->causedBy(auth('adminPanel')->user())
             ->event('updated')
             ->withProperties([
                 'action' => 'update_permissions',

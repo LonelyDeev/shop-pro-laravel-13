@@ -1,6 +1,6 @@
 @php
     $cart =  get_cart();
-
+phpinfo();
 @endphp
     <!DOCTYPE html>
 <html lang="{{ app()->getLocale() }}">
@@ -511,6 +511,7 @@
 <!--    Start Main Slider -------------------->
 @yield('content')
 
+@include('front::partials.floating-widget')
 <!--   Footer---------------------------->
 @include('front::partials.footer')
 <!--   Footer---------------------------->

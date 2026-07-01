@@ -102,6 +102,15 @@ class DeveloperController extends Controller
 
     public function showUpdater()
     {
+        $token = config('self-update.updater_token');
+
+        if (!$token) {
+            toastr()->error('برای بروزرسانی نرم افزار لطفا شماره سفارش راست چین را وارد کنید.');
+            return redirect()->route('admin.developer.settings');
+        }
+
+        $errors=null;
+
         // خواندن نسخه از فایل
         $currentVersion = $this->getVersion();
         $versionInstalled = $currentVersion;
@@ -121,17 +130,26 @@ class DeveloperController extends Controller
                 'token' => $this->updateCode,
                 'version' => $currentVersion
             ]);
-
+            $data = $response->json();
             if ($response->successful()) {
-                $data = $response->json();
                 if ($data['update_available'] ?? false) {
                     $isNewVersionAvailable = true;
                     $description=$data['description'];
                     $versionAvailable = $data['version'];
                 }
             }
+
+            if (isset($data['error'])){
+                $errors = $data['error'];
+            }
         } catch (Exception $e) {
-            // خطا در ارتباط با پنل
+            $message = $e->getMessage();
+            $translated = __('errors.' . $message);
+
+            // اگر ترجمه پیدا نشد، خود پیام را نشان بده
+            $errors = 'خطا رخ داده: ' . (
+                $translated != 'errors.' . $message ? $translated : $message
+                );
         }
 
         return view('back.developer.updater', compact(
@@ -143,7 +161,8 @@ class DeveloperController extends Controller
             'updateStatus',
             'updateError',
             'newVersion',
-            'description'
+            'description',
+            'errors'
         ));
     }
 

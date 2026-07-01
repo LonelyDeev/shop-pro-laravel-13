@@ -91,7 +91,7 @@ class AppServiceProvider extends ServiceProvider
 
         view()->composer(['back.partials.notifications', 'back.partials.sidebar'], function ($view) {
 
-            $notifications = auth()->user()->unreadNotifications;
+            $notifications = auth('adminPanel')->user()->unreadNotifications;
 
             $view->with('notifications', $notifications);
         });

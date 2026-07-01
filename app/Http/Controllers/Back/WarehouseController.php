@@ -367,7 +367,7 @@ class WarehouseController extends Controller
     {
         $format = $request->get('format', 'excel');
 
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
         $warehouseName = $warehouse->name ?? $warehouse->code ?? "#{$warehouse->id}";
 
         // جمع‌آوری اطلاعات فیلترها برای لاگ
@@ -458,7 +458,7 @@ class WarehouseController extends Controller
             activity()
                 ->performedOn($warehouse)
                 ->event('export')
-                ->causedBy(auth()->user())
+                ->causedBy(auth('adminPanel')->user())
                 ->withProperties($logProperties)
                 ->log($logMessage);
 
@@ -468,7 +468,7 @@ class WarehouseController extends Controller
         activity()
             ->performedOn($warehouse)
             ->event('export')
-            ->causedBy(auth()->user())
+            ->causedBy(auth('adminPanel')->user())
             ->withProperties($logProperties)
             ->log($logMessage);
 
@@ -482,7 +482,7 @@ class WarehouseController extends Controller
     {
         $this->authorize('warehouses.edit');
 
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
         $warehouseName = $warehouse->name ?? $warehouse->code ?? "#{$warehouse->id}";
 
         $oldStatus = $warehouse->is_active ? 'فعال' : 'غیرفعال';
@@ -492,7 +492,7 @@ class WarehouseController extends Controller
         activity()
             ->performedOn($warehouse)
             ->event('updated')
-            ->causedBy(auth()->user())
+            ->causedBy(auth('adminPanel')->user())
             ->withProperties([
                 'action' => 'toggle_warehouse_status',
                 'old' => ['وضعیت' => $oldStatus],
@@ -850,7 +850,7 @@ class WarehouseController extends Controller
             'description' => 'nullable|string|max:500',
         ]);
 
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
         $warehouseName = $warehouse->name ?? $warehouse->code ?? "#{$warehouse->id}";
         $startTime = microtime(true);
 
@@ -993,7 +993,7 @@ class WarehouseController extends Controller
             activity()
                 ->performedOn($warehouse)
                 ->event('updated')
-                ->causedBy(auth()->user())
+                ->causedBy(auth('adminPanel')->user())
                 ->withProperties($logDetails)
                 ->log($logMessage);
 
@@ -1022,7 +1022,7 @@ class WarehouseController extends Controller
 
             activity()
                 ->performedOn($warehouse)
-                ->causedBy(auth()->user())
+                ->causedBy(auth('adminPanel')->user())
                 ->event('updated')
                 ->withProperties([
                     'action' => 'stock_take_failed',
@@ -1134,7 +1134,7 @@ class WarehouseController extends Controller
             'stocks.*.stock' => 'required|integer|min:0',
         ]);
 
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
         $warehouseName = $warehouse->name ?? $warehouse->code ?? "#{$warehouse->id}";
         $startTime = microtime(true);
 
@@ -1215,7 +1215,7 @@ class WarehouseController extends Controller
             activity()
                 ->performedOn($warehouse)
                 ->event('updated')
-                ->causedBy(auth()->user())
+                ->causedBy(auth('adminPanel')->user())
                 ->withProperties($logDetails)
                 ->log($logMessage);
 
@@ -1229,7 +1229,7 @@ class WarehouseController extends Controller
 
             activity()
                 ->performedOn($warehouse)
-                ->causedBy(auth()->user())
+                ->causedBy(auth('adminPanel')->user())
                 ->event('updated')
                 ->withProperties([
                     'action' => 'bulk_stock_update_failed',
@@ -1331,7 +1331,7 @@ class WarehouseController extends Controller
      */
     private function exportStockHistory($product, $stockHistory)
     {
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth()->user()->name ?? 'مدیر';
         $productTitle = $product->title ?? $product->name ?? "#{$product->id}";
         $recordsCount = count($stockHistory);
 

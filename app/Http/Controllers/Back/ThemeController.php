@@ -158,7 +158,7 @@ class ThemeController extends Controller
         $this->authorize('themes.settings');
 
         $allChanges = [];
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
 
         // دریافت تنظیمات از کانفیگ
         $settingsFields = config('front.settings.fields', []);
@@ -249,7 +249,7 @@ class ThemeController extends Controller
             $logMessage = "مدیر {$adminName} تنظیمات قالب را به‌روزرسانی کرد: " . implode('، ', $changeDetails);
 
             activity()
-                ->causedBy(auth()->user())
+                ->causedBy(auth('adminPanel')->user())
                 ->withProperties([
                     'action' => 'تنظیمات قالب را به‌روزرسانی کرد',
                     'changes' => $allChanges,

@@ -41,6 +41,8 @@ class Kernel extends ConsoleKernel
         $schedule->command('queue:restart')
             ->hourly();
 
+        $schedule->command('clean:import-logs')->daily();
+
         $schedule->call(function () {
             option_update('schedule_run', now());
         })->everyMinute();

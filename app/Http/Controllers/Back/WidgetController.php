@@ -88,7 +88,7 @@ class WidgetController extends Controller
         Validator::make($request->options, $key['rules'])->validate();
 
         $allChanges = [];
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
         $widgetTitle = $widget->title;
 
         // ========== 1. بررسی تغییرات فیلدهای اصلی ==========
@@ -211,7 +211,7 @@ class WidgetController extends Controller
 
             activity()
                 ->performedOn($widget)
-                ->causedBy(auth()->user())
+                ->causedBy(auth('adminPanel')->user())
                 ->withProperties([
                     'action' => 'ابزارک  صفحه اصلی را ویرایش کرد',
                     'widget_title' => $widgetTitle,
@@ -225,7 +225,7 @@ class WidgetController extends Controller
             // اگر تغییری نکرده بود
           /*  activity()
                 ->performedOn($widget)
-                ->causedBy(auth()->user())
+                ->causedBy(auth('adminPanel')->user())
                 ->withProperties([
                     'action' => 'update_home_widget_no_change',
                     'widget_title' => $widgetTitle,

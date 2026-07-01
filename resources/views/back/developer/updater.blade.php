@@ -110,6 +110,13 @@
                                     <span>نسخه فعلی نرم افزار شما {{ $versionInstalled }}</span>
                                 </div>
 
+                                @if($errors)
+                                    <div class="alert alert-danger" role="alert">
+                                        <span>{{$errors}}</span>
+                                    </div>
+                                @else
+
+
                                 @if ($isNewVersionAvailable)
                                     <div class="alert alert-primary" role="alert">
                                         <i class="feather icon-check mr-1 align-middle"></i>
@@ -176,6 +183,8 @@
                                 <button id="check-update" type="button" class="btn btn-lg btn-info mb-1 waves-effect waves-light">
                                     <i class="feather icon-refresh-cw mr-1"></i> بررسی مجدد
                                 </button>
+
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -239,7 +248,19 @@
                                         <p class="font-weight-bold mb-0">نسخه 1.0.0</p>
                                         <p class="font-small-3">- انتشار اولین نسخه</p>
                                     </div>
-                                    <small class="text-primary">01 آبان 1402</small>
+                                    <small class="text-primary">06 تیر 1405</small>
+                                </li>
+                                <li>
+                                    <div class="timeline-icon bg-success">
+                                        <i class="feather icon-chevron-left font-medium-2 align-middle"></i>
+                                    </div>
+                                    <div class="timeline-info">
+                                        <p class="font-weight-bold mb-0">نسخه 1.1.1</p>
+                                        <p class="font-small-3">- انتشار اولین نسخه</p>
+                                        <p class="font-small-3">- ییبی</p>
+                                        <p class="font-small-3">- بلبیب</p>
+                                    </div>
+                                    <small class="text-primary">07 تیر 1405</small>
                                 </li>
                             </ul>
                         </div>

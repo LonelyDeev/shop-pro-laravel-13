@@ -101,9 +101,9 @@ class MainController extends Controller
 
     public function notifications()
     {
-        $notifications = auth()->user()->notifications()->paginate(15);
+        $notifications = auth('adminPanel')->user()->notifications()->paginate(15);
 
-        auth()->user()->unreadNotifications->markAsRead();
+        auth('adminPanel')->user()->unreadNotifications->markAsRead();
 
         return view('back.notifications.panel', compact('notifications'));
     }

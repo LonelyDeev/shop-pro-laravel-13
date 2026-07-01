@@ -15,10 +15,10 @@ class CheckCreator
      */
     public function handle($request, Closure $next)
     {
-        if (!auth()->check() || auth()->user()->level != 'creator') {
+        if (!auth()->check() || auth('adminPanel')->user()->level != 'creator') {
             abort(403);
         }
-        
+
         return $next($request);
     }
 }

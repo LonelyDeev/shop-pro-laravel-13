@@ -1062,6 +1062,12 @@
                                         class="menu-item">تنظیمات پیامک</span></a>
                             </li>
                         @endcan
+                        @can('settings.floating-widget')
+                            <li class="{{ active_class('admin.settings.floating-widget.*') }}">
+                                <a href="{{ route('admin.settings.floating-widget.index') }}"><i class="fa-solid fa-circle"></i><span
+                                        class="menu-item">تنظیمات ویجت شناور</span></a>
+                            </li>
+                        @endcan
 
                     </ul>
                 </li>

@@ -52,9 +52,9 @@ class RobotsController extends Controller
         $this->generateRobotsFile($settings);
 
         // ثبت لاگ
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
         activity()
-            ->causedBy(auth()->user())
+            ->causedBy(auth('adminPanel')->user())
             ->withProperties([
                 'action' => 'update_robots',
                 'settings' => $settings,

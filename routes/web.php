@@ -66,6 +66,7 @@ use App\Http\Controllers\Back\PulseController;
 use App\Http\Controllers\Back\ActivityLogController;
 use App\Http\Controllers\Back\SeoAuditController;
 use App\Http\Controllers\Back\RobotsController;
+use App\Http\Controllers\Back\Floatingwidgetcontroller;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -373,10 +374,13 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
     // ------------------import
     Route::get('post/import', [ImportsController::class, 'postsExcelImport'])->name('import.posts');
     Route::post('post/import', [ImportsController::class, 'postsExcelImport_Store'])->name('import.posts.store');
+    Route::post('post/import/delete-error', [ImportsController::class, 'deletePostErrorFile'])->name('import.posts.delete-error');
+
     Route::get('products/import', [ImportsController::class, 'productsExcelImport'])->name('import.products');
     Route::post('products/import', [ImportsController::class, 'productsExcelImport_Store'])->name('import.products.store');
     Route::get('user/import', [ImportsController::class, 'usersExcelImport'])->name('import.users');
     Route::post('user/import', [ImportsController::class, 'usersExcelImport_Store'])->name('import.users.store');
+    Route::post('user/import/delete-error', [ImportsController::class, 'deleteUserErrorFile'])->name('import.users.delete-error');
 
     Route::resource('newsletters', NewsletterController::class)->except(['create', 'edit', 'update']);
     Route::post('newsletters/multipleDestroy', [NewsletterController::class, 'multipleDestroy'])->name('newsletters.multipleDestroy');
@@ -384,6 +388,7 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
 
     // ------------------ sms
     Route::resource('sms', SmsController::class)->only(['show']);
+
 
 
     //-------------------------Forms
@@ -507,6 +512,11 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
 
     Route::get('settings/sms', [SettingController::class, 'showSms'])->name('settings.sms');
     Route::post('settings/sms', [SettingController::class, 'updateSms']);
+
+    Route::prefix('settings/floating-widget')->name('settings.floating-widget.')->group(function () {
+        Route::get('/',      [FloatingWidgetController::class, 'index'])->name('index');
+        Route::put('/save',  [FloatingWidgetController::class, 'update'])->name('update');
+    });
 
     Route::get('settings/seller-hero', [SettingController::class, 'seller_hero'])->name('settings.seller-hero');
     Route::get('settings/seller-hero/create', [SettingController::class, 'seller_hero_create'])->name('settings.seller-hero-create');

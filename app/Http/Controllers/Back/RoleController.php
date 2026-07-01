@@ -41,7 +41,7 @@ class RoleController extends Controller
             'title'        => 'required|unique:roles,title'
         ]);
 
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
 
         $role = Role::create([
             'title'       => $request->title,
@@ -68,7 +68,7 @@ class RoleController extends Controller
 
         activity()
             ->performedOn($role)
-            ->causedBy(auth()->user())
+            ->causedBy(auth('adminPanel')->user())
             ->event('created')
             ->withProperties($properties)
             ->log("مدیر {$adminName} مقام جدید «{$request->title}» را ایجاد کرد");
@@ -99,7 +99,7 @@ class RoleController extends Controller
             ],
         ]);
 
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
 
         // ذخیره مقادیر قدیمی
         $oldTitle = $role->title;
@@ -163,7 +163,7 @@ class RoleController extends Controller
 
         activity()
             ->performedOn($role)
-            ->causedBy(auth()->user())
+            ->causedBy(auth('adminPanel')->user())
             ->event('updated')
             ->withProperties($properties)
             ->log("مدیر {$adminName} مقام «{$oldTitle}» را ویرایش کرد");
@@ -174,7 +174,7 @@ class RoleController extends Controller
 
     public function destroy(Role $role)
     {
-        $adminName = auth()->user()->full_name ?? auth()->user()->name ?? 'مدیر';
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
         $roleTitle = $role->title;
         $permissionNames = $role->permissions->pluck('title')->toArray();
 
@@ -193,7 +193,7 @@ class RoleController extends Controller
         ];
 
         activity()
-            ->causedBy(auth()->user())
+            ->causedBy(auth('adminPanel')->user())
             ->event('deleted')
             ->withProperties($properties)
             ->log("مدیر {$adminName} مقام «{$roleTitle}» را حذف کرد");

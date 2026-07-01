@@ -129,7 +129,7 @@ class Comment extends Model
     }
     public function scopeVisibleForUser($query)
     {
-        if (auth()->check() && auth()->user()->is_admin) {
+        if (auth()->check() && auth('adminPanel')->user()->is_admin) {
             return $query; // ادمین همه رو می‌بینه
         }
 
