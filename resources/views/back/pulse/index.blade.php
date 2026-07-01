@@ -2,7 +2,6 @@
 
 @push('styles')
     <link rel="stylesheet" type="text/css" href="{{ asset('back/assets/css/pages/pulse-monitor.css') }}">
-
 @endpush
 
 @section('content')
@@ -51,26 +50,55 @@
 
             {{-- KPI Row --}}
             <div class="p-kpi-grid">
+                {{-- KPI CPU --}}
                 <div class="p-kpi k-cpu">
                     <div style="font-size:20px;margin-bottom:6px;">⚡</div>
-                    <div class="p-kpi-val" id="kpi-cpu">{{ $pulse['cpu'] ?? 0 }}%</div>
+                    <div class="p-kpi-val" id="kpi-cpu">
+                        @if(isset($pulse['cpu']) && $pulse['cpu'] > 0)
+                            {{ $pulse['cpu'] }}%
+                        @else
+                            <span style="color:var(--pm);font-size:14px;">—</span>
+                        @endif
+                    </div>
                     <div class="p-kpi-label">CPU</div>
                     <div class="p-kpi-sub {{ ($pulse['cpu'] ?? 0) > 80 ? 'bad' : (($pulse['cpu'] ?? 0) > 60 ? 'warn' : 'ok') }}" id="kpi-cpu-sub">
-                        {{ ($pulse['cpu'] ?? 0) > 80 ? '⚠ بالا' : '✓ نرمال' }}
+                        @if(isset($pulse['cpu']) && $pulse['cpu'] > 0)
+                            {{ ($pulse['cpu'] ?? 0) > 80 ? '⚠ بالا' : '✓ نرمال' }}
+                        @else
+                            <span style="color:#f6c90e;">غیرفعال</span>
+                        @endif
                     </div>
                 </div>
+
+                {{-- KPI Memory --}}
                 <div class="p-kpi k-mem">
                     <div style="font-size:20px;margin-bottom:6px;">💾</div>
-                    <div class="p-kpi-val" id="kpi-mem">{{ $pulse['memory_used'] ?? 0 }} MB</div>
+                    <div class="p-kpi-val" id="kpi-mem">
+                        @if(isset($pulse['memory_used']) && $pulse['memory_used'] > 0)
+                            {{ $pulse['memory_used'] }} MB
+                        @else
+                            <span style="color:var(--pm);font-size:14px;">—</span>
+                        @endif
+                    </div>
                     <div class="p-kpi-label">Memory</div>
-                    <div class="p-kpi-sub ok" id="kpi-mem-sub">{{ $pulse['memory_percent'] ?? 0 }}% مصرف</div>
+                    <div class="p-kpi-sub ok" id="kpi-mem-sub">
+                        @if(isset($pulse['memory_percent']) && $pulse['memory_percent'] > 0)
+                            {{ $pulse['memory_percent'] }}% مصرف
+                        @else
+                            <span style="color:#f6c90e;">غیرقابل‌دسترس</span>
+                        @endif
+                    </div>
                 </div>
+
+                {{-- KPI Requests --}}
                 <div class="p-kpi k-req">
                     <div style="font-size:20px;margin-bottom:6px;">🌐</div>
                     <div class="p-kpi-val" id="kpi-req">{{ number_format($pulse['total_requests'] ?? 0) }}</div>
                     <div class="p-kpi-label">درخواست (۲۴h)</div>
                     <div class="p-kpi-sub warn" id="kpi-req-sub">{{ $pulse['requests_per_min'] ?? 0 }}/min</div>
                 </div>
+
+                {{-- KPI Slow Requests --}}
                 <div class="p-kpi k-slow">
                     <div style="font-size:20px;margin-bottom:6px;">🐢</div>
                     <div class="p-kpi-val {{ ($pulse['slow_requests_count'] ?? 0) > 0 ? 'bad' : '' }}" id="kpi-slow">{{ $pulse['slow_requests_count'] ?? 0 }}</div>
@@ -79,6 +107,8 @@
                         {{ ($pulse['slow_requests_count'] ?? 0) > 0 ? 'نیاز به بررسی' : '✓ بدون مشکل' }}
                     </div>
                 </div>
+
+                {{-- KPI Exceptions --}}
                 <div class="p-kpi k-exc">
                     <div style="font-size:20px;margin-bottom:6px;">🔥</div>
                     <div class="p-kpi-val {{ ($pulse['exceptions_count'] ?? 0) > 0 ? 'bad' : '' }}" id="kpi-exc">{{ $pulse['exceptions_count'] ?? 0 }}</div>
@@ -87,6 +117,8 @@
                         {{ ($pulse['exceptions_count'] ?? 0) > 10 ? '⚠ زیاد' : (($pulse['exceptions_count'] ?? 0) > 0 ? '⚠ دارد' : '✓ پاک') }}
                     </div>
                 </div>
+
+                {{-- KPI Cache --}}
                 <div class="p-kpi k-cache">
                     <div style="font-size:20px;margin-bottom:6px;">⚡</div>
                     <div class="p-kpi-val" id="kpi-cache">{{ $pulse['cache_hit_rate'] ?? 0 }}%</div>
@@ -107,7 +139,16 @@
                         <span class="p-tag tag-purple">Live</span>
                     </div>
                     <div class="p-card-body" style="padding-bottom:6px;">
-                        <div id="cpu-chart"></div>
+                        @if(isset($pulse['cpu']) && $pulse['cpu'] > 0)
+                            <div id="cpu-chart"></div>
+                        @else
+                            <div class="p-empty" style="padding:30px 0;">
+                                <i class="feather icon-alert-circle" style="color:#f6c90e;font-size:28px;"></i>
+                                <span style="font-size:13px;color:var(--pm);margin-top:10px;">
+                                    داده‌های CPU در دسترس نیست (همه مقادیر صفر هستند)
+                                </span>
+                            </div>
+                        @endif
                     </div>
                 </div>
 
@@ -120,41 +161,118 @@
                     <div class="p-card-body">
                         {{-- Gauge rings --}}
                         <div class="gauge-row mb-3">
+
+                            {{-- CPU Gauge --}}
                             <div class="g-item">
-                                <div class="g-ring" id="ring-cpu" style="background:conic-gradient(#6c63ff {{ ($pulse['cpu'] ?? 0) * 3.6 }}deg, rgba(255,255,255,.06) 0%);box-shadow:0 0 18px #6c63ff33;">
-                                    <span class="g-val" id="ring-cpu-val">{{ $pulse['cpu'] ?? 0 }}%</span>
-                                </div>
-                                <div class="g-name">CPU</div>
+                                @if(isset($pulse['cpu']) && $pulse['cpu'] > 0)
+                                    <div class="g-ring" id="ring-cpu" style="background:conic-gradient(#6c63ff {{ ($pulse['cpu'] ?? 0) * 3.6 }}deg, rgba(255,255,255,.06) 0%);box-shadow:0 0 18px #6c63ff33;">
+                                        <span class="g-val" id="ring-cpu-val">{{ $pulse['cpu'] ?? 0 }}%</span>
+                                    </div>
+                                    <div class="g-name">CPU</div>
+                                @else
+                                    <div class="g-ring" style="background:rgba(255,255,255,.05);border:2px dashed rgba(255,255,255,.15);">
+                                        <span class="g-val" style="font-size:10px;color:var(--pm);">—</span>
+                                    </div>
+                                    <div class="g-name" style="color:var(--pm);">CPU (غیرفعال)</div>
+                                @endif
                             </div>
+
+                            {{-- RAM Gauge --}}
                             <div class="g-item">
-                                <div class="g-ring" id="ring-mem" style="background:conic-gradient(#00d4aa {{ ($pulse['memory_percent'] ?? 0) * 3.6 }}deg, rgba(255,255,255,.06) 0%);box-shadow:0 0 18px #00d4aa33;">
-                                    <span class="g-val" id="ring-mem-val">{{ $pulse['memory_percent'] ?? 0 }}%</span>
-                                </div>
-                                <div class="g-name">RAM</div>
+                                @if(isset($pulse['memory_percent']) && $pulse['memory_percent'] > 0)
+                                    <div class="g-ring" id="ring-mem" style="background:conic-gradient(#00d4aa {{ ($pulse['memory_percent'] ?? 0) * 3.6 }}deg, rgba(255,255,255,.06) 0%);box-shadow:0 0 18px #00d4aa33;">
+                                        <span class="g-val" id="ring-mem-val">{{ $pulse['memory_percent'] ?? 0 }}%</span>
+                                    </div>
+                                    <div class="g-name">RAM</div>
+                                @else
+                                    <div class="g-ring" style="background:rgba(255,255,255,.05);border:2px dashed rgba(255,255,255,.15);">
+                                        <span class="g-val" style="font-size:10px;color:var(--pm);">—</span>
+                                    </div>
+                                    <div class="g-name" style="color:var(--pm);">RAM (غیرقابل‌دسترس)</div>
+                                @endif
                             </div>
+
+                            {{-- Disk Gauge --}}
                             <div class="g-item">
-                                <div class="g-ring" id="ring-disk" style="background:conic-gradient(#f6c90e {{ ($pulse['disk_percent'] ?? 0) * 3.6 }}deg, rgba(255,255,255,.06) 0%);box-shadow:0 0 18px #f6c90e33;">
-                                    <span class="g-val" id="ring-disk-val">{{ $pulse['disk_percent'] ?? 0 }}%</span>
-                                </div>
-                                <div class="g-name">Disk</div>
+                                @if(isset($pulse['disk_percent']) && $pulse['disk_percent'] > 0)
+                                    <div class="g-ring" id="ring-disk" style="background:conic-gradient(#f6c90e {{ ($pulse['disk_percent'] ?? 0) * 3.6 }}deg, rgba(255,255,255,.06) 0%);box-shadow:0 0 18px #f6c90e33;">
+                                        <span class="g-val" id="ring-disk-val">{{ $pulse['disk_percent'] ?? 0 }}%</span>
+                                    </div>
+                                    <div class="g-name">Disk</div>
+                                @else
+                                    <div class="g-ring" style="background:rgba(255,255,255,.05);border:2px dashed rgba(255,255,255,.15);">
+                                        <span class="g-val" style="font-size:10px;color:var(--pm);">—</span>
+                                    </div>
+                                    <div class="g-name" style="color:var(--pm);">Disk (غیرفعال)</div>
+                                @endif
                             </div>
                         </div>
 
+                        {{-- RAM Meter --}}
                         <div class="meter">
-                            <div class="meter-row"><span>RAM</span><span id="mem-detail">{{ $pulse['memory_used'] ?? 0 }} / {{ $pulse['memory_total'] ?? 0 }} MB</span></div>
-                            <div class="meter-track"><div class="meter-fill mf-teal" id="meter-ram" style="width:{{ $pulse['memory_percent'] ?? 0 }}%"></div></div>
+                            <div class="meter-row">
+                                <span>RAM</span>
+                                <span id="mem-detail">
+                                    @if(isset($pulse['memory_total']) && $pulse['memory_total'] > 0)
+                                        {{ $pulse['memory_used'] ?? 0 }} / {{ $pulse['memory_total'] }} MB
+                                    @else
+                                        <span style="color:#f6c90e;">غیرقابل‌دسترس</span>
+                                    @endif
+                                </span>
+                            </div>
+                            <div class="meter-track">
+                                <div class="meter-fill mf-teal" id="meter-ram" style="width:{{ ($pulse['memory_percent'] ?? 0) > 0 ? $pulse['memory_percent'] : 0 }}%;"></div>
+                            </div>
                         </div>
+
+                        {{-- Disk Meter --}}
                         <div class="meter">
-                            <div class="meter-row"><span>Disk</span><span>{{ $pulse['disk_used'] ?? 0 }} / {{ $pulse['disk_total'] ?? 0 }} GB</span></div>
-                            <div class="meter-track"><div class="meter-fill mf-yellow" id="meter-disk" style="width:{{ $pulse['disk_percent'] ?? 0 }}%"></div></div>
+                            <div class="meter-row">
+                                <span>Disk</span>
+                                <span>
+                                    @if(isset($pulse['disk_total']) && $pulse['disk_total'] > 0)
+                                        {{ $pulse['disk_used'] ?? 0 }} / {{ $pulse['disk_total'] }} GB
+                                    @else
+                                        <span style="color:#f6c90e;">اطلاعات در دسترس نیست</span>
+                                    @endif
+                                </span>
+                            </div>
+                            <div class="meter-track">
+                                <div class="meter-fill mf-yellow" id="meter-disk" style="width:{{ ($pulse['disk_percent'] ?? 0) > 0 ? $pulse['disk_percent'] : 0 }}%;"></div>
+                            </div>
+                            @if(!(isset($pulse['disk_total']) && $pulse['disk_total'] > 0))
+                                <div style="font-size:10px;color:#f6c90e;margin-top:4px;">
+                                    <i class="feather icon-alert-circle"></i> تابع disk_total_space/disk_free_space غیرفعال است
+                                </div>
+                            @endif
                         </div>
+
+                        {{-- PHP Memory Peak --}}
                         <div class="meter">
                             <div class="meter-row"><span>PHP Memory Peak</span><span>{{ $pulse['memory_php_peak'] ?? 0 }} MB</span></div>
-                            <div class="meter-track"><div class="meter-fill mf-purple" style="width:{{ $pulse['php_memory_limit'] ?? 0 > 0 ? min(round(($pulse['memory_php_peak'] ?? 0) / ($pulse['php_memory_limit'] ?? 256) * 100), 100) : 0 }}%"></div></div>
+                            <div class="meter-track"><div class="meter-fill mf-purple" style="width:{{ $pulse['php_memory_limit'] ?? 0 > 0 ? min(round(($pulse['memory_php_peak'] ?? 0) / ($pulse['php_memory_limit'] ?? 256) * 100), 100) : 0 }}%;"></div></div>
                         </div>
+
+                        {{-- DB Connections --}}
                         <div class="meter">
-                            <div class="meter-row"><span>DB اتصالات فعال</span><span id="db-conn-val">{{ $pulse['db_connections']['value'] ?? 0 }}</span></div>
-                            <div class="meter-track"><div class="meter-fill mf-blue" id="meter-db" style="width:{{ min(($pulse['db_connections']['value'] ?? 0) * 4, 100) }}%"></div></div>
+                            <div class="meter-row">
+                                <span>DB اتصالات فعال</span>
+                                <span id="db-conn-val">
+                                    @if($pulse['db_connections_avail'] ?? false)
+                                        {{ $pulse['db_connections'] ?? 0 }}
+                                    @else
+                                        <span style="color:#f6c90e;">غیرقابل‌دسترس</span>
+                                    @endif
+                                </span>
+                            </div>
+                            <div class="meter-track">
+                                <div class="meter-fill mf-blue" id="meter-db" style="width:{{ ($pulse['db_connections_avail'] ?? false) ? min(($pulse['db_connections'] ?? 0) * 4, 100) : 0 }}%;"></div>
+                            </div>
+                            @if(!($pulse['db_connections_avail'] ?? false))
+                                <div style="font-size:10px;color:#f6c90e;margin-top:4px;">
+                                    <i class="feather icon-alert-circle"></i> دسترسی به SHOW STATUS میسر نیست
+                                </div>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -190,8 +308,8 @@
                                         <td style="text-align:right;">
                                             @php $d = $req['duration']; @endphp
                                             <span class="d-badge {{ $d > 2000 ? 'd-bad' : ($d > 1000 ? 'd-warn' : 'd-ok') }}">
-                                    {{ number_format($d) }}ms
-                                </span>
+                                                {{ number_format($d) }}ms
+                                            </span>
                                         </td>
                                         <td style="font-size:10px;color:var(--pm);white-space:nowrap;">
                                             {{ $req['time_ago'] }}<br>
@@ -235,8 +353,8 @@
                                         <td style="text-align:right;">
                                             @php $d = $q['duration']; @endphp
                                             <span class="d-badge {{ $d > 1000 ? 'd-bad' : ($d > 500 ? 'd-warn' : 'd-ok') }}">
-                                    {{ number_format($d) }}ms
-                                </span>
+                                                {{ number_format($d) }}ms
+                                            </span>
                                         </td>
                                         <td style="font-size:10px;color:var(--pm);white-space:nowrap;">
                                             {{ $q['time_ago'] }}<br>
@@ -370,22 +488,22 @@
                                         </td>
                                         <td><span class="d-badge d-info">{{ $job['queue'] }}</span></td>
                                         <td>
-                                <span class="q-badge q-{{ $job['status'] }}">
-                                    @switch($job['status'])
-                                        @case('done')    ✓ موفق @break
-                                        @case('running') ⟳ اجرا @break
-                                        @case('failed')  ✗ شکست @break
-                                        @case('pending') ⏳ انتظار @break
-                                        @case('slow')    🐢 کند @break
-                                        @default {{ $job['status'] }}
-                                    @endswitch
-                                </span>
+                                            <span class="q-badge q-{{ $job['status'] }}">
+                                                @switch($job['status'])
+                                                    @case('done')    ✓ موفق @break
+                                                    @case('running') ⟳ اجرا @break
+                                                    @case('failed')  ✗ شکست @break
+                                                    @case('pending') ⏳ انتظار @break
+                                                    @case('slow')    🐢 کند @break
+                                                    @default {{ $job['status'] }}
+                                                @endswitch
+                                            </span>
                                         </td>
                                         <td style="text-align:right;">
                                             @if($job['duration'] !== null)
                                                 <span class="d-badge {{ $job['duration'] > 30 ? 'd-bad' : ($job['duration'] > 10 ? 'd-warn' : 'd-ok') }}">
-                                    {{ $job['duration'] }}s
-                                </span>
+                                                    {{ $job['duration'] }}s
+                                                </span>
                                             @else
                                                 <span style="color:var(--pm);">—</span>
                                             @endif
@@ -441,6 +559,39 @@
                 </div>
             </div>
 
+            {{-- ===================================================== --}}
+            {{--  کارت نمایش وضعیت قابلیت‌های سرور (Capabilities)        --}}
+            {{-- ===================================================== --}}
+            <div class="p-full" style="padding-top:18px;">
+                <div class="p-card" style="border-left:4px solid #a78bfa;">
+                    <div class="p-card-head">
+                        <h5 class="p-card-title"><i class="feather icon-shield"></i> وضعیت دسترسی به توابع سرور</h5>
+                        <span class="p-tag tag-purple">Capabilities</span>
+                    </div>
+                    <div class="p-card-body" style="padding:12px 20px;">
+                        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px 20px;font-size:12px;">
+                            @php $caps = $pulse['capabilities'] ?? []; @endphp
+                            @foreach($caps as $func => $enabled)
+                                <div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+                                    <span style="font-family:monospace;color:var(--pm);">{{ $func }}</span>
+                                    <span style="margin-right:auto;">
+                                        @if($enabled)
+                                            <span style="color:#43e97b;">✅ فعال</span>
+                                        @else
+                                            <span style="color:#ff6b6b;">❌ غیرفعال</span>
+                                        @endif
+                                    </span>
+                                </div>
+                            @endforeach
+                        </div>
+                        <div style="margin-top:12px;padding:8px 12px;background:rgba(246,201,14,.08);border-radius:6px;font-size:11px;color:var(--pm);border-right:2px solid #f6c90e;">
+                            <i class="feather icon-info" style="margin-left:4px;"></i>
+                            توابع غیرفعال ممکن است باعث نشود برخی اطلاعات در این داشبورد نمایش داده نشوند.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div style="height:40px;"></div>
         </div>
     </div>
@@ -457,5 +608,4 @@
         var forceRefreshAPI="{{ route('admin.pulse.refresh') }}";
     </script>
     <script src="{{ asset('back/assets/js/pages/pulse/index.js') }}"></script>
-
 @endpush
