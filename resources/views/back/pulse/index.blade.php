@@ -153,8 +153,8 @@
                             <div class="meter-track"><div class="meter-fill mf-purple" style="width:{{ $pulse['php_memory_limit'] ?? 0 > 0 ? min(round(($pulse['memory_php_peak'] ?? 0) / ($pulse['php_memory_limit'] ?? 256) * 100), 100) : 0 }}%"></div></div>
                         </div>
                         <div class="meter">
-                            <div class="meter-row"><span>DB اتصالات فعال</span><span id="db-conn-val">{{ $pulse['db_connections'] ?? 0 }}</span></div>
-                            <div class="meter-track"><div class="meter-fill mf-blue" id="meter-db" style="width:{{ min(($pulse['db_connections'] ?? 0) * 4, 100) }}%"></div></div>
+                            <div class="meter-row"><span>DB اتصالات فعال</span><span id="db-conn-val">{{ $pulse['db_connections']['value'] ?? 0 }}</span></div>
+                            <div class="meter-track"><div class="meter-fill mf-blue" id="meter-db" style="width:{{ min(($pulse['db_connections']['value'] ?? 0) * 4, 100) }}%"></div></div>
                         </div>
                     </div>
                 </div>

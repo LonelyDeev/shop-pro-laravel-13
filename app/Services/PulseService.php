@@ -102,12 +102,14 @@ class PulseService
     {
         $cpu = 0; $memUsed = 0; $memTotal = 0; $available = false;
 
-        if (PHP_OS_FAMILY === 'Linux' && $this->isFuncAllowed('sys_getloadavg')) {
-            $load = @sys_getloadavg();
-            if (is_array($load)) {
-                $cores = $this->getCpuCores();
-                $cpu = round(min(100, ($load[0] / $cores) * 100), 1);
-                $available = true;
+        if (PHP_OS_FAMILY === 'Linux') {
+            if ($this->isFuncAllowed('sys_getloadavg')) {
+                $load = @sys_getloadavg();
+                if (is_array($load)) {
+                    $cores = $this->getCpuCores();
+                    $cpu = round(min(100, ($load[0] / $cores) * 100), 1);
+                    $available = true;
+                }
             }
 
             if (@is_readable('/proc/meminfo')) {
@@ -122,10 +124,34 @@ class PulseService
                     }
                 }
             }
+        } elseif (PHP_OS_FAMILY === 'Windows') {
+            // --- CPU از طریق wmic ---
+            if ($this->isFuncAllowed('shell_exec')) {
+                $out = @shell_exec('wmic cpu get loadpercentage 2>nul');
+                if ($out) {
+                    preg_match('/\d+/', $out, $m);
+                    if (!empty($m)) {
+                        $cpu = (float) $m[0];
+                        $available = true;
+                    }
+                }
+
+                // --- RAM از طریق wmic ---
+                $memOut = @shell_exec('wmic OS get FreePhysicalMemory,TotalVisibleMemorySize /Value 2>nul');
+                if ($memOut) {
+                    preg_match('/TotalVisibleMemorySize=(\d+)/', $memOut, $tot);
+                    preg_match('/FreePhysicalMemory=(\d+)/', $memOut, $free);
+                    if ($tot && $free) {
+                        $memTotal = (int) round($tot[1] / 1024); // KB -> MB
+                        $memUsed  = $memTotal - (int) round($free[1] / 1024);
+                        $available = true;
+                    }
+                }
+            }
         }
 
         if (!$available) {
-            // shared hosting: نمی‌تونیم متریک واقعی سرور رو بخونیم
+            // فقط مصرف حافظه خود پروسه PHP رو نشون بده (بهتر از هیچی)
             $memUsed = round(memory_get_usage(true) / 1024 / 1024, 1);
         }
 
@@ -134,7 +160,7 @@ class PulseService
             'memory_used'    => $memUsed,
             'memory_total'   => $memTotal,
             'memory_percent' => $memTotal > 0 ? round($memUsed / $memTotal * 100, 1) : 0,
-            'os_metrics_available' => $available, // <-- این رو تو ویو استفاده کن
+            'os_metrics_available' => $available,
         ];
     }
 

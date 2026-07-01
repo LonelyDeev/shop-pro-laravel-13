@@ -130,9 +130,9 @@ function updateDashboard(d) {
     // Meters
     setWidth('meter-ram',  (p.memory_percent || 0) + '%');
     setWidth('meter-disk', (p.disk_percent   || 0) + '%');
-    setWidth('meter-db',   Math.min((p.db_connections || 0) * 4, 100) + '%');
+    setWidth('meter-db',   Math.min((p.db_connections.value || 0) * 4, 100) + '%');
     setText('mem-detail',  (p.memory_used || 0) + ' / ' + (p.memory_total || 0) + ' MB');
-    setText('db-conn-val', p.db_connections || 0);
+    setText('db-conn-val', p.db_connections.value || 0);
 
     // CPU chart — append new point
     if (cpuChart && p.cpu !== undefined) {
