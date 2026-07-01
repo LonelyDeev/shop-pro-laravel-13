@@ -48,6 +48,127 @@
                 </div>
             </div>
 
+            {{-- ===================================================== --}}
+            {{--  هشدار محدودیت‌های هاست اشتراکی                      --}}
+            {{-- ===================================================== --}}
+            @php
+                $caps = $pulse['capabilities'] ?? [];
+                $missing = [];
+                if (!$caps['sys_getloadavg'] ?? true) $missing[] = 'دریافت CPU';
+                if (!$caps['proc_meminfo'] ?? true) $missing[] = 'اطلاعات حافظه';
+                if (!$caps['disk_total_space'] ?? true) $missing[] = 'اطلاعات دیسک';
+                if (!$caps['shell_exec'] ?? true) $missing[] = 'اجرای دستورات سیستمی';
+                if (!$caps['file_get_contents'] ?? true) $missing[] = 'خواندن فایل‌های سیستمی';
+                $hasWarning = count($missing) > 0;
+            @endphp
+            @if($hasWarning)
+                <div style="padding:0 24px;margin-bottom:20px;margin-top:20px;">
+                    <div style="
+            background: linear-gradient(135deg, rgba(255,107,107,0.08) 0%, rgba(246,201,14,0.08) 100%);
+            border: 1px solid rgba(255,107,107,0.15);
+            border-radius: 14px;
+            padding: 18px 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            flex-wrap: wrap;
+        ">
+                        {{-- Icon --}}
+                        <div style="
+                width: 48px;
+                height: 48px;
+                min-width: 48px;
+                background: linear-gradient(135deg, #ff6b6b, #f6c90e);
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 24px;
+                box-shadow: 0 4px 14px rgba(255,107,107,0.25);
+            ">
+                            🚀
+                        </div>
+
+                        {{-- Content --}}
+                        <div style="flex:1;min-width:200px;">
+                            <div style="
+                    font-size: 15px;
+                    font-weight: 700;
+                    color: #ff6b6b;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    flex-wrap: wrap;
+                ">
+                                ⚠️ محدودیت‌های هاست اشتراکی
+                                <span style="
+                        font-size: 10px;
+                        font-weight: 400;
+                        background: rgba(255,107,107,0.12);
+                        color: #ff6b6b;
+                        padding: 2px 10px;
+                        border-radius: 20px;
+                    ">
+                        {{ count($missing) }} مورد
+                    </span>
+                            </div>
+                            <div style="
+                    font-size: 13px;
+                    color: var(--pm, #94a3b8);
+                    margin-top: 4px;
+                    line-height: 1.6;
+                ">
+                                برخی از قابلیت‌های مانیتورینگ به دلیل محدودیت‌های هاست اشتراکی در دسترس نیستند:
+                                <span style="color: #f6c90e;font-weight:500;">{{ implode('، ', $missing) }}</span>.
+                            </div>
+                            <div style="
+                    font-size: 12px;
+                    color: #f6c90e;
+                    margin-top: 4px;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    flex-wrap: wrap;
+                ">
+                    <span style="
+                        background: rgba(246,201,14,0.12);
+                        padding: 2px 12px;
+                        border-radius: 20px;
+                        border: 1px solid rgba(246,201,14,0.1);
+                    ">
+                        💡 برای مشاهده‌ی اطلاعات کامل، از سرور مجازی (VPS) یا سرور اختصاصی استفاده کنید.
+                    </span>
+                                <span style="
+                        font-size: 10px;
+                        color: var(--pm, #94a3b8);
+                        opacity: 0.6;
+                    ">
+                        (این محدودیت‌ها توسط هاست اعمال شده‌اند)
+                    </span>
+                            </div>
+                        </div>
+
+                        {{-- Optional Close Button --}}
+                        <button onclick="this.parentElement.parentElement.style.display='none'" style="
+                background: none;
+                border: none;
+                color: var(--pm, #94a3b8);
+                font-size: 18px;
+                cursor: pointer;
+                padding: 4px 8px;
+                border-radius: 6px;
+                transition: background 0.2s;
+                align-self: flex-start;
+            " onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='none'">
+                            ✕
+                        </button>
+                    </div>
+                </div>
+            @endif
+
+
             {{-- KPI Row --}}
             <div class="p-kpi-grid">
                 {{-- KPI CPU --}}
