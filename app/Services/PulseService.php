@@ -32,10 +32,14 @@ class PulseService
             $memPeak    = round(memory_get_peak_usage(true) / 1024 / 1024, 1);
             $memLimit   = $this->parseMemoryLimit(ini_get('memory_limit'));
 
-            $diskTotal  = round(disk_total_space(base_path()) / 1024 / 1024 / 1024, 2);
-            $diskFree   = round(disk_free_space(base_path())  / 1024 / 1024 / 1024, 2);
-            $diskUsed   = round($diskTotal - $diskFree, 2);
-            $diskPct    = $diskTotal > 0 ? round($diskUsed / $diskTotal * 100, 1) : 0;
+            $diskTotalRaw = @disk_total_space(base_path());
+            $diskFreeRaw  = @disk_free_space(base_path());
+            $diskAvailable = $diskTotalRaw !== false && $diskFreeRaw !== false;
+
+            $diskTotal = $diskAvailable ? round($diskTotalRaw / 1024 / 1024 / 1024, 2) : 0;
+            $diskFree  = $diskAvailable ? round($diskFreeRaw  / 1024 / 1024 / 1024, 2) : 0;
+            $diskUsed  = round($diskTotal - $diskFree, 2);
+            $diskPct   = $diskTotal > 0 ? round($diskUsed / $diskTotal * 100, 1) : 0;
 
             $dbConn     = $this->getDbConnections();
             $reqStats   = $this->getRequestStats();
@@ -96,23 +100,32 @@ class PulseService
 
     protected function getMetricsFromOS(): array
     {
-        $cpu = 0; $memUsed = 0; $memTotal = 0;
+        $cpu = 0; $memUsed = 0; $memTotal = 0; $available = false;
 
-        if (PHP_OS_FAMILY === 'Linux') {
-            $load  = sys_getloadavg();
-            $cores = $this->getCpuCores();
-            $cpu   = round(min(100, ($load[0] / $cores) * 100), 1);
+        if (PHP_OS_FAMILY === 'Linux' && $this->isFuncAllowed('sys_getloadavg')) {
+            $load = @sys_getloadavg();
+            if (is_array($load)) {
+                $cores = $this->getCpuCores();
+                $cpu = round(min(100, ($load[0] / $cores) * 100), 1);
+                $available = true;
+            }
 
-            if (is_readable('/proc/meminfo')) {
-                $info = file_get_contents('/proc/meminfo');
-                preg_match('/MemTotal:\s+(\d+)/', $info, $mt);
-                preg_match('/MemAvailable:\s+(\d+)/', $info, $ma);
-                if ($mt && $ma) {
-                    $memTotal = (int) round($mt[1] / 1024);
-                    $memUsed  = $memTotal - (int) round($ma[1] / 1024);
+            if (@is_readable('/proc/meminfo')) {
+                $info = @file_get_contents('/proc/meminfo');
+                if ($info !== false) {
+                    preg_match('/MemTotal:\s+(\d+)/', $info, $mt);
+                    preg_match('/MemAvailable:\s+(\d+)/', $info, $ma);
+                    if ($mt && $ma) {
+                        $memTotal = (int) round($mt[1] / 1024);
+                        $memUsed  = $memTotal - (int) round($ma[1] / 1024);
+                        $available = true;
+                    }
                 }
             }
-        } else {
+        }
+
+        if (!$available) {
+            // shared hosting: نمی‌تونیم متریک واقعی سرور رو بخونیم
             $memUsed = round(memory_get_usage(true) / 1024 / 1024, 1);
         }
 
@@ -121,6 +134,7 @@ class PulseService
             'memory_used'    => $memUsed,
             'memory_total'   => $memTotal,
             'memory_percent' => $memTotal > 0 ? round($memUsed / $memTotal * 100, 1) : 0,
+            'os_metrics_available' => $available, // <-- این رو تو ویو استفاده کن
         ];
     }
 
@@ -198,12 +212,17 @@ class PulseService
         } catch (\Exception) { return 0; }
     }
 
-    protected function getDbConnections(): int
+    protected function getDbConnections(): array
     {
         try {
             $r = DB::select("SHOW STATUS LIKE 'Threads_connected'");
-            return (int)($r[0]->Value ?? 0);
-        } catch (\Exception) { return 0; }
+            if (empty($r)) {
+                return ['value' => 0, 'available' => false];
+            }
+            return ['value' => (int) ($r[0]->Value ?? 0), 'available' => true];
+        } catch (\Exception) {
+            return ['value' => 0, 'available' => false];
+        }
     }
 
     protected function getCacheStats(): array
@@ -417,27 +436,32 @@ class PulseService
         }
     }
 
+    protected function isFuncAllowed(string $func): bool
+    {
+        if (!function_exists($func)) return false;
+        $disabled = array_map('trim', explode(',', (string) ini_get('disable_functions')));
+        return !in_array($func, $disabled, true);
+    }
+
     protected function getCpuCores(): int
     {
-        // روش ۱: استفاده از nproc (اگر shell_exec موجود باشد)
-        if (function_exists('shell_exec')) {
-            $nproc = @\shell_exec('nproc 2>/dev/null');
+        if ($this->isFuncAllowed('shell_exec')) {
+            $nproc = @shell_exec('nproc 2>/dev/null');
             if ($nproc !== null && is_numeric(trim($nproc))) {
                 return (int) trim($nproc);
             }
         }
 
-        // روش ۲: خواندن مستقیم /proc/cpuinfo (نیازی به shell_exec ندارد)
-        if (is_readable('/proc/cpuinfo')) {
+        if (@is_readable('/proc/cpuinfo')) {
             $cpuinfo = @file_get_contents('/proc/cpuinfo');
             if ($cpuinfo !== false) {
                 $cores = preg_match_all('/^processor\s+:\s+\d+/m', $cpuinfo, $matches);
-                if ($cores > 0) {
-                    return $cores;
-                }
+                if ($cores > 0) return $cores;
             }
         }
 
         return 1;
     }
+
+
 }

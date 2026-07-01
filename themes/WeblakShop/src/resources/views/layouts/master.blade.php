@@ -1,6 +1,5 @@
 @php
     $cart =  get_cart();
-phpinfo();
 @endphp
     <!DOCTYPE html>
 <html lang="{{ app()->getLocale() }}">
