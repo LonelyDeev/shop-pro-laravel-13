@@ -188,6 +188,11 @@
         </script>
     @endif
 
+    {{-- Toast --}}
+    <div class="custom-toast" id="custom-toast">
+        <span id="custom-toast-icon">✅</span>
+        <span id="custom-toast-msg">ذخیره شد</span>
+    </div>
 </body>
 <!-- END: Body-->
 

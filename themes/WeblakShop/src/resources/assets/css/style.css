@@ -16485,3 +16485,206 @@ img.captcha {
     margin-right: 5px;
     position: relative;
 }
+
+
+/*faq*/
+.faq-widget-container {
+    margin: 40px auto;
+    font-family: 'Vazir', 'Tahoma', sans-serif;
+    direction: rtl;
+    background: #ffffff;
+    border-radius: 24px;
+    box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.12);
+    overflow: hidden;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column; /* پیش‌فرض: عمودی */
+}
+
+/* چیدمان افقی (هدر در راست، سوالات در چپ) */
+.faq-widget-container.layout-side {
+    flex-direction: row;
+}
+
+/* هدر ویجت */
+.faq-widget-header {
+    background: var(--primary-color);
+    color: var(--text-on-primary);
+    padding: 35px 25px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    position: relative;
+}
+
+.layout-top .faq-widget-header {
+    border-radius: 0 0 32px 32px;
+}
+
+.layout-side .faq-widget-header {
+    width: 35%; /* عرض هدر در حالت افقی */
+    border-radius: 0;
+}
+
+.faq-header-icon {
+    width: 60px;
+    height: 60px;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 15px;
+    font-size: 26px;
+    backdrop-filter: blur(5px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+}
+
+.faq-widget-header h3 {
+    margin: 0 0 8px;
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+.faq-widget-header p {
+    margin: 0;
+    font-size: 14px;
+    opacity: 0.85;
+    font-weight: 300;
+}
+
+/* بدنه ویجت */
+.faq-widget-body {
+    padding: 25px;
+    background: #f8fafc;
+    flex: 1; /* پر کردن فضای باقی‌مانده در حالت افقی */
+}
+
+.layout-side .faq-widget-body {
+    padding: 30px;
+}
+
+/* آیتم‌های آکاردئون */
+.faq-accordion-item {
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    margin-bottom: 16px;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    background: #ffffff;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+    position: relative;
+}
+
+.faq-accordion-item:hover {
+    transform: translateY(-3px);
+    border-color: var(--primary-color);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+}
+
+.faq-accordion-item.active {
+    border-color: var(--primary-color);
+    box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.15);
+    border-right: 4px solid var(--primary-color);
+}
+
+/* دکمه سوالات */
+.faq-accordion-btn {
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 20px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e293b;
+    text-align: right;
+    transition: color 0.3s ease;
+}
+.faq-accordion-btn:hover {
+    color: var(--primary-color);
+}
+.faq-accordion-item.active .faq-accordion-btn {
+    color: var(--primary-color);
+}
+
+.faq-question-text {
+    flex: 1;
+    padding-left: 15px;
+    line-height: 1.6;
+}
+
+/* آیکون پلاس / ضربدر */
+.faq-icon-wrapper {
+    width: 32px;
+    height: 32px;
+    background: #eef2ff;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: var(--primary-color);
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+}
+.faq-accordion-item.active .faq-icon-wrapper {
+    background: var(--primary-color);
+    color: var(--text-on-primary);
+    border-radius: 50%;
+}
+.faq-accordion-item.active .faq-icon-wrapper i {
+    transform: rotate(45deg);
+}
+
+/* محتوای جواب */
+.faq-accordion-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), padding 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    padding: 0 24px;
+    background: #ffffff;
+    color: #475569;
+    line-height: 2;
+    font-size: 15px;
+}
+.faq-accordion-content p {
+    margin: 0;
+    padding: 0;
+    position: relative;
+    padding-right: 16px;
+}
+.faq-accordion-content p::before {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 13px;
+    width: 6px;
+    height: 6px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    opacity: 0.6;
+}
+
+.faq-accordion-item:last-child {
+    margin-bottom: 0;
+}
+
+/* ریسپانسیو کردن چیدمان افقی در موبایل */
+@media (max-width: 768px) {
+    .faq-widget-container.layout-side {
+        flex-direction: column;
+        width: 90% !important; /* در موبایل حتما فول اسکرین شود */
+    }
+    .layout-side .faq-widget-header {
+        width: 100%;
+        border-radius: 0 0 32px 32px;
+    }
+}
+

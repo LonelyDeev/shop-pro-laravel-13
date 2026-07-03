@@ -249,8 +249,8 @@ class StoryController extends Controller
                 'discount' => $product->getPrices()->first()->discount ? $product->getPrices()->first()->discount . '%' : '',
                 'image' => asset($product->image),
                 'color' => [
-                    'name' => $color->name,
-                    'value' => $color->value,
+                    'name' => @$color->name,
+                    'value' => @$color->value,
                 ]
             ];
         }

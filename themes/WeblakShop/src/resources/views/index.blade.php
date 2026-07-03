@@ -77,6 +77,9 @@
             @case('posts')
                 @include('front::widgets.posts')
             @break
+            @case('faqs')
+                @include('front::widgets.faqs')
+            @break
         @endswitch
     @endforeach
 @endsection

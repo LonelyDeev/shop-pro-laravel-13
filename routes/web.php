@@ -67,6 +67,7 @@ use App\Http\Controllers\Back\ActivityLogController;
 use App\Http\Controllers\Back\SeoAuditController;
 use App\Http\Controllers\Back\RobotsController;
 use App\Http\Controllers\Back\Floatingwidgetcontroller;
+use App\Http\Controllers\Back\FaqController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -490,6 +491,8 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
         //Route::get('/get-product-variations/{productId}', [WarehouseController::class, 'getProductVariations'])->name('get-product-variations');
     });
 
+    Route::delete('faqs/multiple-destroy', [FaqController::class, 'multipleDestroy'])->name('faqs.multipleDestroy');
+    Route::resource('faqs', FaqController::class);
 
     // ------------------ themes
     Route::resource('themes', ThemeController::class)->except(['edit']);

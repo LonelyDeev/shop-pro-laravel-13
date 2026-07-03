@@ -3,11 +3,18 @@
     $products       = $variables['products'];
     $widget_1=$widget->ordering;
     $css_col_lg_10=[];
+    $shortCode=false;
+    if (isset($widget->shortcode)){
+        $shortCode=true;
+    }
+
 @endphp
 
-<!-- Start products -->
+    <!-- Start products -->
 @if($widget->key=="products-moment-block")
-    @if($widget_1==$widget->ordering)
+
+    @if($widget_1==$widget->ordering or $shortCode)
+
     @php
         $variables      = get_widget($widget);
         $products       = $variables['products'];

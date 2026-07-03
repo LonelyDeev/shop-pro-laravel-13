@@ -680,3 +680,24 @@ body.semi-dark-layout .main-menu .shadow-bottom{
 .datatable-table .datatable-head .datatable-row th:first-child {
     padding-top: 1px !important;;
 }
+.custom-toast {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #1a1a2e;
+    color: #fff;
+    padding: .7rem 1.4rem;
+    border-radius: 30px;
+    font-size: .8rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, .2);
+    opacity: 0;
+    transition: all .3s;
+    pointer-events: none;
+    z-index: 9999;
+}
+.custom-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }

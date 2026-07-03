@@ -75,6 +75,10 @@
             @case('posts-tags')
                 @include('front::blogs.widgets.posts-tags')
                 @break
+
+            @case('faqs')
+                @include('front::blogs.widgets.faqs')
+                @break
         @endswitch
     @endforeach
 

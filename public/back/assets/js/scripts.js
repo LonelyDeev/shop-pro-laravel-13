@@ -358,3 +358,16 @@ document.getElementById('sidebar-search-input').addEventListener('input', functi
 });
 
 
+// ── Toast ─────────────────────────────────────────────────────
+function customToast(icon, msg) {
+    const t = document.getElementById('custom-toast');
+    if (!t) {
+        // اگر toast وجود نداشت، با alert ساده
+        alert(icon + ' ' + msg);
+        return;
+    }
+    document.getElementById('custom-toast-icon').textContent = icon;
+    document.getElementById('custom-toast-msg').textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+}

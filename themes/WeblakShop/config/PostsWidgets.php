@@ -1223,6 +1223,103 @@ return [
             'number' => 'required',
         ]
     ],
+    'faqs' => [
+        'title' => 'سوالات متداول',
+        'image' => 'widgets/customer.jpg',
+        'options' => [
+            [
+                'title'      => 'عنوان ',
+                'key'        => 'title',
+                'input-type' => 'input',
+                'type'       => 'text',
+                'class'      => 'col-md-4 col-6',
+            ],
+            [
+                'title'      => 'توضیحات',
+                'key'        => 'text',
+                'input-type' => 'input',
+                'type'       => 'text',
+                'class'      => 'col-md-8 col-6',
+            ],
+            [
+                'title'      => 'تعداد قابل نمایش',
+                'key'        => 'number',
+                'input-type' => 'input',
+                'type'       => 'number',
+                'default'    => '10',
+                'class'      => 'col-md-4 col-6',
+                'attributes' => 'required'
+            ],
+            [
+                'title'      => 'رنگ پس زمینه کادر',
+                'key'        => 'block_color',
+                'input-type' => 'input',
+                'default'    => '#4f46e5',
+                'type'       => 'color',
+                'class'      => 'col-md-4 col-6',
+            ],
+            [
+                'title'      => 'رنگ متن زمینه کادر',
+                'key'        => 'text_color',
+                'input-type' => 'input',
+                'default'    => '#ffffff',
+                'type'       => 'color',
+                'class'      => 'col-md-4 col-6',
+            ],
+            [
+                'title'      => 'عرض ویجت',
+                'key'        => 'width',
+                'input-type' => 'select',
+                'type'       => 'select',
+                'options'    => [
+                    [
+                        'value' => '50%',
+                        'title' => '۵۰ درصد'
+                    ],
+                    [
+                        'value' => '70%',
+                        'title' => '۷۰ درصد'
+                    ],
+                    [
+                        'value' => '80%',
+                        'title' => '۸۰ درصد'
+                    ],
+                    [
+                        'value' => '90%',
+                        'title' => '۹۰ درصد'
+                    ],
+                    [
+                        'value' => '100%',
+                        'title' => '۱۰۰ درصد'
+                    ],
+
+                ],
+                'default'    => '90%',
+                'class'      => 'col-md-4 col-6',
+            ],
+            [
+                'title'      => 'نوع چیدمان',
+                'key'        => 'layout',
+                'input-type' => 'select',
+                'type'       => 'select',
+                'options'    => [
+                    [
+                        'value' => 'top',
+                        'title' => 'هدر در بالا (عمودی)'
+                    ],
+                    [
+                        'value' => 'side',
+                        'title' => 'هدر در راست (افقی)'
+                    ],
+                ],
+                'default'    => 'top',
+                'class'      => 'col-md-4 col-6',
+            ],
+        ],
+        'rules' => [
+            'number' => 'required',
+        ]
+    ],
 
     /*'categories' => [
         'title' => 'دسته بندی محصولات',

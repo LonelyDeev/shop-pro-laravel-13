@@ -24,14 +24,14 @@
                                 <div class="item">
                                     <div class="post-card mb-0">
                                         <div class="post-thumbnail">
-                                            <a href="{{ route('front.blogs.show', ['post' => $post]) }}">
+                                            <a href="{{ route('front.articles.show', ['slug' => $post->slug]) }}">
                                                 <img src="{{ asset('/no-image-product.svg') }}" data-src="{{ $post->image ? asset($post->image) : theme_asset('/no-image-product.svg') }}" alt="{{ $post->title }}">
                                             </a>
                                             <span class="post-tag">{{ $post->category ? $post->category->title : 'دسته بندی نشده' }}</span>
 
                                         </div>
                                         <div class="post-title">
-                                            <a href="{{ route('front.blogs.show', ['post' => $post]) }}">{{ $post->title }}</a>
+                                            <a href="{{ route('front.articles.show', ['slug' => $post->slug]) }}">{{ $post->title }}</a>
                                             <span class="post-date">{{ jdate($post->created_at)->format('%d %B %Y') }}</span>
                                         </div>
                                     </div>

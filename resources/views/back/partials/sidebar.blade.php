@@ -888,6 +888,14 @@
                     </a>
                 </li>
             @endcan
+            @can('faqs')
+                <li class="{{ active_class('admin.faqs.index') }} nav-item">
+                    <a href="{{ route('admin.faqs.index') }}">
+                        <i class=" far fa-circle-question"></i>
+                        <span class="menu-title"> سوالات متداول</span>
+                    </a>
+                </li>
+            @endcan
 
 
             <li class="title">امور کاربران و مدیران </li>

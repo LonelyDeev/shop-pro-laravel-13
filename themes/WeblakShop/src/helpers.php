@@ -14,6 +14,7 @@ use App\Models\Tag;
 function get_widget($widget)
 {
     $variables = [];
+
     switch ($widget->key) {
         case 'fullscreen-slider': {
             $variables['fullscreen_slider'] = Slider::detectLang()->where('group', 'fullscreen_slider')
@@ -513,6 +514,11 @@ function get_widget($widget)
 
             break;
         }
+
+        case 'faqs':
+            $variables['faqs']=\App\Models\Faq::where('published', true)
+                ->take($widget->option('number', 10))
+                ->orderBy('order', 'asc')->get();
     }
 
     return $variables;

@@ -726,3 +726,41 @@ $('#newsletter-form').on('submit', function(e) {
         }
     });
 });
+
+
+
+document.addEventListener('DOMContentLoaded', function () {
+    const accItems = document.querySelectorAll('.faq-accordion-item');
+
+    accItems.forEach(item => {
+        const btn = item.querySelector('.faq-accordion-btn');
+        const content = item.querySelector('.faq-accordion-content');
+
+        btn.addEventListener('click', function() {
+            const isActive = item.classList.contains('active');
+
+            // بستن سایر آیتم‌ها
+            accItems.forEach(otherItem => {
+                if (otherItem !== item) {
+                    otherItem.classList.remove('active');
+                    const otherContent = otherItem.querySelector('.faq-accordion-content');
+                    otherContent.style.maxHeight = null;
+                    otherContent.style.padding = '0 24px';
+                    otherItem.querySelector('.faq-accordion-btn').setAttribute('aria-expanded', 'false');
+                }
+            });
+
+            if (isActive) {
+                item.classList.remove('active');
+                content.style.maxHeight = null;
+                content.style.padding = '0 24px';
+                btn.setAttribute('aria-expanded', 'false');
+            } else {
+                item.classList.add('active');
+                content.style.maxHeight = content.scrollHeight + 60 + "px";
+                content.style.padding = '0 24px 24px 24px';
+                btn.setAttribute('aria-expanded', 'true');
+            }
+        });
+    });
+});
