@@ -1,7 +1,11 @@
 @extends('front::auth.layouts.master', ['title' => 'ورود به سایت'])
 
 @php
-    $redirect_url = request("redirect") ?: Redirect::intended()->getTargetUrl();
+    $redirect_url = request("redirect") ?: \Illuminate\Support\Facades\Redirect::intended()->getTargetUrl();
+  $params = null;
+        if (request('ref')) {
+            $params = "?ref=" . request('ref');
+        }
 @endphp
 
 @section('style')
@@ -23,7 +27,7 @@
             </a>
             <span class="account-head-line">ورود | ثبت‌نام</span>
             <div class="content-account">
-                <form action="{{ route('front.user.CheckMobileEmail') }}" id="login" method="post">
+                <form action="{{ route('front.user.CheckMobileEmail').$params }}" id="login" method="post">
                     @csrf
                     <label for="email-phone">سلام!<br>
 

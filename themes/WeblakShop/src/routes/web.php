@@ -225,6 +225,13 @@ Route::group(['as' => 'front.'], function () {
         Route::post('profile/wallet/withdraw', [WalletController::class,'withdraw'])->name('wallet.withdraw');
         Route::resource('profile/wallet', WalletController::class)->only(['index','store','show']);
 
+        Route::get('profile/notifications', [UserController::class, 'notifications'])->name('notifications.index');
+        Route::get('profile/messages', [UserController::class, 'messages'])->name('messages.index');
+        Route::get('profile/messages/show/{message}', [UserController::class, 'messages_show'])->name('messages.show');
+
+
+        Route::get('profile/referrals', [UserController::class, 'referrals'])->name('user.referrals.index');
+
         // ------------------ user
         Route::get('profile', [UserController::class, 'profile'])->name('user.profile');
         Route::get('profile/edit-profile', [UserController::class, 'editProfile'])->name('user.profile.edit');

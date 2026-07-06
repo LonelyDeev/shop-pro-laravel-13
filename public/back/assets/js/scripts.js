@@ -1,4 +1,5 @@
 
+
 $('.table-responsive .dropdown-action').each(function() {
     var $dropdownMenu = $(this).find('.dropdown-menu');
 
@@ -371,3 +372,9 @@ function customToast(icon, msg) {
     t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 3000);
 }
+
+$(".btn-fullscreen").on("click", function(e) {
+    e.preventDefault();
+    var toggledPanel = $(this).parents(".box-fullScreen")[0];
+    screenfull.toggle(toggledPanel);
+});

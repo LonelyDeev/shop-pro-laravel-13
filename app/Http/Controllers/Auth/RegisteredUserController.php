@@ -18,8 +18,15 @@ class RegisteredUserController extends Controller
      *
      * @return \Illuminate\View\View
      */
-    public function create()
+    public function create(Request $request)
     {
+        $params = null;
+        if ($request->has('ref')) {
+            $params = "?ref=" . $request->input('ref');
+        }
+
+        $loginUrl = route('login') . $params;
+        return redirect($loginUrl, 303);
         $view = config('front.pages.register');
 
         if (!$view) {
@@ -44,7 +51,7 @@ class RegisteredUserController extends Controller
         $data['password']      = Hash::make($data['password']);
         $data['referral_code'] = Referral::generateCode();
 
-        if ($request->referral_code && option('user_refrral_enable', 0) == 1) {
+        if ($request->referral_code && option('user_referrals_enable', 0) == 1) {
             $data['referral_id'] = User::where('referral_code', $request->referral_code)->first()->id;
         }
 

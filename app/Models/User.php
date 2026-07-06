@@ -272,4 +272,9 @@ class User extends Authenticatable
             'admin.users_count'
         ];
     }
+
+    public function messages()
+    {
+        return $this->belongsToMany(Message::class);
+    }
 }

@@ -568,6 +568,8 @@
         });
     </script>
 @endif
+
+@include('front::partials.popup-message')
 </body>
 
 </html>

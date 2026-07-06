@@ -22,9 +22,12 @@ class EventServiceProvider extends ServiceProvider
 
         Registered::class => [
             'App\Listeners\User\Registered',
-            'App\Listeners\Seller\Registered',
             'App\Listeners\User\AddGiftCredit',
             'App\Listeners\User\CreateReferralDiscounts',
+        ],
+
+        'App\Events\SendMessage' => [
+            'App\Listeners\SendMessage',
         ],
 
         'App\Events\OrderCreated' => [

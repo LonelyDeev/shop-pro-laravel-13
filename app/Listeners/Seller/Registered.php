@@ -31,7 +31,6 @@ class Registered
      */
     public function handle(SellerCreated $event)
     {
-
         // send notification for admins
         $admins = Admin::whereIn('level', ['admin', 'creator'])->get();
         Notification::send($admins, new SellerRegistered($event->seller));

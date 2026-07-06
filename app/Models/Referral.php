@@ -41,6 +41,10 @@ class Referral extends Model
     {
         return $this->belongsTo(User::class);
     }
+    public function owner()
+    {
+        return $this->belongsTo(User::class);
+    }
 
     public function referralDiscount()
     {
@@ -51,4 +55,16 @@ class Referral extends Model
     {
         return $this->belongsTo(Discount::class, 'user_discount_id');
     }
+
+
+    public function ownerWalletHistory()
+    {
+        return $this->belongsTo(WalletHistory::class, 'owner_wallet_history_id');
+    }
+
+    public function userWalletHistory()
+    {
+        return $this->belongsTo(WalletHistory::class, 'user_wallet_history_id');
+    }
+
 }

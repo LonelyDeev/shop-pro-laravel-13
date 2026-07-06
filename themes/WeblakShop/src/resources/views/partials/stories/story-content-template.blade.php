@@ -17,8 +17,8 @@
             'discount' => $productItem->getPrices()->first()->discount ? $productItem->getPrices()->first()->discount . '%' : '',
             'image' => asset($productItem->image),
             'color' => [
-                'name' => $color->name,
-                'value' => $color->value,
+                'name' => @$color->name,
+                'value' => @$color->value,
             ]
         ];
     }

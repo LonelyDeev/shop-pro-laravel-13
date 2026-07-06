@@ -1493,3 +1493,39 @@ if (!function_exists('parse_shortcodes')) {
         return App\Helpers\ShortcodeHelper::parse($content);
     }
 }
+
+
+function currencyTitle(){
+
+
+    $option = Option::where('option_name', 'default_currency_id')->first();
+
+    $currency_id = null;
+    if ($option) {
+        $currency = \App\Models\Currency::detectLang()->find($option->option_value);
+        if ($currency) {
+            return $currency->title;
+        }
+
+        return 'ریال';
+    }
+
+
+     $value = Cache::rememberForever('options.default_currency_id' , function (){
+         $currency=\App\Models\Currency::detectLang()->find(option('default_currency_id'));
+
+         if ($currency){
+             return $currency->title;
+         }
+
+         return 'تومان';
+     });
+
+
+     if (is_null($value) || $value === false) {
+         return 'تومان';
+     }
+
+     return $value;
+}
+

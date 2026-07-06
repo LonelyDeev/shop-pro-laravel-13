@@ -68,6 +68,7 @@ use App\Http\Controllers\Back\SeoAuditController;
 use App\Http\Controllers\Back\RobotsController;
 use App\Http\Controllers\Back\Floatingwidgetcontroller;
 use App\Http\Controllers\Back\FaqController;
+use App\Http\Controllers\Back\MessageController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -434,6 +435,12 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
         Route::put('/reply/{reply}/status', [CommentController::class, 'updateReplyStatus'])->name('update-reply-status');
         Route::delete('/reply/{reply}', [CommentController::class, 'destroyReply'])->name('destroy-reply');
     });
+
+    // ------------------ messages
+    Route::resource('messages', MessageController::class)->only(['index','show','store', 'destroy', 'update']);
+    Route::get('messages/birthday', [MessageController::class, 'birthday'])->name('messages.birthday');
+    Route::post('messages/birthday/store', [MessageController::class, 'birthdayStore'])->name('messages.birthday.store');
+
 
     // ------------------ reviews
     Route::resource('reviews', ReviewController::class)->only(['index', 'show', 'destroy', 'update']);

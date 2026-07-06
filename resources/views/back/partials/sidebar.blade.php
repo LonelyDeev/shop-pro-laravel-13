@@ -245,13 +245,13 @@
 
                         @can('themes.settings')
                             @if (config('front.home-widgets'))
-                                <li class="{{ active_class('admin.widgets.index') }}">
+                                <li class="{{ active_class('admin.widgets.index').' '.active_class('admin.widgets.create') }}">
                                     <a href="{{ route('admin.widgets.index') }}"><i class="fa-solid fa-circle"></i><span
                                             class="menu-item">مدیریت صفحه اصلی</span></a>
                                 </li>
                             @endif
                             @if (config('front.posts-widgets'))
-                                <li class="{{ active_class('admin.posts-widgets.index') }}">
+                                <li class="{{ active_class('admin.posts-widgets.index').' '.active_class('admin.posts-widgets.create') }}">
                                     <a href="{{ route('admin.posts-widgets.index') }}"><i class="fa-solid fa-circle"></i><span
                                             class="menu-item">مدیریت صفحه اصلی مقالات</span></a>
                                 </li>
@@ -916,6 +916,8 @@
                                         class="menu-item">ایجاد کاربر</span></a>
                             </li>
                         @endcan
+
+
                     </ul>
                 </li>
             @endcan
@@ -995,6 +997,16 @@
                     </ul>
                 </li>
             @endif
+
+            @can('settings.sms')
+                <li class="{{ active_class('admin.messages.index') }} nav-item">
+                    <a href="{{ route('admin.messages.index') }}">
+                        <i class=" feather icon-mail"></i>
+                        <span class="menu-title">ارسال پیام</span>
+                    </a>
+                </li>
+
+            @endcan
 
 
             <li class="title">امور مدیریتی</li>

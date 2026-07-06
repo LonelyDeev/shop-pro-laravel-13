@@ -5,8 +5,11 @@ namespace Themes\WeblakShop\src\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
 use App\Models\Banner;
+use App\Models\Message;
+use App\Models\Option;
 use App\Models\Product;
 use App\Models\Province;
+use App\Models\Referral;
 use App\Models\User;
 use App\Models\UserMobileVerify;
 use App\Models\Widget;
@@ -24,11 +27,13 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
+use Illuminate\Auth\Events\Registered;
 
 class UserController extends Controller
 {
     public function Check_Mobile_Email(Request $request)
     {
+
         $this->validate($request, [
             'username'   => 'required',
         ],[
@@ -53,22 +58,33 @@ class UserController extends Controller
 
         }
 
+        $params = null;
+        if ($request->has('ref')) {
+            $params = "?ref=" . $request->input('ref');
+        }
 
         session()->put('ShowPasswordForm_Mobile_Email',$request->username);
-        return redirect('/login/password');
+        return redirect('/login/password'.$params);
 
 
     }
-    public function ShowPasswordForm($data=null)
+    public function ShowPasswordForm(Request $request,$data=null)
     {
+
         if (session('SettFirstOnePassword')){
+
+            $params = null;
+            if ($request->has('ref')) {
+                $params = "?ref=" . $request->input('ref');
+            }
+            $request=$request->all();
             if (User::where('username',session('SettFirstOnePassword'))->exists()){
                 session()->put('ShowPasswordForm_Mobile_Email',session('SettFirstOnePassword'));
-                return view('front::auth.password-login');
+                return view('front::auth.password-login',compact('request'));
             }else{
                 session()->forget('SettFirstOnePassword');
                 session()->forget('ShowPasswordForm_Mobile_Email');
-                return redirect('/login');
+                return redirect('/login'.$params);
             }
 
         }else{
@@ -113,18 +129,30 @@ class UserController extends Controller
         session()->put('ShowPasswordForm_Mobile_Email',$request->username);
         $this->validate($request, [
             'username'   => 'required',
-            'password' => 'required|min:6'
+            'password' => 'required|min:6',
+            'referralCode' => 'nullable|exists:users,referral_code',
         ],[
             'username.required'=>'لطفا این قسمت را خالی نگذارید.',
             'password.required'=>'لطفا این قسمت را خالی نگذارید.',
             'password.min'=>'فیلد رمز ورود 6 کاراکتر الزامی می باشد.',
+            'referralCode.exists'=>'کد معرف معتبر نمی باشد.',
         ]);
 
         // Attempt to log the user in
         session()->forget('ShowPasswordForm_Mobile_Email');
 
         if (session('SettFirstOnePassword')){
-            User::where('username',session('SettFirstOnePassword'))->update(['password'=>Hash::make($request->password)]);
+            $referralCode=null;
+            if ($request->has('referralCode')){
+                $referralCode=User::where('referral_code',$request->referralCode)->first()->id;
+            }
+            $user=User::where('username',session('SettFirstOnePassword'))->first();
+            $user->password=Hash::make($request->password);
+            $user->referral_id=$referralCode;
+            $user->save();
+
+            //$user=User::where('username',session('SettFirstOnePassword'))->update(['password'=>Hash::make($request->password),'referral_id'=>$referralCode]);
+            event(new Registered($user));
             Auth::guard('web')->attempt([$this->username($request->username) => $request->username, 'password' => $request->password], $request->remember);
             $request->session()->regenerate();
             session()->put('UserWelcome',$request->username);
@@ -174,6 +202,7 @@ class UserController extends Controller
                 $user->mobile=$UserMobileVerify->mobile;
                 $user->username=$UserMobileVerify->mobile;
                 $user->level='user';
+                $user->referral_code=Referral::generateCode();
                 $user->verified_at= Carbon::now();
                 $user->save();
                 $UserMobileVerify->delete();
@@ -320,5 +349,137 @@ class UserController extends Controller
 
         return $field;
     }
+    public function notifications()
+    {
+        $notifications = auth()->user()->notifications()->paginate(15);
+
+        auth()->user()->unreadNotifications->markAsRead();
+        $active="profileEdit";
+        return view('front::user.notifications', compact( 'notifications','active'));
+    }
+    public function messages()
+    {
+        $messages = auth()->user()->messages()->orderby('id','desc')->paginate(15);
+        $active="messages";
+        return view('front::user.messages.index', compact( 'messages','active'));
+    }
+
+    public function messages_show(Message $message)
+    {
+        $itemMessage = $message->items()->first();
+        $itemMessage->status = "seen";
+        $itemMessage->save();
+
+        if (request()->ajax()) {
+            return view('front::user.messages.show')->with('message', $message);
+        }
+
+        // در غیر این صورت صفحه کامل را رندر کن
+        return view('front::user.messages.show')->with(['message' => $message]);
+    }
+
+    public function referrals()
+    {
+        $userId = auth()->id();
+
+        // -----------------------------------------------------------
+        // ۱) جوایز و کدهای تخفیف دریافتی کاربر
+        //    - به‌عنوان معرف (owner_id) که owner_discount_id یا owner_wallet_history_id دارد
+        //    - به‌عنوان معرفی‌شده (user_id) که user_discount_id یا user_wallet_history_id دارد
+        // -----------------------------------------------------------
+        $refrrals = Referral::query()
+            ->where(function ($query) use ($userId) {
+                $query->where('owner_id', $userId)
+                    ->where(function ($q) {
+                        $q->whereNotNull('owner_discount_id')
+                            ->orWhereNotNull('owner_wallet_history_id');
+                    });
+            })
+            ->orWhere(function ($query) use ($userId) {
+                $query->where('user_id', $userId)
+                    ->where(function ($q) {
+                        $q->whereNotNull('user_discount_id')
+                            ->orWhereNotNull('user_wallet_history_id');
+                    });
+            })
+            ->with([
+                // اطلاعات مربوط به تخفیف‌ها
+                'referralDiscount' => fn($q) => $q->select(['id', 'code', 'amount', 'type', 'end_date']),
+                'userDiscount'     => fn($q) => $q->select(['id', 'code', 'amount', 'type', 'end_date']),
+
+                // اطلاعات مربوط به کیف پول
+                'ownerWalletHistory' => fn($q) => $q->select(['id', 'amount', 'type', 'description', 'created_at']),
+                'userWalletHistory'  => fn($q) => $q->select(['id', 'amount', 'type', 'description', 'created_at']),
+
+                'user'             => fn($q) => $q->select(['id', 'first_name', 'last_name','username']),
+                'owner'            => fn($q) => $q->select(['id', 'first_name', 'last_name','username']),
+            ])
+            ->latest()
+            ->paginate(10, ['*'], 'rewards_page');
+
+        // -----------------------------------------------------------
+        // ۲) زیرمجموعه‌های مستقیم کاربر (کسانی که با کد معرف این کاربر ثبت‌نام کرده‌اند)
+        //    چون فیلد referred_by در جدول users وجود ندارد، از جدول referrals استفاده می‌کنیم.
+        // -----------------------------------------------------------
+        $directReferralUserIds = Referral::query()
+            ->where('owner_id', $userId)
+            ->pluck('user_id')
+            ->toArray();
+
+        $directReferrals = User::query()
+            ->whereIn('id', $directReferralUserIds)
+            ->select(['id', 'first_name', 'last_name', 'username', 'mobile', 'created_at'])
+            ->latest()
+            ->paginate(10, ['*'], 'directs_page');
+
+        // شناسه کاربرانی که خرید موفق داشته‌اند (discount برایشان صادر شده = خرید کامل‌شده)
+        $qualifiedUserIds = Referral::query()
+            ->where('owner_id', $userId)
+            ->whereNotNull('user_discount_id')
+            ->pluck('user_id')
+            ->toArray();
+
+        // اضافه‌کردن وضعیت has_qualified_purchase به هر کاربر
+        $directReferrals->getCollection()->transform(function ($user) use ($qualifiedUserIds) {
+            $user->has_qualified_purchase = in_array($user->id, $qualifiedUserIds);
+            return $user;
+        });
+
+        // -----------------------------------------------------------
+        // ۳) آمار برای کارت‌های بالای صفحه
+        // -----------------------------------------------------------
+        $totalReferrals      = count($directReferralUserIds);
+        $successfulReferrals = count($qualifiedUserIds);
+        $totalRewards        = $refrrals->total();
+
+        // -----------------------------------------------------------
+        // ۴) تنظیمات سامانه معرف (مطابق فیلدهای پنل مدیریت)
+        // -----------------------------------------------------------
+        $settings = [
+            'user_register_gift_credit'       => option('user_register_gift_credit', 0),
+            'user_referrals_enable'             => option('user_referrals_enable', 'true'),
+            'user_referrals_gift_type'          => option('user_referrals_gift_type', 'discount_code'),
+            'user_referrals_gift_discount_type' => option('user_referrals_gift_discount_type', 'amount'),
+            'owner_referrals_amount'            => option('owner_referrals_amount', 5),
+            'user_referrals_amount'             => option('user_referrals_amount', 10),
+            'minimum_amount_gift'             => option('minimum_amount_gift', 0),
+            'minimum_product_gift'            => option('minimum_product_gift', 1),
+        ];
+
+        $referralCode = auth()->user()->referral_code;
+        $active       = 'referrals';
+
+        return view('front::user.referrals.index', compact(
+            'refrrals',
+            'directReferrals',
+            'successfulReferrals',
+            'totalReferrals',
+            'totalRewards',
+            'settings',
+            'referralCode',
+            'active'
+        ));
+    }
+
 
 }

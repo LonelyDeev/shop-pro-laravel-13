@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Back;
 use App\Http\Controllers\Controller;
 use App\Imports\UsersImport;
 use App\Models\NotificationManage;
+use App\Models\Referral;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -97,6 +98,7 @@ class UserController extends Controller
             'national_code'       => $request->national_code,
             'card_number'       => $request->card_number,
             'level'       => 'user',
+            'referral_code'=>Referral::generateCode(),
             'birth_date'      => $birth_date,
             'password'    => Hash::make($request->password),
             'verified_at' => $request->verified_at ? Carbon::now() : null,

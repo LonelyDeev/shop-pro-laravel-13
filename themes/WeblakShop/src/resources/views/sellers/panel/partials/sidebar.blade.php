@@ -9,11 +9,11 @@
                 </div>
             </div>
 
-        @if (option('user_refrral_enable', 0) == 1)
+        @if (option('user_referrals_enable', 0) == 1)
             <div class="box-sidebar">
                 <div class="profile-box">
                     <p>با دعوت از دوستان تان به {{ option('info_site_title') }}
-                        <b>{{ option('owner_refrral_amount', 0) }}</b> درصد کد تخفیف بگیرید.</p>
+                        <b>{{ option('owner_referrals_amount', 0) }}</b> درصد کد تخفیف بگیرید.</p>
                     <span>کد معرفی شما:</span><strong class="text-info"> {{ seller_info()->referral_code }}</strong>
                 </div>
             </div>

@@ -1,8 +1,10 @@
 @extends('back.layouts.master')
-
+@push('styles')
+    <link rel="stylesheet" type="text/css" href="{{asset('back/assets/css/pages/widgets/all.css')}}">
+@endpush
 @section('content')
 
-    <div class="app-content content">
+    <div class="app-content content widgets-page">
         <div class="content-overlay"></div>
         <div class="header-navbar-shadow"></div>
         <div class="content-wrapper">
@@ -12,10 +14,8 @@
                         <div class="col-12">
                             <div class="breadcrumb-wrapper col-12">
                                 <ol class="breadcrumb no-border">
-                                    <li class="breadcrumb-item">مدیریت
-                                    </li>
-                                    <li class="breadcrumb-item">قالب ها
-                                    </li>
+                                    <li class="breadcrumb-item">مدیریت</li>
+                                    <li class="breadcrumb-item">قالب ها</li>
                                     <li class="breadcrumb-item active">مدیریت صفحه اصلی مقالات</li>
                                 </ol>
                             </div>
@@ -24,69 +24,89 @@
                 </div>
                 <div class="content-header-right text-md-right col-md-3 col-12">
                     <div class="form-group breadcrum-right">
-                        <a href="{{ route('admin.posts-widgets.create') }}" class="btn-icon btn btn-success"><i class="feather icon-plus mr-1"></i> ایجاد ابزارک</a>
+                        <a href="{{ route('admin.posts-widgets.create') }}" class="btn-create">
+                            <i class="feather icon-plus"></i> ایجاد ابزارک
+                        </a>
                     </div>
                 </div>
             </div>
+
             <div class="content-body">
 
+                <div class="page-heading">
+                    <h2>مدیریت صفحه اصلی</h2>
+                    <p>ترتیب نمایش ابزارک‌ها را با کشیدن دستگیره جابه‌جا کنید؛ تغییرات بلافاصله ذخیره می‌شود.</p>
+                </div>
+
                 @if($widgets->count())
-                    <section class="card">
-                        <div class="card-header">
-                            <h4 class="card-title">مدیریت صفحه اصلی مقالات</h4>
+                    <section class="widgets-card">
+                        <div class="widgets-card-head">
+                            <h4>ابزارک‌های صفحه اصلی</h4>
+                            <span class="hint"><i class="feather icon-move"></i> برای تغییر ترتیب، بکشید و رها کنید</span>
                         </div>
                         <div class="card-content" id="main-card">
-                            <div class="card-body">
-                                <div class="table-responsive">
-                                    <table class="table table-striped mb-0">
-                                        <thead>
-                                            <tr>
-                                                <th class="text-center">ردیف</th>
-                                                <th>عنوان</th>
-                                                <th>نوع ابزارک</th>
-                                                <th class="text-center">وضعیت</th>
-                                                <th class="text-center">عملیات</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="widgets-sortable" data-action="{{ route('admin.posts-widgets.sort') }}">
-                                            @foreach ($widgets as $widget)
-                                                <tr id="widget-{{ $widget->id }}">
-                                                    <td class="text-center draggable-handler">
-                                                        <div class="fonticon-wrap"><i class="feather icon-move"></i></div>
-                                                    </td>
-                                                    <td>{{ $widget->title }}</td>
-                                                    <td>{{ $widget->type() }}</td>
-                                                    <td class="text-center">
-                                                        @if($widget->is_active)
-                                                            <div class="badge bg-success">فعال</div>
-                                                        @else
-                                                            <div class="badge badge-danger">غیر فعال</div>
-                                                        @endif
-                                                    </td>
-                                                    <td class="text-center">
-                                                        <a href="{{ route('admin.posts-widgets.edit', ['posts_widget'=>$widget]) }}" class="btn btn-warning waves-effect waves-light">ویرایش</a>
-                                                        <button type="button" data-action="{{ route('admin.posts-widgets.destroy',  ['posts_widget'=>$widget]) }}" class="btn btn-danger waves-effect waves-light btn-delete"  data-toggle="modal" data-target="#delete-modal">حذف</button>
-                                                    </td>
-                                                </tr>
-                                            @endforeach
-
-                                        </tbody>
-                                    </table>
-                                </div>
+                            <div class="table-responsive">
+                                <table class="table widget-table mb-0">
+                                    <thead>
+                                    <tr>
+                                        <th class="text-center" style="width:56px">ترتیب</th>
+                                        <th>عنوان</th>
+                                        <th>نوع ابزارک</th>
+                                        <th class="text-center">وضعیت</th>
+                                        <th class="text-center">عملیات</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="widgets-sortable" data-action="{{ route('admin.posts-widgets.sort') }}">
+                                    @foreach ($widgets as $widget)
+                                        <tr id="widget-{{ $widget->id }}">
+                                            <td class="text-center draggable-handler">
+                                                <span class="drag-handle"><i class="feather icon-move"></i></span>
+                                            </td>
+                                            <td>
+                                                <div class="widget-title">
+                                                    {{ $widget->title }}
+                                                    <small>#{{ $widget->id }}</small>
+                                                </div>
+                                            </td>
+                                            <td><span class="type-chip">{{ $widget->type() }}</span></td>
+                                            <td class="text-center">
+                                                @if($widget->is_active)
+                                                    <span class="status-pill is-active">فعال</span>
+                                                @else
+                                                    <span class="status-pill is-inactive">غیر فعال</span>
+                                                @endif
+                                            </td>
+                                            <td class="text-center">
+                                                <a href="{{ route('admin.posts-widgets.edit', ['widget' => $widget]) }}" class="icon-btn edit">
+                                                    <i class="feather icon-edit-2"></i> ویرایش
+                                                </a>
+                                                <button type="button"
+                                                        data-action="{{ route('admin.posts-widgets.destroy', ['widget' => $widget]) }}"
+                                                        class="icon-btn delete btn-delete"
+                                                        data-toggle="modal" data-target="#delete-modal">
+                                                    <i class="feather icon-trash-2"></i> حذف
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </section>
-
                 @else
-                    <section class="card">
-                        <div class="card-header">
-                            <h4 class="card-title">مدیریت صفحه اصلی</h4>
+                    <section class="widgets-card">
+                        <div class="widgets-card-head">
+                            <h4>ابزارک‌های صفحه اصلی</h4>
                         </div>
                         <div class="card-content">
-                            <div class="card-body">
-                                <div class="card-text">
-                                    <p>چیزی برای نمایش وجود ندارد!</p>
-                                </div>
+                            <div class="empty-state">
+                                <div class="icon-wrap"><i class="feather icon-layout"></i></div>
+                                <h5>هنوز ابزارکی اضافه نشده</h5>
+                                <p>برای شروع، اولین بخش صفحه اصلی سایت را ایجاد کنید.</p>
+                                <a href="{{ route('admin.posts-widgets.create') }}" class="btn-create">
+                                    <i class="feather icon-plus"></i> ایجاد ابزارک
+                                </a>
                             </div>
                         </div>
                     </section>
@@ -97,7 +117,7 @@
     </div>
 
     {{-- delete widget modal --}}
-    <div class="modal fade text-left" id="delete-modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel19" aria-hidden="true">
+    <div class="modal fade text-left widgets-page-modal" id="delete-modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel19" aria-hidden="true">
         <div class="modal-dialog modal-sm" role="document">
             <div class="modal-content">
                 <div class="modal-header">

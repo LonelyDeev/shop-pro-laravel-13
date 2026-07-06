@@ -3,6 +3,7 @@
 namespace App\Console;
 
 use App\Jobs\CalculateViewers;
+use App\Jobs\HappyBirthday;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Database\Console\Migrations\InstallCommand;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
@@ -48,6 +49,7 @@ class Kernel extends ConsoleKernel
         })->everyMinute();
 
         $schedule->job(new CalculateViewers)->dailyAt('00:00');
+        $schedule->job(new HappyBirthday)->dailyAt('01:00');
     }
 
     /**

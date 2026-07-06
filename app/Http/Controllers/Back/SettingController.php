@@ -533,6 +533,11 @@ class SettingController extends Controller
             'PUSHER_APP_KEY',
             'PUSHER_APP_SECRET',
             'PUSHER_APP_CLUSTER',
+            'MAIL_MAILER',
+            'MAIL_HOST',
+            'MAIL_PORT',
+            'MAIL_USERNAME',
+            'MAIL_PASSWORD',
         ];
 
         $allChanges = [];
@@ -729,9 +734,9 @@ class SettingController extends Controller
 
             // تنظیمات کاربران
             'user_register_gift_credit' => 'اعتبار هدیه ثبت نام کاربر',
-            'user_refrral_enable' => 'امکان معرفی افراد',
-            'owner_refrral_amount' => 'تخفیف معرفی کننده',
-            'user_refrral_amount' => 'تخفیف معرفی شونده',
+            'user_referrals_enable' => 'امکان معرفی افراد',
+            'owner_referrals_amount' => 'تخفیف معرفی کننده',
+            'user_referrals_amount' => 'تخفیف معرفی شونده',
 
             // تنظیمات تصاویر
             'optimizeImage' => 'درصد بهینه سازی تصاویر',

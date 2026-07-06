@@ -1,7 +1,8 @@
 <div class="{{ $option['class'] ?? 'col-md-6 col-12' }}">
-    <div class="form-group">
-        <label>{{ $option['title'] }}</label>
-        <select id="post-categories-{{ $option['key'] }}" class="form-control" name="options[{{ $option['key'] }}][]" {!! $option['attributes'] ?? '' !!} multiple>
+    <div class="form-group widget-field-tree">
+        <label class="field-label">{{ $option['title'] }}</label>
+
+        <select id="post-categories-{{ $option['key'] }}" class="styled-tree-select" name="options[{{ $option['key'] }}][]" {!! $option['attributes'] ?? '' !!} multiple>
             @foreach ($post_categories as $category)
                 @php
 
@@ -23,8 +24,13 @@
                 </option>
             @endforeach
         </select>
+
+        @isset($option['help'])
+            <p class="field-help">{{ $option['help'] }}</p>
+        @endisset
     </div>
 </div>
+
 
 <script>
     setTimeout(() => {

@@ -1225,7 +1225,7 @@ return [
     ],
     'faqs' => [
         'title' => 'سوالات متداول',
-        'image' => 'widgets/customer.jpg',
+        'image' => 'widgets/faqs.png',
         'options' => [
             [
                 'title'      => 'عنوان ',

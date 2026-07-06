@@ -155,6 +155,12 @@
             @endpush
 
         @break
+        @case('screenfull')
+            @push('plugin-scripts')
+                <script src="{{ asset('back/app-assets/plugins/screenfull/screenfull.js') }}"></script>
+            @endpush
+
+        @break
 
     @endswitch
 

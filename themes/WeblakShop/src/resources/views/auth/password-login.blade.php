@@ -52,6 +52,18 @@
                         <a href="{{route('login-with-code.request')}}" class="account-link-password">ورود با رمز یکبار مصرف</a>
                             @endif
                     @endif
+
+                    @if(session('SettFirstOnePassword') and option('user_referrals_enable', "false") == "true")
+                        <span class="account-head-line pt-4 pr-0">کد معرف را وارد کنید (اختیاری)</span>
+                        <input name="referralCode" type="text"  value="{{@request('ref')}}" class="input-email-account" placeholder="">
+                        @error('referralCode')
+                        <span class="invalid-feedback" role="alert" style="margin: 10px 0;">
+                                        <strong>{{ $message }}</strong>
+                                    </span>
+                        @enderror
+                    @endif
+
+
                     <div class="parent-btn">
                         <button class="dk-btn dk-btn-info text-center mt-5">
                             تایید
