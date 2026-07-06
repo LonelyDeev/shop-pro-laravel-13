@@ -1,8 +1,6 @@
 @if(Auth::check())
     <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
-{{--
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.qrcode/1.0/jquery.qrcode.min.js"></script>
---}}
     <script>
 
         // Enable pusher logging - don't include this in production
@@ -12,7 +10,6 @@
 
         var channel = pusher.subscribe('inbox-user-{{Auth::id()}}');
         channel.bind('send-message-user', function(data) {
-            alert('t')
             var notifications_count=$('.front-dropdown-notification .dropdown-header .notifications-count').attr('data-count');
             notifications_count=parseInt(notifications_count)+parseInt(1)
             $('.front-dropdown-notification .notifications-count').text(notifications_count);
