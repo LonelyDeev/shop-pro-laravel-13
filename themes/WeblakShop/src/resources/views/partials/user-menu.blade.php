@@ -1,5 +1,6 @@
 <!--start .author-author__info-->
 @if(auth()->check())
+
     <ul class="nav float-left">
     <li class="nav-item account dropdown">
         <a class="nav-link" href="#" data-toggle="dropdown" aria-haspopup="true"

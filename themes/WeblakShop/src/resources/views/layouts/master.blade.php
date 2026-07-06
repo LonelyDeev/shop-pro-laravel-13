@@ -313,11 +313,12 @@
             </div>
 
             <div class="col-lg-4 col-md-4 col-xs-12 pull-left">
-                <div class="header-left">
+                <div class="header-left d-flex flex-row-reverse">
 
                     @include('front::partials.cart')
 
                     @if(auth()->check())
+
                         <a class="login-link">
                             <div class="btn-login">
                                 <span class="mdi mdi-account"></span>
@@ -372,6 +373,7 @@
                                 </div>
                             </div>
                         </a>
+                        @include('front::partials.notifications')
                     @else
                         <a href="{{ route('login') }}" class="login-link">
                             <div class="btn-login">

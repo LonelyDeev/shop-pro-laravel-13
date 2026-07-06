@@ -17,6 +17,9 @@ return [
         'total'                  => 'جمع :',
         'kala'                   => ' کالا ',
         'add-to-cart'            => 'افزودن به سبد',
+        'new-notification'            => 'اعلان جدید',
+        'no-notification'            => ' اعلان جدیدی وجود ندارد',
+        'show-all-notifications'            => 'نمایش همه اعلان ها',
     ],
 
     'currency' => [
