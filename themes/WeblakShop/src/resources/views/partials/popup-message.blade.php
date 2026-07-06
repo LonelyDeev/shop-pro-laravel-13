@@ -2,7 +2,7 @@
     <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.qrcode/1.0/jquery.qrcode.min.js"></script>
     <script>
-
+        Pusher.logToConsole = true;
         // Enable pusher logging - don't include this in production
         var pusher = new Pusher('{{env('PUSHER_APP_KEY')}}', {
             cluster: '{{env('PUSHER_APP_CLUSTER')}}'
