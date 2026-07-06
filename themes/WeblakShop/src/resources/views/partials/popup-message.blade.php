@@ -10,7 +10,8 @@
 
         var channel = pusher.subscribe('inbox-user-{{Auth::id()}}');
         channel.bind('send-message-user', function(data) {
-            var notifications_count=$('.front-dropdown-notification .dropdown-header .notifications-count').attr('data-count');
+            alert('kk')
+     /*       var notifications_count=$('.front-dropdown-notification .dropdown-header .notifications-count').attr('data-count');
             notifications_count=parseInt(notifications_count)+parseInt(1)
             $('.front-dropdown-notification .notifications-count').text(notifications_count);
             $('.front-dropdown-notification .dropdown-header .notifications-count').attr('data-count',notifications_count);
@@ -28,7 +29,7 @@
                         <time class="media-meta">${data.message.created_at}</time></small>
                     </div>
                 </a>`)
-
+*/
         });
     </script>
 
