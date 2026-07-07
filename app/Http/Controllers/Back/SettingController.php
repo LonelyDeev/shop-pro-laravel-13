@@ -539,6 +539,7 @@ class SettingController extends Controller
             'MAIL_PORT',
             'MAIL_USERNAME',
             'MAIL_PASSWORD',
+            'MAIL_ENCRYPTION',
         ];
 
         $allChanges = [];
