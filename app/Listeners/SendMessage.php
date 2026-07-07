@@ -5,6 +5,7 @@ use App\Events\SendMessage as EventsSendMessage;
 use App\Events\SendMessagePopUp;
 use App\Models\Message;
 use App\Models\Sms;
+use App\Models\User;
 use App\Notifications\Contact\ContactCreated;
 use App\Services\Sms\SmsService;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -25,8 +26,13 @@ class SendMessage
 
            foreach ($items as $item){
                if ($message->email) {
+                    $user=User::find($item->user);
+                    if ($user->email){
+                        Mail::to($user->email)->send(new SendMailMessage($message->title,$message->description));
+
+                    }
                    // ارسال ایمیل
-                   Mail::to($item->user->email)->send(new SendMailMessage($message->title,$message->description));
+
                }
 
                if ($message->sms) {
