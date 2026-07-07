@@ -385,7 +385,7 @@
                                                     <div class="col-md-4 col-12">
                                                         <div class="form-group">
                                                             <label>Transport</label>
-                                                            <input type="text" name="MAIL_DRIVER" class="form-control ltr" value="{{ config('mail.mailers.smtp.transport') }}">
+                                                            <input type="text" name="MAIL_TRANSPORT" class="form-control ltr" value="{{ config('mail.mailers.smtp.transport') }}">
                                                         </div>
                                                     </div>
                                                     <div class="col-md-4 col-12">
