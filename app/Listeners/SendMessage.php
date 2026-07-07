@@ -27,12 +27,10 @@ class SendMessage
            foreach ($items as $item){
                if ($message->email) {
                     if ($item->user->email){
-                        dd($item->user->email);
                         Mail::to($item->user->email)->send(new SendMailMessage($message->title,$message->description));
 
                     }
                    // ارسال ایمیل
-dd('ff');
                }
 
                if ($message->sms) {
