@@ -71,6 +71,11 @@ class Sms extends Model
             'string' => 'اطلاع رسانی برگشت وجه به کیف پول',
             'method' => 'walletRefund'
         ],
+        'SEND_MESSAGE_USERS' => [
+            'key'    => 'send-message-users',
+            'string' => 'ارسال پبام به کاربران',
+            'method' => 'sendMessageUsers'
+        ],
     ];
 
     public function user()
