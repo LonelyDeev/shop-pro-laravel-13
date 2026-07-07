@@ -533,6 +533,7 @@ class SettingController extends Controller
             'PUSHER_APP_KEY',
             'PUSHER_APP_SECRET',
             'PUSHER_APP_CLUSTER',
+            'MAIL_TRANSPORT',
             'MAIL_MAILER',
             'MAIL_HOST',
             'MAIL_PORT',
