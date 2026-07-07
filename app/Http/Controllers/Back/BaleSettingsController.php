@@ -20,7 +20,7 @@ class BaleSettingsController extends Controller
 
         // اگر توکن از فرم ارسال شده، موقتاً ذخیره می‌کنیم تا تست انجام شود
         if ($request->filled('bot_token')) {
-            option(['BALE_BOT_TOKEN' => $request->bot_token]);
+            option_update('BALE_BOT_TOKEN', $request->bot_token);
         }
 
         $bale = app(BaleMessenger::class);
