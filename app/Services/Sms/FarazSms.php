@@ -55,6 +55,7 @@ class FarazSms extends SmsService implements SmsContract, SmsNotificationContrac
 
         } catch (Exception $e) {
             $response = $e->getMessage();
+            dd($response);
         }
 
         return $response;

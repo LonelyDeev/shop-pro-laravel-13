@@ -69,6 +69,8 @@ use App\Http\Controllers\Back\RobotsController;
 use App\Http\Controllers\Back\Floatingwidgetcontroller;
 use App\Http\Controllers\Back\FaqController;
 use App\Http\Controllers\Back\MessageController;
+use App\Http\Controllers\Back\BaleSettingsController;
+use App\Http\Controllers\BaleWebhookController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -393,6 +395,7 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
 
 
 
+
     //-------------------------Forms
     Route::resource('forms', FormController::class)->except(['show']);
     // مدیریت فیلدها
@@ -528,6 +531,19 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
         Route::put('/save',  [FloatingWidgetController::class, 'update'])->name('update');
     });
 
+    Route::prefix('settings/bale')->name('settings.bale.')->group(function () {
+
+        // تست اتصال ربات
+        Route::post('/test', [BaleSettingsController::class, 'testConnection'])->name('test');
+
+        // تنظیم وب‌هوک
+        Route::post('/set-webhook', [BaleSettingsController::class, 'setWebhook'])->name('set-webhook');
+
+        // حذف وب‌هوک
+        Route::post('/delete-webhook', [BaleSettingsController::class, 'deleteWebhook'])->name('delete-webhook');
+    });
+
+
     Route::get('settings/seller-hero', [SettingController::class, 'seller_hero'])->name('settings.seller-hero');
     Route::get('settings/seller-hero/create', [SettingController::class, 'seller_hero_create'])->name('settings.seller-hero-create');
     Route::post('settings/seller-hero/store', [SettingController::class, 'seller_hero_store'])->name('settings.seller-hero-store');
@@ -648,3 +664,5 @@ Route::get('refresh-csrf', function () {
 })->name('csrf');
 
 
+Route::post('/bale/webhook', [BaleWebhookController::class, 'handle'])
+    ->name('bale.webhook');
