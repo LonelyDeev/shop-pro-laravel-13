@@ -26,8 +26,6 @@
             const channel = pusher.subscribe('inbox-user-' + userId);
 
             channel.bind('send-message-user', function (data) {
-                alert('jj')
-                console.log(data)
                 const wrapper = document.querySelector('.front-dropdown-notification');
                 if (!wrapper) return;
 

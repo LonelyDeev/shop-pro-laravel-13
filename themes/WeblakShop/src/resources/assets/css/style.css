@@ -16890,7 +16890,7 @@ img.captcha {
     color: #6366f1;
     font-size: 1.1rem;
 }
-.notif-card-body { flex: 1; min-width: 0; }
+.notif-card-body { flex: 1; min-width: 0;text-align: right }
 .notif-card-title {
     margin: 0 0 4px;
     font-size: .875rem;
