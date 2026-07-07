@@ -104,3 +104,68 @@ $('#messages-delete-form').submit(function (e) {
         processData: false
     });
 });
+$(function() {
+    // -------- مدیریت نمایش بخش پترن بر اساس تیک پیامک --------
+    var $smsCheckbox = $('input[name="sms"]');
+    var $patternBox = $('#pattern-code-div');
+
+    function togglePatternBox() {
+        if ($smsCheckbox.is(':checked')) {
+            $patternBox.removeClass('d-none');
+        } else {
+            $patternBox.addClass('d-none');
+        }
+    }
+
+    // اجرا در بارگذاری اولیه
+    togglePatternBox();
+
+    // اتصال به تغییر وضعیت چک‌باکس
+    $smsCheckbox.on('change', togglePatternBox);
+
+    // -------- مدیریت افزودن و حذف متغیرها --------
+    var $variablesContainer = $('#variables');
+    var $template = $('.variable-template');
+    var $emptyAlert = $('#vars-empty'); // اگر این آی‌دی وجود ندارد، آن را به alert مورد نظر اضافه کنید
+
+    // در صورتی که alert دارای id="vars-empty" نیست، می‌توانید با کلاس یا محتوا آن را انتخاب کنید:
+    // var $emptyAlert = $('.msg-alert:contains("متغیرهای موجود را حذف کنید")');
+
+    function updateEmptyState() {
+        var $visibleRows = $variablesContainer.find('.variable-item:not(.d-none)');
+        if ($visibleRows.length === 0) {
+            $emptyAlert.removeClass('d-none');
+        } else {
+            $emptyAlert.addClass('d-none');
+        }
+    }
+
+    // افزودن متغیر جدید
+    $(document).on('click', '.add-variable-item', function(e) {
+        e.preventDefault();
+
+        // clone از قالب
+        var $newRow = $template.clone();
+        $newRow.removeClass('d-none variable-template');
+        // خالی کردن مقادیر ورودی‌ها
+        $newRow.find('input').val('');
+        // افزودن به انتهای ظرف
+        $variablesContainer.append($newRow);
+        // به‌روزرسانی وضعیت خالی بودن
+        updateEmptyState();
+    });
+
+    // حذف متغیر
+    $(document).on('click', '.remove-variable-item', function(e) {
+        e.preventDefault();
+        var $row = $(this).closest('.variable-item');
+        // اگر ردیف قالب نباشد (یعنی قابل حذف باشد)
+        if (!$row.hasClass('variable-template')) {
+            $row.remove();
+            updateEmptyState();
+        }
+    });
+
+    // وضعیت اولیه پس از بارگذاری
+    updateEmptyState();
+});

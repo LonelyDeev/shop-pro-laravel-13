@@ -40,6 +40,7 @@ class SendMessage
                    }else{
                         $sms_variables=null;
                     }
+                   dd($sms_variables);
                    $smsService = new SmsService(
                        $item->user->mobile,
                        $sms_variables,

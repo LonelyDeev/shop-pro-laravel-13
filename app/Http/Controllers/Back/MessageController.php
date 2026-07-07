@@ -33,25 +33,39 @@ class MessageController extends Controller
             'description' => 'required',
         ]);
 
-        $input_data=[];
-        if ($request->sms){
-            $this->validate($request, [
-                'user_message_pattern_code' => 'required',
-            ],[
-                'user_message_pattern_code.required'=>'کد پترن را وارد کنید'
-            ]);
+        $input_data=null;
+        if (isset($request->variables) and count($request->variables)) {
+            // مرحله 1: فیلتر کردن مقادیر خالی
+            $filteredVariables = [];
+            $filteredValues = [];
 
-            option_update('user_message_pattern_code',$request->user_message_pattern_code);
+            foreach ($request->variables as $index => $variable) {
+                if (!is_null($variable) && $variable !== '' &&
+                    isset($request->values[$index]) &&
+                    !is_null($request->values[$index]) &&
+                    $request->values[$index] !== '') {
+                    $filteredVariables[] = $variable;
+                    $filteredValues[] = $request->values[$index];
+                }
+            }
 
-            if (isset($request->variables) and count($request->variables)) {
-                $request->validate([
-                    'variables.*' => 'required',
-                    'values.*' => 'required',
+            // مرحله 2: حالا اعتبارسنجی روی داده‌های پالایش شده
+            if (count($filteredVariables) > 0) {
+                // برای اعتبارسنجی باید داده‌ها را به request اضافه کنیم
+                $request->merge([
+                    'filtered_variables' => $filteredVariables,
+                    'filtered_values' => $filteredValues
                 ]);
-                $input_data = array_combine($request->variables, $request->values);
+
+                $request->validate([
+                    'filtered_variables.*' => 'required',
+                    'filtered_values.*' => 'required',
+                ]);
+
+                // مرحله 3: ترکیب نهایی
+                $input_data = array_combine($filteredVariables, $filteredValues);
             }
         }
-
         if ($request->users){
             $users=User::whereIn('id',$request->users)->get();
         }else{
@@ -64,7 +78,6 @@ class MessageController extends Controller
                'message'=> 'هیچ کاربری برای ارسال پیام، وجود ندارد.'
             ]);
         }
-
 
         $message=new Message();
         $message->title=$request->title;
