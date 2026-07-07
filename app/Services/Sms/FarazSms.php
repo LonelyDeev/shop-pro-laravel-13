@@ -241,8 +241,8 @@ class FarazSms extends SmsService implements SmsContract, SmsNotificationContrac
     public function sendMessageUsers()
     {
         return [
-            'template' => option('user_message_pattern_code'),
-            'input_data'   =>  $this->data,
+            'pattern_code' => option('user_message_pattern_code'),
+            'attributes'   =>  $this->data,
         ];
     }
 }
