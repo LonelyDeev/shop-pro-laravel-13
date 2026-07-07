@@ -39,7 +39,7 @@
             <div class="content-body">
                 <section id="statistics-card">
                     <div class="row">
-                        <div class="col-lg-12 col-12">
+                        <div class="col-lg-12 col-12 mb-4">
                             <div class="notif-list-grid">
                                 @if($notifications->count())
                                     @foreach($notifications as $notification)
