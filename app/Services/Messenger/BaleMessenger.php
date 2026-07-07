@@ -15,7 +15,7 @@ class BaleMessenger implements BaleMessengerContract
     protected $client;
 
     /** آدرس پایه API ربات بله */
-    protected const BALE_API_BASE = 'https://api.bale.ai/bot';
+    protected const BALE_API_BASE = 'https://tapi.bale.ai/bot';
 
     public function __construct($mobile = null, $data = [])
     {
