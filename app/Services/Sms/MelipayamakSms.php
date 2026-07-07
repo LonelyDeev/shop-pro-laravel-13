@@ -190,4 +190,12 @@ class MelipayamakSms extends SmsService implements SmsContract, SmsNotificationC
             ],
         ];
     }
+
+    public function sendMessageUsers()
+    {
+        return [
+            'template' => option('user_message_pattern_code'),
+            'input_data'   =>  $this->data,
+        ];
+    }
 }

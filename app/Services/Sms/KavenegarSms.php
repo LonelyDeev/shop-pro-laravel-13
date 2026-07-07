@@ -196,4 +196,12 @@ class KavenegarSms extends SmsService implements SmsContract, SmsNotificationCon
             ],
         ];
     }
+
+    public function sendMessageUsers()
+    {
+        return [
+            'template' => option('user_message_pattern_code'),
+            'input_data'   =>  $this->data,
+        ];
+    }
 }

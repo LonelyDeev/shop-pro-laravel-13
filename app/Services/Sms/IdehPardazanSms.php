@@ -228,4 +228,12 @@ class IdehPardazanSms extends SmsService implements SmsContract, SmsNotification
             ],
         ];
     }
+
+    public function sendMessageUsers()
+    {
+        return [
+            'template' => option('user_message_pattern_code'),
+            'input_data'   =>  $this->data,
+        ];
+    }
 }

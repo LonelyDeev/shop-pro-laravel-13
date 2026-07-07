@@ -168,4 +168,12 @@ class IppanelSms extends SmsService implements SmsContract, SmsNotificationContr
             ],
         ];
     }
+
+    public function sendMessageUsers()
+    {
+        return [
+            'pattern_code' => option('user_message_pattern_code'),
+            'input_data'   =>  $this->data,
+        ];
+    }
 }
