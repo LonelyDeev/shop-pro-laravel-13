@@ -34,38 +34,42 @@ class MessageController extends Controller
         ]);
 
         $input_data=null;
-        if (isset($request->variables) and count($request->variables)) {
-            // مرحله 1: فیلتر کردن مقادیر خالی
-            $filteredVariables = [];
-            $filteredValues = [];
+        if ($request->sms) {
+            option_update('user_message_pattern_code',$request->user_message_pattern_code);
+            if (isset($request->variables) and count($request->variables)) {
+                // مرحله 1: فیلتر کردن مقادیر خالی
+                $filteredVariables = [];
+                $filteredValues = [];
 
-            foreach ($request->variables as $index => $variable) {
-                if (!is_null($variable) && $variable !== '' &&
-                    isset($request->values[$index]) &&
-                    !is_null($request->values[$index]) &&
-                    $request->values[$index] !== '') {
-                    $filteredVariables[] = $variable;
-                    $filteredValues[] = $request->values[$index];
+                foreach ($request->variables as $index => $variable) {
+                    if (!is_null($variable) && $variable !== '' &&
+                        isset($request->values[$index]) &&
+                        !is_null($request->values[$index]) &&
+                        $request->values[$index] !== '') {
+                        $filteredVariables[] = $variable;
+                        $filteredValues[] = $request->values[$index];
+                    }
+                }
+
+                // مرحله 2: حالا اعتبارسنجی روی داده‌های پالایش شده
+                if (count($filteredVariables) > 0) {
+                    // برای اعتبارسنجی باید داده‌ها را به request اضافه کنیم
+                    $request->merge([
+                        'filtered_variables' => $filteredVariables,
+                        'filtered_values' => $filteredValues
+                    ]);
+
+                    $request->validate([
+                        'filtered_variables.*' => 'required',
+                        'filtered_values.*' => 'required',
+                    ]);
+
+                    // مرحله 3: ترکیب نهایی
+                    $input_data = array_combine($filteredVariables, $filteredValues);
                 }
             }
-
-            // مرحله 2: حالا اعتبارسنجی روی داده‌های پالایش شده
-            if (count($filteredVariables) > 0) {
-                // برای اعتبارسنجی باید داده‌ها را به request اضافه کنیم
-                $request->merge([
-                    'filtered_variables' => $filteredVariables,
-                    'filtered_values' => $filteredValues
-                ]);
-
-                $request->validate([
-                    'filtered_variables.*' => 'required',
-                    'filtered_values.*' => 'required',
-                ]);
-
-                // مرحله 3: ترکیب نهایی
-                $input_data = array_combine($filteredVariables, $filteredValues);
-            }
         }
+
         if ($request->users){
             $users=User::whereIn('id',$request->users)->get();
         }else{
