@@ -9,6 +9,7 @@
         $unreadCount        = $notifications->count();
         $notificationsRoute = route('front.notifications.index');
     @endphp
+
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const pusherKey     = '{{ config('broadcasting.connections.pusher.key') }}';
@@ -25,12 +26,12 @@
             const channel = pusher.subscribe('inbox-user-' + userId);
 
             channel.bind('send-message-user', function (data) {
-                const wrapper   = document.querySelector('.front-dropdown-notification');
+                const wrapper = document.querySelector('.front-dropdown-notification');
                 if (!wrapper) return;
 
                 const countBell = wrapper.querySelector('.notifications-count');
                 const countHead = wrapper.querySelector('.header-count');
-                const list      = wrapper.querySelector('.scrollable-container');
+                const list      = wrapper.querySelector('.notif-list');
                 if (!countBell || !list) return;
 
                 // Update counters
@@ -38,13 +39,16 @@
                 countBell.dataset.count = currentCount;
                 countBell.textContent   = currentCount;
                 countBell.style.display = '';
+                countBell.classList.remove('pop');
+                void countBell.offsetWidth; // restart animation
+                countBell.classList.add('pop');
                 if (countHead) countHead.textContent = currentCount;
 
                 // Remove the "no notifications" placeholder
-                const empty = list.querySelector('.empty-notifications');
+                const empty = list.querySelector('.notif-empty');
                 if (empty) empty.remove();
 
-                // Escape user-supplied values to prevent XSS
+                // Escape user-supplied values
                 const escapeHtml = (str) => {
                     const div = document.createElement('div');
                     div.textContent = str ?? '';
@@ -56,26 +60,26 @@
                 const createdAt   = escapeHtml(data.message.created_at);
 
                 const html = `
-                    <a class="d-flex justify-content-between notification-item new-notif" href="${link}">
-                        <div class="media d-flex align-items-start">
-                            <div class="media-left">
-                                <div class="notif-icon"><i class="mdi mdi-comment-outline"></i></div>
-                            </div>
-                            <div class="media-body text-right">
-                                <h6 class="primary media-heading">${title}</h6>
-                                <small class="notification-text">${description}</small>
-                                <time class="media-meta d-block">${createdAt}</time>
-                            </div>
+                    <a class="notif-card new-notif" href="${link}">
+                        <div class="notif-card-icon">
+                            <i class="mdi mdi-comment-text-outline"></i>
                         </div>
+                        <div class="notif-card-body">
+                            <h6 class="notif-card-title">${title}</h6>
+                            <p class="notif-card-text">${description}</p>
+                            <span class="notif-card-time">
+                                <i class="mdi mdi-clock-outline"></i>
+                                ${createdAt}
+                            </span>
+                        </div>
+                        <span class="notif-dot"></span>
                     </a>`;
 
                 list.insertAdjacentHTML('afterbegin', html);
 
-                // Play alert sound (if exists)
+                // Play alert sound
                 const audio = document.getElementById('alert-sound');
-                if (audio) {
-                    audio.play().catch(() => {});
-                }
+                if (audio) audio.play().catch(() => {});
             });
         });
     </script>
