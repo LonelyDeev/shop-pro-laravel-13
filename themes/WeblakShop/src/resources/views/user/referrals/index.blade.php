@@ -211,7 +211,7 @@
 
                                         $discountType = ($discount && $discount->type == 'percent') ? '٪' : ' ' . currencyTitle();
                                         $giftType = $isWallet ? 'کیف پول' : 'کد تخفیف';
-                                        $badgeClass = $isWallet ? 'bg-success' : 'bg-light-primary';
+                                        $badgeClass = 'bg-light-primary';
 
                                         // نام کاربر مرتبط
                                         $relatedUser = $isOwner ? ($refrral->user ?? null) : ($refrral->owner ?? null);
