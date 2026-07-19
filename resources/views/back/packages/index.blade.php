@@ -245,7 +245,8 @@
                         <div class="pkg-empty-icon"><i class="feather icon-alert-octagon"></i></div>
                         <h5>ارتباط با سرور پکیج‌ها برقرار نشد!</h5>
                         <p>لطفاً چند لحظه دیگر مجدد تلاش کنید یا با پشتیبانی تماس بگیرید.</p>
-                        <div class="alert alert-danger" role="alert">
+
+                        <div class="alert alert-danger mt-1 m-auto width-max-content" role="alert">
                             <p class="ltr">{!! $errors !!}</p>
                         </div>
                     </div>
