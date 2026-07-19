@@ -9,8 +9,8 @@ return [
     */
     'api' => [
         'base_url'        => env('PACKAGES_API_URL', 'https://update.webtpro.ir'),
-        'token'           => env('SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN'),
-        'project_key'     => env('SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN'),
+        'token'           => env('SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN',option('SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN')),
+        'project_key'     => env('SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN',option('SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN')),
         'timeout'         => env('PACKAGES_API_TIMEOUT', 120), // ← افزایش به ۱۲۰ ثانیه
         'connect_timeout' => env('PACKAGES_API_CONNECT_TIMEOUT', 30), // ← اضافه شد
         'cache_ttl'       => env('PACKAGES_CACHE_TTL', 300),
