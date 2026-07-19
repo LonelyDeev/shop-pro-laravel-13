@@ -32,7 +32,7 @@ class PackageController extends Controller
     {
         $query = $request->only(['page', 'search', 'category', 'sort']);
         $cacheKey = 'packages.list.' . md5(json_encode($query));
-
+        $errors=null;
         try {
             $data = Cache::remember($cacheKey, now()->addMinutes(config('packages.cache.list_ttl')), function () use ($query) {
                 return $this->api->listPackages($query);
@@ -78,10 +78,11 @@ class PackageController extends Controller
             $packages = [];
             $pagination = [];
             $installedMap = [];
+            $errors = $e->getMessage();
             session()->flash('error', $e->getMessage());
         }
 
-        return view('back.packages.index', compact('packages', 'pagination', 'installedMap'));
+        return view('back.packages.index', compact('packages', 'pagination', 'installedMap','errors'));
     }
 
     /* ===================================================================
