@@ -2,7 +2,6 @@
     $variables    = get_widget($widget);
     $categories   = $variables['categories'];
 @endphp
-@dd($categories)
 <!-- Start Category-Section -->
 @if ($categories->count())
     <div class="col-12">

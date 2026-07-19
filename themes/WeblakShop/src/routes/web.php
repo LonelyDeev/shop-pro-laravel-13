@@ -46,24 +46,6 @@ Route::group(['as' => 'front.'], function () {
     // ------------------ MainController
     Route::get('/', [MainController::class, 'index'])->name('index');
 
-    Route::prefix('story')->name('story.')->group(function () {
-
-        // روت‌های عمومی
-        Route::get('/{story}', [StoryController::class, 'getStoryContent'])->name('getStoryContent');
-
-        // روت‌های تعاملات (POST)
-        Route::prefix('interaction')->group(function () {
-            Route::post('/seen', [StoryController::class, 'setStorySeen'])->name('seen');
-            Route::post('/like', [StoryController::class, 'toggleLike'])->name('like');
-            Route::post('/click', [StoryController::class, 'storeInteraction'])->name('click');
-        });
-
-        Route::get('/{story}/comments', [StoryController::class, 'getStoryComments'])->name('comments');
-        Route::get('/{story}/product/{product}', [StoryController::class, 'productRedirect'])->name('product.redirect');
-        Route::get('/{story}/widget', [StoryController::class, 'widgetRedirect'])->name('widget.redirect');
-
-        Route::post('/comment', [StoryController::class, 'storeStoryComment'])->name('storeStoryComment');
-    });
 
     Route::get('/get-new-captcha', [MainController::class, 'captcha']);
     Route::get('/stores', [MainController::class, 'showStore'])->name('showStore');

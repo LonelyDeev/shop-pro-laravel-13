@@ -77,10 +77,20 @@
                                                                 <i class="fa-solid fa-ellipsis-vertical"></i>
                                                             </button>
                                                             <div class="dropdown-menu" aria-labelledby="dropdownMenu{{ $page->id }}">
-                                                                @can('pages.details')
-                                                                <a class="dropdown-item" target='_blank' href="{{ route('admin.pages.details', ['page' => $page])}}"><i class="fa-regular fa-eye mr-1"></i>جزئیات</a>
-                                                                <div class="dropdown-divider"></div>
-                                                                @endcan
+
+                                                                    @can('pages.details')
+                                                                        @php
+                                                                            $seoAuditActive = module_is_active('SeoAudit');
+                                                                            $detailsRoute = $seoAuditActive ? route('admin.seo-audit.pages.details', ['page' => $page]) : '';
+                                                                        @endphp
+                                                                        @if($seoAuditActive)
+                                                                            <a class="dropdown-item" target='_blank' href="{{ $detailsRoute }}">
+                                                                                <i class="fa-regular fa-eye mr-1"></i>جزئیات
+                                                                            </a>
+                                                                            <div class="dropdown-divider"></div>
+                                                                        @endif
+
+                                                                    @endcan
                                                                     @can('pages.update')
                                                                     <a class="dropdown-item" href="{{ route('admin.pages.edit', ['page' => $page]) }}"><i class="fa-solid fa-pencil mr-1"></i>ویرایش</a>
                                                                     <div class="dropdown-divider"></div>

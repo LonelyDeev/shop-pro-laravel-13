@@ -1,7 +1,6 @@
 @php
     $variables      = get_widget($widget);
     $banners=$variables['banner'];
-dd($banners)
 @endphp
 <!--    Start Main Slider -------------------->
 @if (count($banners))

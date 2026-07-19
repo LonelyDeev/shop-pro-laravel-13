@@ -47,6 +47,7 @@ return array(
     'ce9671a430e4846b44e1c68c7611f9f5' => $vendorDir . '/mockery/mockery/library/Mockery.php',
     'e4e590a9b5afe940db71ee1662c02677' => $vendorDir . '/morilog/jalali/src/helpers.php',
     'a1cfe24d14977df6878b9bf804af2d1c' => $vendorDir . '/nunomaduro/collision/src/Adapters/Phpunit/Autoload.php',
+    '9f394da3192a168c4633675768d80428' => $vendorDir . '/nwidart/laravel-modules/src/helpers.php',
     'ec07570ca5a812141189b1fa81503674' => $vendorDir . '/phpunit/phpunit/src/Framework/Assert/Functions.php',
     'd7354eb4c8441fbf08eec280b61c7c73' => $vendorDir . '/rachidlaasri/laravel-installer/src/Helpers/functions.php',
     '72b1e3f4a2af9b30b3f137b3ec2057fc' => $vendorDir . '/spatie/laravel-activitylog/src/helpers.php',

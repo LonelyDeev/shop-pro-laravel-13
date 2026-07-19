@@ -91,47 +91,6 @@ return [
         ]
     ],
 
-    'main-story' => [
-        'title' => 'استوری و هایلایت ها',
-        'image' => 'widgets/story.png',
-        'options' => [
-            [
-                'title'      => 'عنوان',
-                'key'        => 'title',
-                'input-type' => 'input',
-                'type'       => 'text',
-                'class'      => 'col-md-4 col-6',
-            ],
-            [
-                'title'      => 'تعداد استوری',
-                'key'        => 'number',
-                'input-type' => 'input',
-                'type'       => 'number',
-                'default'    => '10',
-                'class'      => 'col-md-4 col-6',
-                'attributes' => 'required'
-            ],[
-                'title'      => 'ترتیب نمایش',
-                'key'        => 'ordering',
-                'input-type' => 'select',
-                'class'      => 'col-md-4',
-                'options'    => [
-                    [
-                        'value' => 'asc',
-                        'title' => 'صعودی'
-                    ],
-                    [
-                        'value' => 'desc',
-                        'title' => 'نزولی'
-                    ]
-                ],
-            ],
-        ],
-        'rules' => [
-            'number' => 'required',
-        ]
-    ],
-
     'products-moment-block' => [
         'title' => 'کادر محصولات با پیشنهاد لحظه ای',
         'image' => 'widgets/products-moment.png',

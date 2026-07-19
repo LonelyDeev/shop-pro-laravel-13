@@ -47,17 +47,7 @@
                                         <label class="field-label">نوع ابزارک <small>با کلیک روی دکمه زیر، از بین الگوها انتخاب کنید</small></label>
 
                                         {{-- kept intact (id/name/data-*) so the existing create.js keeps working --}}
-                                        <select id="widget-key" name="key" required>
-                                            <option value="">انتخاب کنید</option>
-                                            @foreach (config('front.home-widgets') as $key => $template_widget)
-                                                <option value="{{ $key }}"
-                                                        data-image="{{ isset($template_widget['image']) ? theme_asset($template_widget['image']) : '' }}"
-                                                        data-title="{{ $template_widget['title'] }}"
-                                                        data-action="{{ route('admin.widgets.template', ['key' => $key]) }}">
-                                                    {{ $template_widget['title'] }}
-                                                </option>
-                                            @endforeach
-                                        </select>
+                                        @include('back.widgets.partials.widget-select', ['page' => 'home'])
 
                                         <button type="button" class="type-picker-trigger" id="type-picker-trigger" data-toggle="modal" data-target="#widget-type-modal">
                                             <span class="thumb" id="type-picker-thumb"><i class="feather icon-layout"></i></span>
@@ -117,43 +107,7 @@
                 </section>
 
                 {{-- widget type picker modal --}}
-                <div class="modal fade widget-type-modal" id="widget-type-modal" tabindex="-1" role="dialog" aria-labelledby="widgetTypeModalLabel" aria-hidden="true">
-                    <div class="modal-dialog modal-lg" role="document">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h4 class="modal-title" id="widgetTypeModalLabel">انتخاب نوع ابزارک</h4>
-                                <p>الگوی موردنظر برای این بخش از صفحه اصلی را انتخاب کنید</p>
-                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true">×</span>
-                                </button>
-                            </div>
-                            <div class="modal-body">
-                                <input type="text" class="modal-search" id="type-picker-search" placeholder="جستجوی نوع ابزارک...">
-
-                                <div class="template-gallery" id="template-gallery">
-                                    @foreach (config('front.home-widgets') as $key => $template_widget)
-                                        <div class="template-card" data-key="{{ $key }}" data-title="{{ $template_widget['title'] }}">
-                                            <div class="thumb"
-                                                 @if(isset($template_widget['image']))
-                                                     style="background-image:url('{{ theme_asset($template_widget['image']) }}')"
-                                                @endif>
-                                                @if(!isset($template_widget['image']))
-                                                    <i class="feather icon-layout"></i>
-                                                @endif
-                                            </div>
-                                            <div class="label">
-                                                <span>{{ $template_widget['title'] }}</span>
-                                                <span class="check"></span>
-                                            </div>
-                                        </div>
-                                    @endforeach
-                                </div>
-
-                                <div class="no-results" id="type-picker-no-results">چیزی با این عنوان پیدا نشد</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                @include('back.widgets.partials.widget-select-modal', ['page' => 'home'])
 
             </div>
         </div>

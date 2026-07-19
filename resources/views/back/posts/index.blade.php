@@ -85,8 +85,18 @@
                                                             </button>
                                                             <div class="dropdown-menu" aria-labelledby="dropdownMenu{{ $post->id }}">
                                                                 @can('posts.details')
-                                                                <a class="dropdown-item" target='_blank' href="{{  route('admin.posts.details', ['post' => $post]) }}"><i class="fa-regular fa-eye mr-1"></i>جزئیات</a>
-                                                                <div class="dropdown-divider"></div>
+                                                                    @php
+                                                                        $seoAuditActive = module_is_active('SeoAudit');
+                                                                        $detailsRoute = $seoAuditActive
+                                                                            ? route('admin.seo-audit.posts.details', ['post' => $post]): '';
+                                                                    @endphp
+                                                                @if($seoAuditActive)
+                                                                        <a class="dropdown-item" target='_blank' href="{{ $detailsRoute }}">
+                                                                            <i class="fa-regular fa-eye mr-1"></i>جزئیات
+                                                                        </a>
+                                                                        <div class="dropdown-divider"></div>
+                                                                @endif
+
                                                                 @endcan
                                                                 @can('posts.update')
                                                                     <a class="dropdown-item" href="{{ route('admin.posts.edit', ['post' => $post]) }}"><i class="fa-solid fa-pencil mr-1"></i>ویرایش</a>

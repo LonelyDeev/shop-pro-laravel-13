@@ -1000,6 +1000,11 @@ function aparat_iframe($string)
     return '<div class="h_iframe-aparat_embed_frame"><span style="display: block;padding-top: 57%">.</span><iframe data-src="https://www.aparat.com/video/video/embed/videohash/' . $matches[1] . '/vt/frame" allowFullScreen="true" webkitallowfullscreen="true" mozallowfullscreen="true"></iframe></div>';
 }
 
+function module_asset(string $module, string $path): string
+{
+    $moduleLower = strtolower($module);
+    return asset('modules/' . $moduleLower . '/' . ltrim($path, '/'));
+}
 function theme_asset($path)
 {
     return asset(config('front.asset_path') . $path);
@@ -1529,3 +1534,13 @@ function currencyTitle(){
      return $value;
 }
 
+if (!function_exists('module_is_active')) {
+    function module_is_active(string $moduleName): bool
+    {
+        try {
+            return app('modules')->isEnabled($moduleName);
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+}

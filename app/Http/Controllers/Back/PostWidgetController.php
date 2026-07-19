@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Back;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Widget;
+use App\Services\WidgetTemplateRegistry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -13,7 +14,8 @@ class PostWidgetController extends Controller
 {
     public function __construct()
     {
-        if (!config('front.posts-widgets')) {
+        // اگه هیچ ویجتی برای صفحه‌ی posts وجود نداشت → 404
+        if (empty(WidgetTemplateRegistry::allKeysForPage('posts'))) {
             abort(404);
         }
     }
@@ -39,7 +41,8 @@ class PostWidgetController extends Controller
 
     public function store(Request $request)
     {
-        $keys = implode(',', array_keys(config('front.posts-widgets')));
+        // کلیدهای مجاز برای صفحه‌ی posts (شامل ماژول‌ها)
+        $keys = implode(',', WidgetTemplateRegistry::allKeysForPage('posts'));
 
         $request->validate([
             'key'         => "required|in:$keys",
@@ -47,9 +50,14 @@ class PostWidgetController extends Controller
             'is_active'   => 'boolean'
         ]);
 
-        $key   = config('front.posts-widgets.' . $request->key);
+        // دریافت template از هر source (برای صفحه‌ی posts)
+        $template = WidgetTemplateRegistry::findConfigForPage('posts', $request->key);
 
-        Validator::make($request->options, $key['rules'])->validate();
+        if (!$template) {
+            return back()->withErrors(['key' => 'ویجت یافت نشد.'])->withInput();
+        }
+
+        Validator::make($request->options, $template['rules'] ?? [])->validate();
 
         $widget = Widget::create([
             'title'       => $request->title,
@@ -60,7 +68,7 @@ class PostWidgetController extends Controller
             'lang'        => app()->getLocale(),
         ]);
 
-        $options = $this->getRequestOptions($key, $request, $widget);
+        $options = $this->getRequestOptions($template, $request, $widget);
 
         $this->saveWidgetOptions($widget, $options);
 
@@ -71,7 +79,7 @@ class PostWidgetController extends Controller
     public function edit(Widget $posts_widget)
     {
         $this->authorize('themes.widgets');
-        $widget=$posts_widget;
+        $widget = $posts_widget;
         $template = $this->template($widget->key, $widget);
 
         return view('back.posts-widgets.edit', compact('widget', 'template'));
@@ -80,7 +88,7 @@ class PostWidgetController extends Controller
     public function update(Widget $posts_widget, Request $request)
     {
         $widget = $posts_widget;
-        $keys = implode(',', array_keys(config('front.posts-widgets')));
+        $keys = implode(',', WidgetTemplateRegistry::allKeysForPage('posts'));
 
         $request->validate([
             'key'         => "required|in:$keys",
@@ -88,9 +96,13 @@ class PostWidgetController extends Controller
             'is_active'   => 'boolean'
         ]);
 
-        $key = config('front.posts-widgets.' . $request->key);
+        $template = WidgetTemplateRegistry::findConfigForPage('posts', $request->key);
 
-        Validator::make($request->options, $key['rules'])->validate();
+        if (!$template) {
+            return back()->withErrors(['key' => 'ویجت یافت نشد.'])->withInput();
+        }
+
+        Validator::make($request->options, $template['rules'] ?? [])->validate();
 
         $allChanges = [];
         $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
@@ -117,9 +129,9 @@ class PostWidgetController extends Controller
                     $newValue = $newValue ? 'فعال' : 'غیرفعال';
                 }
 
-                // تبدیل key به نام خوانا
+                // تبدیل key به نام خوانا (با پشتیبانی از ماژول‌ها)
                 if ($field === 'key') {
-                    $widgetsList = config('front.posts-widgets', []);
+                    $widgetsList = WidgetTemplateRegistry::mergedForPage('posts');
                     $oldValue = $widgetsList[$oldValue]['title'] ?? $oldValue;
                     $newValue = $widgetsList[$newValue]['title'] ?? $newValue;
                 }
@@ -136,15 +148,7 @@ class PostWidgetController extends Controller
             $allChanges['main_fields'] = $mainChanges;
         }
 
-        // ========== 2. بررسی تغییرات options ==========
-        $widget->update([
-            'page'        => 'posts',
-            'title'       => $request->title,
-            'key'         => $request->key,
-            'is_active'   => $request->is_active,
-        ]);
-
-        // دریافت options قدیمی
+        // ========== 2. دریافت options قدیمی (قبل از update) ==========
         $oldOptions = [];
         foreach ($widget->options as $option) {
             if ($option->key === 'post_categories' || $option->key === 'product_categories') {
@@ -154,16 +158,22 @@ class PostWidgetController extends Controller
             }
         }
 
-        // حذف options قدیمی
-        $widget->options()->delete();
+        // ========== 3. به‌روزرسانی ویجت ==========
+        $widget->update([
+            'page'        => 'posts',
+            'title'       => $request->title,
+            'key'         => $request->key,
+            'is_active'   => $request->is_active,
+        ]);
 
-        // ذخیره options جدید
-        $options = $this->getRequestOptions($key, $request, $widget);
+        // ========== 4. ذخیره options جدید ==========
+        $widget->options()->delete();
+        $options = $this->getRequestOptions($template, $request, $widget);
         $this->saveWidgetOptions($widget, $options);
 
-        // دریافت options جدید
-        $newOptions = [];
+        // ========== 5. دریافت options جدید ==========
         $widget->refresh();
+        $newOptions = [];
         foreach ($widget->options as $option) {
             if ($option->key === 'post_categories' || $option->key === 'product_categories') {
                 $newOptions[$option->key] = $option->categories->pluck('id')->toArray();
@@ -172,23 +182,22 @@ class PostWidgetController extends Controller
             }
         }
 
-        // بررسی تغییرات options
+        // ========== 6. بررسی تغییرات options ==========
         $optionChanges = [];
-        $allKeys = array_unique(array_merge(array_keys($oldOptions), array_keys($newOptions)));
+        $allOptionKeys = array_unique(array_merge(array_keys($oldOptions), array_keys($newOptions)));
 
-        foreach ($allKeys as $key) {
-            $oldValue = $oldOptions[$key] ?? null;
-            $newValue = $newOptions[$key] ?? null;
+        foreach ($allOptionKeys as $optKey) {
+            $oldValue = $oldOptions[$optKey] ?? null;
+            $newValue = $newOptions[$optKey] ?? null;
 
             if ($oldValue != $newValue) {
-                // فرمت کردن مقادیر برای نمایش
-                $formattedOld = $this->formatOptionValue($key, $oldValue);
-                $formattedNew = $this->formatOptionValue($key, $newValue);
+                $formattedOld = $this->formatOptionValue($optKey, $oldValue);
+                $formattedNew = $this->formatOptionValue($optKey, $newValue);
 
-                $optionChanges[$key] = [
+                $optionChanges[$optKey] = [
                     'old' => $formattedOld,
                     'new' => $formattedNew,
-                    'title' => $this->getOptionFieldTitle($key)
+                    'title' => $this->getOptionFieldTitle($optKey)
                 ];
             }
         }
@@ -197,49 +206,36 @@ class PostWidgetController extends Controller
             $allChanges['options'] = $optionChanges;
         }
 
-        // ========== 3. ثبت لاگ ==========
+        // ========== 7. ثبت لاگ ==========
         if (!empty($allChanges)) {
             $changeDetails = [];
 
-            // تغییرات فیلدهای اصلی
             if (isset($allChanges['main_fields'])) {
                 foreach ($allChanges['main_fields'] as $change) {
                     $changeDetails[] = "{$change['title']} از «{$change['old']}» به «{$change['new']}»";
                 }
             }
 
-            // تغییرات options
             if (isset($allChanges['options'])) {
                 foreach ($allChanges['options'] as $change) {
                     $changeDetails[] = "{$change['title']} از «{$change['old']}» به «{$change['new']}»";
                 }
             }
 
-            $logMessage = "مدیر {$adminName} ابزارک صفحه اصلی مقالات «{$widgetTitle}» را ویرایش کرد: " . implode('، ', $changeDetails);
+            $logMessage = "مدیر {$adminName} ابزارک صفحه مقالات «{$widgetTitle}» را ویرایش کرد: " . implode('، ', $changeDetails);
 
             activity()
                 ->performedOn($widget)
                 ->causedBy(auth('adminPanel')->user())
                 ->withProperties([
-                    'action' => 'ابزارک  صفحه اصلی مقالات را ویرایش کرد',
+                    'action' => 'ابزارک صفحه مقالات را ویرایش کرد',
                     'widget_title' => $widgetTitle,
                     'widget_id' => $widget->id,
+                    'page' => 'posts',
                     'changes' => $allChanges,
                     'ip' => $request->ip()
                 ])
                 ->log($logMessage);
-        } else {
-            // اگر تغییری نکرده بود
-/*            activity()
-                ->performedOn($widget)
-                ->causedBy(auth('adminPanel')->user())
-                ->withProperties([
-                    'action' => 'ابزارک  صفحه اصلی مقالات',
-                    'widget_title' => $widgetTitle,
-                    'widget_id' => $widget->id,
-                    'ip' => $request->ip()
-                ])
-                ->log("مدیر {$adminName} ابزارک «{$widgetTitle}» را ویرایش کرد اما تغییری اعمال نشد");*/
         }
 
         session()->put('toast-success', 'ابزارک با موفقیت ویرایش شد.');
@@ -263,11 +259,21 @@ class PostWidgetController extends Controller
             // برای دسته‌بندی‌ها، نام دسته‌بندی‌ها را بگیر
             if ($key === 'post_categories' || $key === 'product_categories') {
                 try {
-                    // استفاده از ستون 'title' به جای 'name'
-                    $categories = \App\Models\Category::whereIn('id', $value)->pluck('title')->toArray();
-                    return implode('، ', $categories);
+                    $categoryNames = [];
+                    $categories = \App\Models\Category::whereIn('id', $value)->get();
+
+                    foreach ($categories as $category) {
+                        if (isset($category->title) && $category->title) {
+                            $categoryNames[] = $category->title;
+                        } elseif (isset($category->name) && $category->name) {
+                            $categoryNames[] = $category->name;
+                        } else {
+                            $categoryNames[] = "#{$category->id}";
+                        }
+                    }
+
+                    return !empty($categoryNames) ? implode('، ', $categoryNames) : implode('، ', $value);
                 } catch (\Exception $e) {
-                    // اگر خطا رخ داد، فقط IDها را نمایش بده
                     return implode('، ', $value);
                 }
             }
@@ -275,8 +281,13 @@ class PostWidgetController extends Controller
             return implode('، ', $value);
         }
 
+        if (is_bool($value)) {
+            return $value ? 'بله' : 'خیر';
+        }
+
         return $value ?: 'خالی';
     }
+
     /**
      * دریافت عنوان فارسی فیلدهای option
      */
@@ -301,6 +312,9 @@ class PostWidgetController extends Controller
             'image_mobile' => 'تصویر موبایل',
             'banner_link' => 'لینک بنر',
             'alt_text' => 'متن جایگزین تصویر',
+            // تنظیمات استوری (اگه ماژول برای posts هم ثبت بشه)
+            'number' => 'تعداد استوری',
+            'ordering' => 'ترتیب نمایش',
         ];
 
         return $titles[$key] ?? str_replace('_', ' ', $key);
@@ -309,7 +323,7 @@ class PostWidgetController extends Controller
     public function destroy(Widget $posts_widget)
     {
         $this->authorize('themes.widgets');
-        $widget=$posts_widget;
+        $widget = $posts_widget;
         $widget->delete();
 
         return response('success');
@@ -334,11 +348,16 @@ class PostWidgetController extends Controller
         return response('success');
     }
 
+    /**
+     * نمایش فرم تنظیمات ویجت برای صفحه‌ی posts
+     */
     public function template($key, $widget = null)
     {
         $this->authorize('themes.widgets');
 
-        $options = config('front.posts-widgets.' . $key . '.options');
+        // دریافت template از هر source (برای صفحه‌ی posts)
+        $template = WidgetTemplateRegistry::findConfigForPage('posts', $key);
+        $options = $template['options'] ?? null;
 
         $product_categories = Category::detectLang()->where('type', 'productcat')->orderBy('ordering')->get();
         $post_categories    = Category::detectLang()->where('type', 'postcat')->orderBy('ordering')->get();
@@ -355,52 +374,52 @@ class PostWidgetController extends Controller
         ));
     }
 
-    private function getRequestOptions($key, $request, Widget $widget)
+    private function getRequestOptions($template, $request, Widget $widget)
     {
         $options = [];
 
-        foreach ($key['options'] as $key => $option) {
+        foreach ($template['options'] as $key => $option) {
             switch ($option['input-type']) {
                 case 'input': {
-                        $options[$key]['input-type'] = $option['input-type'];
-                        $options[$key]['key'] = $option['key'];
-                        $options[$key]['value'] = $request->input('options.' . $option['key']);
-                        break;
-                    }
+                    $options[$key]['input-type'] = $option['input-type'];
+                    $options[$key]['key'] = $option['key'];
+                    $options[$key]['value'] = $request->input('options.' . $option['key']);
+                    break;
+                }
 
                 case 'file': {
-                        $file = $request->file('options.' . $option['key']);
+                    $file = $request->file('options.' . $option['key']);
                     if (!file_exists(public_path("/uploads/widgets"))) {
                         Storage::disk('public')->makeDirectory("/uploads/widgets");
                     }
-                        if ($file) {
-                            $name = uniqid() . '_' . time() . '.' . $file->getClientOriginalExtension();
-                            $path = $file->storeAs('widgets', $name);
-                            $options[$key]['value'] = '/uploads/' . $path;
-                        } else {
-                            $options[$key]['value'] = $widget->option($option['key']);
-                        }
-
-                        $options[$key]['input-type'] = $option['input-type'];
-                        $options[$key]['key'] = $option['key'];
-
-                        break;
+                    if ($file) {
+                        $name = uniqid() . '_' . time() . '.' . $file->getClientOriginalExtension();
+                        $path = $file->storeAs('widgets', $name);
+                        $options[$key]['value'] = '/uploads/' . $path;
+                    } else {
+                        $options[$key]['value'] = $widget->option($option['key']);
                     }
+
+                    $options[$key]['input-type'] = $option['input-type'];
+                    $options[$key]['key'] = $option['key'];
+
+                    break;
+                }
 
                 case 'select': {
-                        $options[$key]['input-type'] = $option['input-type'];
-                        $options[$key]['key'] = $option['key'];
-                        $options[$key]['value'] = $request->input('options.' . $option['key']);
-                        break;
-                    }
+                    $options[$key]['input-type'] = $option['input-type'];
+                    $options[$key]['key'] = $option['key'];
+                    $options[$key]['value'] = $request->input('options.' . $option['key']);
+                    break;
+                }
 
                 case 'post_categories':
                 case 'product_categories': {
-                        $options[$key]['input-type'] = $option['input-type'];
-                        $options[$key]['key'] = $option['key'];
-                        $options[$key]['value'] = $request->input('options.' . $option['key']);
-                        break;
-                    }
+                    $options[$key]['input-type'] = $option['input-type'];
+                    $options[$key]['key'] = $option['key'];
+                    $options[$key]['value'] = $request->input('options.' . $option['key']);
+                    break;
+                }
             }
         }
 
@@ -413,24 +432,24 @@ class PostWidgetController extends Controller
             switch ($option['input-type']) {
                 case 'post_categories':
                 case 'product_categories': {
-                        $value = is_array($option['value']) && !empty($option['value']) ? 'on' : 'off';
+                    $value = is_array($option['value']) && !empty($option['value']) ? 'on' : 'off';
 
-                        $inserted_option = $widget->options()->create([
-                            'key'   => $option['key'],
-                            'value' => $value
-                        ]);
+                    $inserted_option = $widget->options()->create([
+                        'key'   => $option['key'],
+                        'value' => $value
+                    ]);
 
-                        $inserted_option->categories()->sync($option['value']);
+                    $inserted_option->categories()->sync($option['value']);
 
-                        break;
-                    }
+                    break;
+                }
 
                 default: {
-                        $widget->options()->create([
-                            'key'   => $option['key'],
-                            'value' => $option['value']
-                        ]);
-                    }
+                    $widget->options()->create([
+                        'key'   => $option['key'],
+                        'value' => $option['value']
+                    ]);
+                }
             }
         }
     }

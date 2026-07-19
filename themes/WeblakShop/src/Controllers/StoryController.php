@@ -9,10 +9,9 @@ use App\Models\Story;
 use App\Models\StoryComment;
 use App\Models\StoryInteraction;
 use App\Models\StoryLike;
-use App\Traits\StoryInteractionTrait;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Cookie;
+use Modules\Story\Traits\StoryInteractionTrait;
 
 class StoryController extends Controller
 {

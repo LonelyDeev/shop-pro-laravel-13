@@ -85,7 +85,6 @@ class ImportProductsJob implements ShouldQueue, ShouldBeUnique
             ]);
 
         } catch (\Exception $e) {
-            dd($e->getMessage());
             Log::error('خطا در Job واردات محصولات: ' . $e->getMessage(), [
                 'file' => $this->filePath,
                 'trace' => $e->getTraceAsString()

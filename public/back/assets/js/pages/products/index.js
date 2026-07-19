@@ -164,24 +164,29 @@ var product_datatable = (function () {
                 overflow: 'visible',
                 autoHide: false,
                 template: function (row) {
+                    let showDetailsHtml = '';
+                    if (row.links.show && row.links.show !== '#') {
+                        showDetailsHtml = `
+            <a class="dropdown-item" target='_blank' href="${row.links.show}"><i class="fa-regular fa-eye mr-1"></i>جزئیات</a>
+            <div class="dropdown-divider"></div>
+        `;
+                    }
+
                     return (
                         `<div class="dropdown dropdown-action">
-                             <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenu`+row.id+`" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                 <i class="fa-solid fa-ellipsis-vertical"></i>
-                             </button>
-                             <div class="dropdown-menu" aria-labelledby="dropdownMenu`+row.id+`">
-                             <a class="dropdown-item" target='_blank' href="`+row.links.show +`"><i class="fa-regular fa-eye mr-1"></i>جزئیات</a>
-                             <div class="dropdown-divider"></div>
-
-                             <a class="dropdown-item" href="`+row.links.edit +`"><i class="fa-solid fa-pencil mr-1"></i>ویرایش</a>
-                             <div class="dropdown-divider"></div>
-
-                             <a class="dropdown-item" href="`+ row.links.copy +`"><i class="fa-solid fa-copy mr-1"></i>کپی کردن</a>
-                             <div class="dropdown-divider"></div>
-                             <button class="dropdown-item btn-delete" data-toggle="modal" data-target="#delete-modal" data-action="`+row.links.destroy +`"><i class="fa-solid fa-trash-can mr-1"></i> حذف</button>
-
-                             </div>
-                        </div>`);
+            <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenu${row.id}" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <i class="fa-solid fa-ellipsis-vertical"></i>
+            </button>
+            <div class="dropdown-menu" aria-labelledby="dropdownMenu${row.id}">
+                ${showDetailsHtml}
+                <a class="dropdown-item" href="${row.links.edit}"><i class="fa-solid fa-pencil mr-1"></i>ویرایش</a>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item" href="${row.links.copy}"><i class="fa-solid fa-copy mr-1"></i>کپی کردن</a>
+                <div class="dropdown-divider"></div>
+                <button class="dropdown-item btn-delete" data-toggle="modal" data-target="#delete-modal" data-action="${row.links.destroy}"><i class="fa-solid fa-trash-can mr-1"></i> حذف</button>
+            </div>
+        </div>`
+                    );
                 }
             }
         ]

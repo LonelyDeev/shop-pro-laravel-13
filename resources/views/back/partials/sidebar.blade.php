@@ -110,6 +110,31 @@
                 </li>
             @endcan
 
+            @can('packages')
+                <li class="nav-item has-sub {{ open_class(['admin.packages.*']) }}">
+                    <a>
+                        <i class=" fab fa-buffer"></i><span class="menu-title"> پکیج ها</span></a>
+                    <ul class="menu-content">
+                        @can('packages.index')
+                            <li class="{{ active_class('admin.packages.index') }}">
+                                <a href="{{ route('admin.packages.index') }}"><i class="fa-solid fa-circle"></i><span
+                                        class="menu-item">لیست پکیج ها</span></a>
+                            </li>
+                        @endcan
+
+                        @can('packages.installed')
+                            <li class="{{ active_class('admin.packages.installed') }}">
+                                <a href="{{ route('admin.packages.installed') }}"><i class="fa-solid fa-circle"></i><span
+                                        class="menu-item">نصب شده</span></a>
+                            </li>
+                        @endcan
+
+
+                    </ul>
+                </li>
+
+            @endcan
+
 
             <li class="title">مدیریت محتوا </li>
             @can('posts')
@@ -193,28 +218,6 @@
 
 
             <li class="title"> امور ظاهری</li>
-            @can('stories')
-                <li class="nav-item has-sub {{ open_class(['admin.stories.*']) }}"><a><i
-                            class=" fas fa-camera"></i><span class="menu-title"> استوری ها</span></a>
-                    <ul class="menu-content">
-                        @can('stories.index')
-                            <li class="{{ active_class('admin.stories.index') }}">
-                                <a href="{{ route('admin.stories.index') }}"><i class="fa-solid fa-circle"></i><span
-                                        class="menu-item">لیست استوری ها</span></a>
-                            </li>
-                        @endcan
-
-                        @can('stories.create')
-                            <li class="{{ active_class('admin.stories.create') }}">
-                                <a href="{{ route('admin.stories.create') }}"><i class="fa-solid fa-circle"></i><span
-                                        class="menu-item">ایجاد استوری</span></a>
-                            </li>
-                        @endcan
-
-                    </ul>
-                </li>
-            @endcan
-
             @can('themes')
                 <li class="nav-item has-sub {{ open_class(['admin.themes.*', 'admin.widgets.*']) }}"><a><i
                             class="fa-solid fa-boxes-packing"></i><span class="menu-title">قالب </span></a>
@@ -898,6 +901,14 @@
             @endcan
 
 
+            <li class="title">پکیج ها </li>
+            @foreach (\App\Services\ModuleMenuRegistry::all() as $menuView)
+                @if (view()->exists($menuView))
+                    @include($menuView)
+                @endif
+            @endforeach
+
+
             <li class="title">امور کاربران و مدیران </li>
             @can('users')
                 <li class="nav-item has-sub {{ open_class(['admin.users.*']) }}"><a><i
@@ -1144,14 +1155,7 @@
                             </li>
                         @endcan
 
-                        @can('seo.audit')
-                            <li class="{{ active_class('admin.seo.audit') }} nav-item">
-                                <a href="{{ route('admin.seo.audit') }}">
-                                    <i class="fa fa-search" style='font-size: 15px'></i>
-                                    <span class="menu-title">برسی سئو سایت</span>
-                                </a>
-                            </li>
-                        @endcan
+
 
 
                     </ul>

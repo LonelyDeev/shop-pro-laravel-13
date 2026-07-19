@@ -8,11 +8,14 @@ use App\Models\Slider;
 use App\Models\Widget;
 use App\Models\Brand;
 use Illuminate\Support\Facades\DB;
-use App\Models\Story;
+use App\Services\WidgetRegistry;
 use App\Models\Tag;
 
 function get_widget($widget)
 {
+    if (WidgetRegistry::has($widget->key)) {
+        return WidgetRegistry::handle($widget->key, $widget);
+    }
     $variables = [];
 
     switch ($widget->key) {
@@ -58,15 +61,6 @@ function get_widget($widget)
                 break;
             }
 
-        case 'main-story': {
-            $variables['main_story'] = Story::where('status', 'active')
-                ->where('expiry_date', '>', now())
-                ->orderBy('created_at', $widget->option('ordering', 'asc'))
-                ->take($widget->option('number', 10))
-                ->get();
-
-            break;
-        }
         case 'middle-banners': {
                 $variables['index_middle_banners'] = Banner::where('group', 'index_middle_banners')
                     ->where('published', true)

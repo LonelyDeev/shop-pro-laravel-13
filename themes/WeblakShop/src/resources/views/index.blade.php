@@ -4,7 +4,7 @@
     <meta name="description" content="{{ option('info_short_description') }}">
     <meta name="keywords" content="{{ option('info_tags') }}">
 
-    <link rel="canonical" href="{{ url('/') }}" />
+    <link rel="canonical" href="{{ url('/') }}"/>
 
     @php
         $ldData = [
@@ -28,59 +28,67 @@
 
 @section('content')
     @foreach ($widgets as $widget)
-        @switch($widget->key)
-            @case('fullscreen-slider')
-                @include('front::widgets.fullscreen-slider')
-            @break
+        @php
+            // اول چک کن آیا ماژولی این ویجت رو ثبت کرده
+            $moduleView = \App\Services\WidgetRegistry::getView($widget->key);
+            $moduleHasWidget = $moduleView && view()->exists($moduleView);
+        @endphp
 
-            @case('main-slider')
-                @include('front::widgets.main-slider')
-            @break
+        @if ($moduleHasWidget)
+            {{-- ویجت از ماژول لود میشه --}}
+            @include($moduleView)
+        @else
+            @switch($widget->key)
+                @case('fullscreen-slider')
+                    @include('front::widgets.fullscreen-slider')
+                    @break
 
-            @case('main-story')
-                @include('front::widgets.main-story')
-            @break
+                @case('main-slider')
+                    @include('front::widgets.main-slider')
+                    @break
 
-            @case('products-moment-block')
-            @case('products-default-block')
-                @include('front::widgets.products-default-block')
-            @break
 
-            @case('products-colorful-block')
-                @include('front::widgets.products-colorful-block')
-            @break
+                @case('products-moment-block')
+                @case('products-default-block')
+                    @include('front::widgets.products-default-block')
+                    @break
 
-            @case('middle-banners')
-                @include('front::widgets.middle-banners')
-            @break
+                @case('products-colorful-block')
+                    @include('front::widgets.products-colorful-block')
+                    @break
 
-            @case('middle-banners-2')
-                @include('front::widgets.middle-banners-2')
-            @break
+                @case('middle-banners')
+                    @include('front::widgets.middle-banners')
+                    @break
 
-            @case('middle-banners-4')
-                @include('front::widgets.middle-banners-4')
-            @break
+                @case('middle-banners-2')
+                    @include('front::widgets.middle-banners-2')
+                    @break
 
-            @case('coworker-sliders')
-                @include('front::widgets.coworker-sliders')
-            @break
+                @case('middle-banners-4')
+                    @include('front::widgets.middle-banners-4')
+                    @break
 
-            @case('sevices-sliders')
-                @include('front::widgets.sevices-sliders')
-            @break
+                @case('coworker-sliders')
+                    @include('front::widgets.coworker-sliders')
+                    @break
 
-            @case('categories')
-                @include('front::widgets.categories')
-            @break
+                @case('sevices-sliders')
+                    @include('front::widgets.sevices-sliders')
+                    @break
 
-            @case('posts')
-                @include('front::widgets.posts')
-            @break
-            @case('faqs')
-                @include('front::widgets.faqs')
-            @break
-        @endswitch
+                @case('categories')
+                    @include('front::widgets.categories')
+                    @break
+
+                @case('posts')
+                    @include('front::widgets.posts')
+                    @break
+                @case('faqs')
+                    @include('front::widgets.faqs')
+                    @break
+            @endswitch
+        @endif
     @endforeach
 @endsection
 @push('scripts')
@@ -99,7 +107,8 @@
                                 <img src="{{ asset(option('dt_index_popup_image')) }}" class="img-responsive w-100">
                             </div>
                             <div class="d-block d-md-none">
-                                <img src="{{ asset(option('dt_index_popup_image_mobile')) }}" class="img-responsive w-100">
+                                <img src="{{ asset(option('dt_index_popup_image_mobile')) }}"
+                                     class="img-responsive w-100">
                             </div>
                         </a>
                     </div>
@@ -111,7 +120,7 @@
         </script>
     @elseif (option('dt_index_popup_type') == 'text')
         <div id="text-popup-modal" class="modal fade" tabindex="-1" role="dialog"
-            aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+             aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
                     <div class="modal-header">

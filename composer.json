@@ -28,6 +28,7 @@
         "mews/captcha": "^3.2",
         "milon/barcode": "^13.1",
         "morilog/jalali": "^3.2",
+        "nwidart/laravel-modules": "^13.0",
         "paquettg/php-html-parser": "^2.2",
         "predis/predis": "^2.3.0",
         "pusher/pusher-php-server": "^7.2",
@@ -38,7 +39,8 @@
         "spatie/image-optimizer": "^1.8",
         "spatie/laravel-activitylog": "^4.12",
         "spatie/laravel-backup": "^10.2.2",
-        "spatie/laravel-sitemap": "^7.3.2"
+        "spatie/laravel-sitemap": "^7.3.2",
+        "wikimedia/composer-merge-plugin": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
@@ -55,23 +57,28 @@
         "preferred-install": "dist",
         "sort-packages": true,
         "allow-plugins": {
-            "pestphp/pest-plugin": true,
-            "php-http/discovery": true,
-            "composer/package-versions-deprecated": true,
-            "maatwebsite/excel": true,
-            "spatie/laravel-backup": true,
-            "intervention/image": true,
-            "cviebrock/eloquent-sluggable": true,
             "barryvdh/laravel-debugbar": true,
+            "composer/package-versions-deprecated": true,
+            "cviebrock/eloquent-sluggable": true,
+            "intervention/image": true,
             "laravel/breeze": true,
             "laravel/sail": true,
-            "rachidlaasri/laravel-installer": true
+            "maatwebsite/excel": true,
+            "pestphp/pest-plugin": true,
+            "php-http/discovery": true,
+            "rachidlaasri/laravel-installer": true,
+            "spatie/laravel-backup": true,
+            "wikimedia/composer-merge-plugin": true
         }
-
     },
     "extra": {
         "laravel": {
             "dont-discover": []
+        },
+        "merge-plugin": {
+            "include": [
+                "Modules/*/composer.json"
+            ]
         }
     },
     "autoload": {

@@ -187,6 +187,7 @@ return [
         Codedge\Updater\UpdaterServiceProvider::class,
         App\Providers\ShortcodeServiceProvider::class,
         App\Providers\HolidayServiceProvider::class,
+        Nwidart\Modules\LaravelModulesServiceProvider::class,
         /*
          * Application Service Providers...
          */
@@ -246,6 +247,7 @@ return [
         'URL' => Illuminate\Support\Facades\URL::class,
         'Validator' => Illuminate\Support\Facades\Validator::class,
         'View' => Illuminate\Support\Facades\View::class,
+        'Module' => Nwidart\Modules\Facades\Module::class,
         //'Image' => Intervention\Image\Facades\Image::class,
 
     ],

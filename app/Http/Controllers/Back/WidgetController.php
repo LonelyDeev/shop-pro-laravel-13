@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Back;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Widget;
+use App\Services\WidgetTemplateRegistry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -15,7 +16,8 @@ class WidgetController extends Controller
     {
         $this->authorizeResource(Widget::class, 'widget');
 
-        if (!config('front.home-widgets')) {
+        // اگه هیچ ویجتی برای صفحه‌ی home وجود نداشت → 404
+        if (empty(WidgetTemplateRegistry::allKeysForPage('home'))) {
             abort(404);
         }
     }
@@ -38,7 +40,8 @@ class WidgetController extends Controller
 
     public function store(Request $request)
     {
-        $keys = implode(',', array_keys(config('front.home-widgets')));
+        // کلیدهای مجاز برای صفحه‌ی home
+        $keys = implode(',', WidgetTemplateRegistry::allKeysForPage('home'));
 
         $request->validate([
             'key'         => "required|in:$keys",
@@ -46,9 +49,14 @@ class WidgetController extends Controller
             'is_active'   => 'boolean'
         ]);
 
-        $key   = config('front.home-widgets.' . $request->key);
+        // دریافت template از هر source (برای صفحه‌ی home)
+        $template = WidgetTemplateRegistry::findConfigForPage('home', $request->key);
 
-        Validator::make($request->options, $key['rules'])->validate();
+        if (!$template) {
+            return back()->withErrors(['key' => 'ویجت یافت نشد.'])->withInput();
+        }
+
+        Validator::make($request->options, $template['rules'] ?? [])->validate();
 
         $widget = Widget::create([
             'title'       => $request->title,
@@ -58,7 +66,7 @@ class WidgetController extends Controller
             'lang'        => app()->getLocale(),
         ]);
 
-        $options = $this->getRequestOptions($key, $request, $widget);
+        $options = $this->getRequestOptions($template, $request, $widget);
 
         $this->saveWidgetOptions($widget, $options);
 
@@ -75,7 +83,7 @@ class WidgetController extends Controller
 
     public function update(Widget $widget, Request $request)
     {
-        $keys = implode(',', array_keys(config('front.home-widgets')));
+        $keys = implode(',', WidgetTemplateRegistry::allKeysForPage('home'));
 
         $request->validate([
             'key'         => "required|in:$keys",
@@ -83,9 +91,13 @@ class WidgetController extends Controller
             'is_active'   => 'boolean'
         ]);
 
-        $key = config('front.home-widgets.' . $request->key);
+        $template = WidgetTemplateRegistry::findConfigForPage('home', $request->key);
 
-        Validator::make($request->options, $key['rules'])->validate();
+        if (!$template) {
+            return back()->withErrors(['key' => 'ویجت یافت نشد.'])->withInput();
+        }
+
+        Validator::make($request->options, $template['rules'] ?? [])->validate();
 
         $allChanges = [];
         $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
@@ -114,9 +126,9 @@ class WidgetController extends Controller
 
                 // تبدیل key به نام خوانا
                 if ($field === 'key') {
-                    $widgetsList = config('front.home-widgets', []);
-                    $oldValue = $widgetsList[$oldValue]['title'] ?? $oldValue;
-                    $newValue = $widgetsList[$newValue]['title'] ?? $newValue;
+                    $allWidgets = WidgetTemplateRegistry::mergedForPage('home');
+                    $oldValue = $allWidgets[$oldValue]['title'] ?? $oldValue;
+                    $newValue = $allWidgets[$newValue]['title'] ?? $newValue;
                 }
 
                 $mainChanges[$field] = [
@@ -149,7 +161,7 @@ class WidgetController extends Controller
         ]);
 
         // ========== 4. ذخیره options جدید ==========
-        $options = $this->getRequestOptions($key, $request, $widget);
+        $options = $this->getRequestOptions($template, $request, $widget);
         $widget->options()->delete();
         $this->saveWidgetOptions($widget, $options);
 
@@ -221,19 +233,6 @@ class WidgetController extends Controller
                     'ip' => $request->ip()
                 ])
                 ->log($logMessage);
-        } else {
-            // اگر تغییری نکرده بود
-          /*  activity()
-                ->performedOn($widget)
-                ->causedBy(auth('adminPanel')->user())
-                ->withProperties([
-                    'action' => 'update_home_widget_no_change',
-                    'widget_title' => $widgetTitle,
-                    'widget_id' => $widget->id,
-                    'page' => 'home',
-                    'ip' => $request->ip()
-                ])
-                ->log("مدیر {$adminName} ابزارک صفحه اصلی «{$widgetTitle}» را ویرایش کرد اما تغییری اعمال نشد");*/
         }
 
         session()->put('toast-success', 'ابزارک با موفقیت ویرایش شد.');
@@ -343,6 +342,9 @@ class WidgetController extends Controller
             'banner_position' => 'موقعیت بنر',
             'banner_width' => 'عرض بنر',
             'banner_height' => 'ارتفاع بنر',
+
+            // تنظیمات استوری (ماژول)
+            'number' => 'تعداد استوری',
         ];
 
         return $titles[$key] ?? str_replace('_', ' ', $key);
@@ -374,11 +376,16 @@ class WidgetController extends Controller
         return response('success');
     }
 
+    /**
+     * نمایش فرم تنظیمات ویجت برای صفحه‌ی home
+     */
     public function template($key, $widget = null)
     {
         $this->authorize('themes.widgets');
 
-        $options = config('front.home-widgets.' . $key . '.options');
+        // دریافت template از هر source (برای صفحه‌ی home)
+        $template = WidgetTemplateRegistry::findConfigForPage('home', $key);
+        $options = $template['options'] ?? null;
 
         $product_categories = Category::detectLang()->where('type', 'productcat')->orderBy('ordering')->get();
         $post_categories    = Category::detectLang()->where('type', 'postcat')->orderBy('ordering')->get();
@@ -395,52 +402,52 @@ class WidgetController extends Controller
         ));
     }
 
-    private function getRequestOptions($key, $request, Widget $widget)
+    private function getRequestOptions($template, $request, Widget $widget)
     {
         $options = [];
 
-        foreach ($key['options'] as $key => $option) {
+        foreach ($template['options'] as $key => $option) {
             switch ($option['input-type']) {
                 case 'input': {
-                        $options[$key]['input-type'] = $option['input-type'];
-                        $options[$key]['key'] = $option['key'];
-                        $options[$key]['value'] = $request->input('options.' . $option['key']);
-                        break;
-                    }
+                    $options[$key]['input-type'] = $option['input-type'];
+                    $options[$key]['key'] = $option['key'];
+                    $options[$key]['value'] = $request->input('options.' . $option['key']);
+                    break;
+                }
 
                 case 'file': {
-                        $file = $request->file('options.' . $option['key']);
+                    $file = $request->file('options.' . $option['key']);
                     if (!file_exists(public_path("/uploads/widgets"))) {
                         Storage::disk('public')->makeDirectory("/uploads/widgets");
                     }
-                        if ($file) {
-                            $name = uniqid() . '_' . time() . '.' . $file->getClientOriginalExtension();
-                            $path = $file->storeAs('widgets', $name);
-                            $options[$key]['value'] = '/uploads/' . $path;
-                        } else {
-                            $options[$key]['value'] = $widget->option($option['key']);
-                        }
-
-                        $options[$key]['input-type'] = $option['input-type'];
-                        $options[$key]['key'] = $option['key'];
-
-                        break;
+                    if ($file) {
+                        $name = uniqid() . '_' . time() . '.' . $file->getClientOriginalExtension();
+                        $path = $file->storeAs('widgets', $name);
+                        $options[$key]['value'] = '/uploads/' . $path;
+                    } else {
+                        $options[$key]['value'] = $widget->option($option['key']);
                     }
+
+                    $options[$key]['input-type'] = $option['input-type'];
+                    $options[$key]['key'] = $option['key'];
+
+                    break;
+                }
 
                 case 'select': {
-                        $options[$key]['input-type'] = $option['input-type'];
-                        $options[$key]['key'] = $option['key'];
-                        $options[$key]['value'] = $request->input('options.' . $option['key']);
-                        break;
-                    }
+                    $options[$key]['input-type'] = $option['input-type'];
+                    $options[$key]['key'] = $option['key'];
+                    $options[$key]['value'] = $request->input('options.' . $option['key']);
+                    break;
+                }
 
                 case 'post_categories':
                 case 'product_categories': {
-                        $options[$key]['input-type'] = $option['input-type'];
-                        $options[$key]['key'] = $option['key'];
-                        $options[$key]['value'] = $request->input('options.' . $option['key']);
-                        break;
-                    }
+                    $options[$key]['input-type'] = $option['input-type'];
+                    $options[$key]['key'] = $option['key'];
+                    $options[$key]['value'] = $request->input('options.' . $option['key']);
+                    break;
+                }
             }
         }
 
@@ -453,24 +460,24 @@ class WidgetController extends Controller
             switch ($option['input-type']) {
                 case 'post_categories':
                 case 'product_categories': {
-                        $value = is_array($option['value']) && !empty($option['value']) ? 'on' : 'off';
+                    $value = is_array($option['value']) && !empty($option['value']) ? 'on' : 'off';
 
-                        $inserted_option = $widget->options()->create([
-                            'key'   => $option['key'],
-                            'value' => $value
-                        ]);
+                    $inserted_option = $widget->options()->create([
+                        'key'   => $option['key'],
+                        'value' => $value
+                    ]);
 
-                        $inserted_option->categories()->sync($option['value']);
+                    $inserted_option->categories()->sync($option['value']);
 
-                        break;
-                    }
+                    break;
+                }
 
                 default: {
-                        $widget->options()->create([
-                            'key'   => $option['key'],
-                            'value' => $option['value']
-                        ]);
-                    }
+                    $widget->options()->create([
+                        'key'   => $option['key'],
+                        'value' => $option['value']
+                    ]);
+                }
             }
         }
     }

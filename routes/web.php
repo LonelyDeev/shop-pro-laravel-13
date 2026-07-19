@@ -1,76 +1,75 @@
 <?php
 
-use App\Http\Controllers\Back\ApikeyController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AdminLoginController;
-use App\Http\Controllers\Back\ProvinceController;
-use App\Http\Controllers\Back\MainController;
-use App\Http\Controllers\Back\UserController;
-use App\Http\Controllers\Back\ProductController;
-use App\Http\Controllers\Back\BrandController;
-use App\Http\Controllers\Back\FilterController;
-use App\Http\Controllers\Back\AttributeGroupController;
-use App\Http\Controllers\Back\AttributeController;
-use App\Http\Controllers\Back\BackupController;
-use App\Http\Controllers\Back\SpecTypeController;
-use App\Http\Controllers\Back\PostController;
-use App\Http\Controllers\Back\NotificationController;
-use App\Http\Controllers\Back\CategoryController;
-use App\Http\Controllers\Back\SellerControllers;
-use App\Http\Controllers\Back\PageController;
-use App\Http\Controllers\Back\MenuController;
-use App\Http\Controllers\Back\OrderController;
-use App\Http\Controllers\Back\TransactionController;
-use App\Http\Controllers\Back\SliderController;
-use App\Http\Controllers\Back\BannerController;
-use App\Http\Controllers\Back\CarrierController;
-use App\Http\Controllers\Back\CityController;
-use App\Http\Controllers\Back\LinkController;
-use App\Http\Controllers\Back\ContactController;
-use App\Http\Controllers\Back\StockNotifyController;
-use App\Http\Controllers\Back\CommentController;
-use App\Http\Controllers\Back\CurrencyController;
+use App\Http\Controllers\Back\ActivityLogController;
 use App\Http\Controllers\Back\AdminController;
+use App\Http\Controllers\Back\AdminSessionController;
+use App\Http\Controllers\Back\ApikeyController;
+use App\Http\Controllers\Back\AttributeController;
+use App\Http\Controllers\Back\AttributeGroupController;
+use App\Http\Controllers\Back\BackupController;
+use App\Http\Controllers\Back\BannerController;
+use App\Http\Controllers\Back\BrandController;
+use App\Http\Controllers\Back\CarrierController;
+use App\Http\Controllers\Back\CategoryController;
+use App\Http\Controllers\Back\CityController;
+use App\Http\Controllers\Back\CommentController;
+use App\Http\Controllers\Back\ContactController;
+use App\Http\Controllers\Back\CurrencyController;
 use App\Http\Controllers\Back\DeveloperController;
 use App\Http\Controllers\Back\DiscountController;
+use App\Http\Controllers\Back\FaqController;
 use App\Http\Controllers\Back\FildController;
+use App\Http\Controllers\Back\FilterController;
+use App\Http\Controllers\Back\Floatingwidgetcontroller;
+use App\Http\Controllers\Back\FormController;
+use App\Http\Controllers\Back\HolidayController;
+use App\Http\Controllers\Back\ImportsController;
 use App\Http\Controllers\Back\InstallController;
-use App\Http\Controllers\Back\RoleController;
+use App\Http\Controllers\Back\LinkController;
+use App\Http\Controllers\Back\MainController;
+use App\Http\Controllers\Back\MenuController;
+use App\Http\Controllers\Back\MessageController;
+use App\Http\Controllers\Back\NewsletterController;
+use App\Http\Controllers\Back\NotificationController;
+use App\Http\Controllers\Back\OrderController;
+use App\Http\Controllers\Back\PackageController;
+use App\Http\Controllers\Back\PackagePaymentController;
+use App\Http\Controllers\Back\PageController;
 use App\Http\Controllers\Back\PermissionController;
+use App\Http\Controllers\Back\PostController;
+use App\Http\Controllers\Back\PostWidgetController;
+use App\Http\Controllers\Back\ProductController;
+use App\Http\Controllers\Back\ProvinceController;
+use App\Http\Controllers\Back\PulseController;
+use App\Http\Controllers\Back\RedirectInternalController;
+use App\Http\Controllers\Back\RequestDepositAdmin;
 use App\Http\Controllers\Back\ReviewController;
+use App\Http\Controllers\Back\RobotsController;
+use App\Http\Controllers\Back\RoleController;
+use App\Http\Controllers\Back\SearchController;
+use App\Http\Controllers\Back\SellerControllers;
 use App\Http\Controllers\Back\SettingController;
 use App\Http\Controllers\Back\SizeTypeController;
+use App\Http\Controllers\Back\SliderController;
 use App\Http\Controllers\Back\SmsController;
+use App\Http\Controllers\Back\SpecTypeController;
 use App\Http\Controllers\Back\StatisticsController;
+use App\Http\Controllers\Back\StockNotifyController;
+use App\Http\Controllers\Back\TagController;
 use App\Http\Controllers\Back\TariffController;
-use App\Http\Controllers\Back\ImportsController;
-use App\Http\Controllers\Back\RedirectInternalController;
 use App\Http\Controllers\Back\ThemeController;
 use App\Http\Controllers\Back\TicketController;
+use App\Http\Controllers\Back\TransactionController;
+use App\Http\Controllers\Back\UserController;
 use App\Http\Controllers\Back\WalletController;
 use App\Http\Controllers\Back\WalletHistoryController;
-use App\Http\Controllers\Back\WidgetController;
-use App\Http\Controllers\Back\RequestDepositAdmin;
-use App\Http\Controllers\PushSubscriptionController;
-use Rap2hpoutre\LaravelLogViewer\LogViewerController;
-use App\Http\Controllers\Back\StoryController;
-use App\Http\Controllers\Back\SearchController;
-use App\Http\Controllers\Back\NewsletterController;
-use App\Http\Controllers\Back\FormController;
-use App\Http\Controllers\Back\TagController;
-use App\Http\Controllers\Back\PostWidgetController;
-use App\Http\Controllers\Back\AdminSessionController;
-use App\Http\Controllers\Back\HolidayController;
 use App\Http\Controllers\Back\WarehouseController;
-use App\Http\Controllers\Back\PulseController;
-use App\Http\Controllers\Back\ActivityLogController;
-use App\Http\Controllers\Back\SeoAuditController;
-use App\Http\Controllers\Back\RobotsController;
-use App\Http\Controllers\Back\Floatingwidgetcontroller;
-use App\Http\Controllers\Back\FaqController;
-use App\Http\Controllers\Back\MessageController;
-use App\Http\Controllers\Back\BaleSettingsController;
-use App\Http\Controllers\BaleWebhookController;
+use App\Http\Controllers\Back\WidgetController;
+use App\Http\Controllers\PushSubscriptionController;
+use Illuminate\Support\Facades\Route;
+use Rap2hpoutre\LaravelLogViewer\LogViewerController;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -245,7 +244,6 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
     Route::resource('posts', PostController::class)->except(['show']);
     Route::get('post/categories', [PostController::class, 'categories'])->name('posts.categories.index');
     Route::post('post/slug', [PostController::class, 'generate_slug']);
-    Route::get('post/{post}/details', [PostController::class, 'show_details'])->name('posts.details');
 
 
     // ------------------ categories
@@ -268,7 +266,6 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
 
     // ------------------ pages
     Route::resource('pages', PageController::class)->except(['show']);
-    Route::get('page/{page}/details', [PageController::class, 'show_details'])->name('pages.details');
 
     // ------------------ apikeys
     Route::resource('apikeys', ApikeyController::class)->except(['show']);
@@ -323,16 +320,7 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
     // ------------------ currencies
     Route::resource('currencies', CurrencyController::class)->except(['show']);
 
-    // -------------------stories
-    Route::resource('stories',StoryController::class)->except(['show']);
-    Route::post('stories/product', [StoryController::class, 'getProductWithId'])->name('stories.get-product');
-    Route::post('stories/multipleDestroy', [StoryController::class, 'multipleDestroy'])->name('stories.multipleDestroy');
-    Route::get('stories/{story}/details', [StoryController::class, 'details'])->name('stories.details');
-    Route::post('stories/comments/{comment}/status', [StoryController::class, 'changeStatusComment'])->name('stories.comments.status');
-    Route::delete('stories/comments/{comment}', [StoryController::class, 'destroyComment'])->name('stories.comments.destroy');
-    Route::post('stories/comments/{comment}/reject', [StoryController::class, 'rejectComment'])->name('stories.comments.reject');
-    Route::post('stories/comments/multipleOperation', [StoryController::class, 'multipleOperationComments'])->name('stories.comments.multipleOperation');
-    //Route::post('stories/sort', [StoryController::class, 'sort']);
+
 
 
     //---------------------- searches
@@ -531,18 +519,6 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
         Route::put('/save',  [FloatingWidgetController::class, 'update'])->name('update');
     });
 
-    Route::prefix('settings/bale')->name('settings.bale.')->group(function () {
-
-        // تست اتصال ربات
-        Route::post('/test', [BaleSettingsController::class, 'testConnection'])->name('test');
-
-        // تنظیم وب‌هوک
-        Route::post('/set-webhook', [BaleSettingsController::class, 'setWebhook'])->name('set-webhook');
-
-        // حذف وب‌هوک
-        Route::post('/delete-webhook', [BaleSettingsController::class, 'deleteWebhook'])->name('delete-webhook');
-    });
-
 
     Route::get('settings/seller-hero', [SettingController::class, 'seller_hero'])->name('settings.seller-hero');
     Route::get('settings/seller-hero/create', [SettingController::class, 'seller_hero_create'])->name('settings.seller-hero-create');
@@ -622,18 +598,7 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
     });
 
 
-    Route::prefix('seo')->name('seo.')->group(function () {
-        Route::get('/audit', [SeoAuditController::class, 'index'])->name('audit');
-        // کراول زنده URL
-        Route::post('/crawl', [SeoAuditController::class, 'crawl'])->name('crawl');
-        // بررسی robots.txt
-        Route::get('/robots', [SeoAuditController::class, 'checkRobots'])->name('robots');
-        // بررسی sitemap.xml
-        Route::get('/sitemap', [SeoAuditController::class, 'checkSitemap'])->name('sitemap');
-        // بررسی لینک‌های شکسته
-        Route::post('/broken-links', [SeoAuditController::class, 'checkBrokenLinks'])->name('broken-links');
 
-    });
 
     Route::prefix('robots')->name('robots.')->group(function () {
         Route::get('/', [RobotsController::class, 'index'])->name('index');
@@ -641,6 +606,28 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
         Route::post('/preview', [RobotsController::class, 'preview'])->name('preview');
 
     });
+
+
+
+
+    Route::prefix('packages')->name('packages.')->group(function () {
+            // --- لیست و جزئیات ---
+            Route::get('/', [PackageController::class, 'index'])->name('index');
+            Route::get('installed', [PackageController::class, 'installed'])->name('installed');
+            Route::get('{slug}', [PackageController::class, 'show'])->name('show');
+
+            // --- آپدیت‌ها ---
+            Route::post('check-updates', [PackageController::class, 'checkUpdates'])->name('check-updates');
+
+            // --- نصب ---
+            Route::post('{slug}/install', [PackageController::class, 'startInstall'])->name('install');
+            Route::post('{slug}/update', [PackageController::class, 'update'])->name('update');
+            Route::post('{slug}/uninstall', [PackageController::class, 'uninstall'])->name('uninstall');
+            Route::post('{slug}/toggle', [PackageController::class, 'toggleActivation'])->name('toggle');
+
+            // --- وضعیت (polling) ---
+            Route::get('{slug}/status', [PackageController::class, 'status'])->name('status');
+        });
 
 });
 
@@ -664,5 +651,7 @@ Route::get('refresh-csrf', function () {
 })->name('csrf');
 
 
-Route::post('/bale/webhook', [BaleWebhookController::class, 'handle'])
-    ->name('bale.webhook');
+/*Route::post('/bale/webhook', [BaleWebhookController::class, 'handle'])
+    ->name('bale.webhook');*/
+Route::get('packages/payment/callback', [PackagePaymentController::class, 'callback'])->name('admin.packages.payment.callback');
+
