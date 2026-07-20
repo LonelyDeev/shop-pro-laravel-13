@@ -9,10 +9,11 @@ return [
     */
     'api' => [
         'base_url'        => env('PACKAGES_API_URL', 'https://update.webtpro.ir'),
-        'token'           => env('SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN',option('SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN')),
-        'project_key'     => env('SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN',option('SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN')),
-        'timeout'         => env('PACKAGES_API_TIMEOUT', 120), // ← افزایش به ۱۲۰ ثانیه
-        'connect_timeout' => env('PACKAGES_API_CONNECT_TIMEOUT', 30), // ← اضافه شد
+        // ✅ حذف option() و استفاده مستقیم از env()
+        'token'           => env('SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN', env('PACKAGES_API_TOKEN')),
+        'project_key'     => env('SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN', env('PACKAGES_API_PROJECT_KEY')),
+        'timeout'         => env('PACKAGES_API_TIMEOUT', 120),
+        'connect_timeout' => env('PACKAGES_API_CONNECT_TIMEOUT', 30),
         'cache_ttl'       => env('PACKAGES_CACHE_TTL', 300),
     ],
 
@@ -66,13 +67,12 @@ return [
     'download' => [
         'disk'           => 'local',
         'temp_path'      => 'packages/temp',
-        'timeout'        => env('PACKAGES_DOWNLOAD_TIMEOUT', 300), // ← ۵ دقیقه
-        'connect_timeout'=> env('PACKAGES_DOWNLOAD_CONNECT_TIMEOUT', 30), // ← اضافه شد
+        'timeout'        => env('PACKAGES_DOWNLOAD_TIMEOUT', 300),
+        'connect_timeout'=> env('PACKAGES_DOWNLOAD_CONNECT_TIMEOUT', 30),
         'chunk_size'     => 1024 * 1024, // 1MB
-        'retry_times'    => env('PACKAGES_DOWNLOAD_RETRY', 3), // ← اضافه شد
-        'retry_sleep'    => env('PACKAGES_DOWNLOAD_RETRY_SLEEP', 1000), // ← اضافه شد (میلی‌ثانیه)
+        'retry_times'    => env('PACKAGES_DOWNLOAD_RETRY', 3),
+        'retry_sleep'    => env('PACKAGES_DOWNLOAD_RETRY_SLEEP', 1000), // میلی‌ثانیه
     ],
-
 
     /*
     |--------------------------------------------------------------------------
