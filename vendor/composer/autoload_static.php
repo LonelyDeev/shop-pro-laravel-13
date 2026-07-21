@@ -169,6 +169,10 @@ class ComposerStaticInita79a6346a5a295f183402461d60fc86b
         array (
             'Morilog\\Jalali\\' => 15,
             'Monolog\\' => 8,
+            'Modules\\Story\\Tests\\' => 20,
+            'Modules\\Story\\Database\\Seeders\\' => 31,
+            'Modules\\Story\\Database\\Factories\\' => 33,
+            'Modules\\Story\\' => 14,
             'Modules\\SeoAudit\\Tests\\' => 23,
             'Modules\\SeoAudit\\Database\\Seeders\\' => 34,
             'Modules\\SeoAudit\\Database\\Factories\\' => 36,
@@ -612,6 +616,22 @@ class ComposerStaticInita79a6346a5a295f183402461d60fc86b
         'Monolog\\' =>
         array (
             0 => __DIR__ . '/..' . '/monolog/monolog/src/Monolog',
+        ),
+        'Modules\\Story\\Tests\\' =>
+        array (
+            0 => __DIR__ . '/../..' . '/Modules/Story/tests',
+        ),
+        'Modules\\Story\\Database\\Seeders\\' =>
+        array (
+            0 => __DIR__ . '/../..' . '/Modules/Story/database/seeders',
+        ),
+        'Modules\\Story\\Database\\Factories\\' =>
+        array (
+            0 => __DIR__ . '/../..' . '/Modules/Story/database/factories',
+        ),
+        'Modules\\Story\\' =>
+        array (
+            0 => __DIR__ . '/../..' . '/Modules/Story/app',
         ),
         'Modules\\SeoAudit\\Tests\\' =>
         array (
@@ -1119,7 +1139,6 @@ class ComposerStaticInita79a6346a5a295f183402461d60fc86b
         'App\\Http\\Controllers\\Back\\RoleController' => __DIR__ . '/../..' . '/app/Http/Controllers/Back/RoleController.php',
         'App\\Http\\Controllers\\Back\\SearchController' => __DIR__ . '/../..' . '/app/Http/Controllers/Back/SearchController.php',
         'App\\Http\\Controllers\\Back\\SellerControllers' => __DIR__ . '/../..' . '/app/Http/Controllers/Back/SellerControllers.php',
-        'App\\Http\\Controllers\\Back\\SeoAuditController' => __DIR__ . '/../..' . '/app/Http/Controllers/Back/SeoAuditController.php',
         'App\\Http\\Controllers\\Back\\SettingController' => __DIR__ . '/../..' . '/app/Http/Controllers/Back/SettingController.php',
         'App\\Http\\Controllers\\Back\\SizeTypeController' => __DIR__ . '/../..' . '/app/Http/Controllers/Back/SizeTypeController.php',
         'App\\Http\\Controllers\\Back\\SliderController' => __DIR__ . '/../..' . '/app/Http/Controllers/Back/SliderController.php',
@@ -6723,11 +6742,28 @@ class ComposerStaticInita79a6346a5a295f183402461d60fc86b
         'Mockery\\Undefined' => __DIR__ . '/..' . '/mockery/mockery/library/Mockery/Undefined.php',
         'Mockery\\VerificationDirector' => __DIR__ . '/..' . '/mockery/mockery/library/Mockery/VerificationDirector.php',
         'Mockery\\VerificationExpectation' => __DIR__ . '/..' . '/mockery/mockery/library/Mockery/VerificationExpectation.php',
+        'Modules\\SeoAudit\\Console\\Commands\\InstallPermissionsCommand' => __DIR__ . '/../..' . '/Modules/SeoAudit/app/Console/Commands/InstallPermissionsCommand.php',
+        'Modules\\SeoAudit\\Database\\Seeders\\PermissionSeeder' => __DIR__ . '/../..' . '/Modules/SeoAudit/database/seeders/PermissionSeeder.php',
         'Modules\\SeoAudit\\Database\\Seeders\\SeoAuditDatabaseSeeder' => __DIR__ . '/../..' . '/Modules/SeoAudit/database/seeders/SeoAuditDatabaseSeeder.php',
+        'Modules\\SeoAudit\\Http\\Controllers\\Back\\PageSeoController' => __DIR__ . '/../..' . '/Modules/SeoAudit/app/Http/Controllers/Back/PageSeoController.php',
+        'Modules\\SeoAudit\\Http\\Controllers\\Back\\PostSeoController' => __DIR__ . '/../..' . '/Modules/SeoAudit/app/Http/Controllers/Back/PostSeoController.php',
+        'Modules\\SeoAudit\\Http\\Controllers\\Back\\ProductsSeoController' => __DIR__ . '/../..' . '/Modules/SeoAudit/app/Http/Controllers/Back/ProductsSeoController.php',
+        'Modules\\SeoAudit\\Http\\Controllers\\Back\\SeoAuditController' => __DIR__ . '/../..' . '/Modules/SeoAudit/app/Http/Controllers/Back/SeoAuditController.php',
         'Modules\\SeoAudit\\Http\\Controllers\\SeoAuditController' => __DIR__ . '/../..' . '/Modules/SeoAudit/app/Http/Controllers/SeoAuditController.php',
+        'Modules\\SeoAudit\\Permissions\\ModulePermissions' => __DIR__ . '/../..' . '/Modules/SeoAudit/app/Permissions/ModulePermissions.php',
         'Modules\\SeoAudit\\Providers\\EventServiceProvider' => __DIR__ . '/../..' . '/Modules/SeoAudit/app/Providers/EventServiceProvider.php',
         'Modules\\SeoAudit\\Providers\\RouteServiceProvider' => __DIR__ . '/../..' . '/Modules/SeoAudit/app/Providers/RouteServiceProvider.php',
         'Modules\\SeoAudit\\Providers\\SeoAuditServiceProvider' => __DIR__ . '/../..' . '/Modules/SeoAudit/app/Providers/SeoAuditServiceProvider.php',
+        'Modules\\Story\\Console\\Commands\\InstallStoryPermissionsCommand' => __DIR__ . '/../..' . '/Modules/Story/app/Console/Commands/InstallStoryPermissionsCommand.php',
+        'Modules\\Story\\Database\\Seeders\\StoryPermissionSeeder' => __DIR__ . '/../..' . '/Modules/Story/database/seeders/StoryPermissionSeeder.php',
+        'Modules\\Story\\Http\\Controllers\\Back\\StoryController' => __DIR__ . '/../..' . '/Modules/Story/app/Http/Controllers/Back/StoryController.php',
+        'Modules\\Story\\Http\\Controllers\\Front\\FrontStoryController' => __DIR__ . '/../..' . '/Modules/Story/app/Http/Controllers/Front/FrontStoryController.php',
+        'Modules\\Story\\Models\\Story' => __DIR__ . '/../..' . '/Modules/Story/app/Models/Story.php',
+        'Modules\\Story\\Providers\\EventServiceProvider' => __DIR__ . '/../..' . '/Modules/Story/app/Providers/EventServiceProvider.php',
+        'Modules\\Story\\Providers\\RouteServiceProvider' => __DIR__ . '/../..' . '/Modules/Story/app/Providers/RouteServiceProvider.php',
+        'Modules\\Story\\Providers\\StoryServiceProvider' => __DIR__ . '/../..' . '/Modules/Story/app/Providers/StoryServiceProvider.php',
+        'Modules\\Story\\Services\\StoryWidgetService' => __DIR__ . '/../..' . '/Modules/Story/app/Services/StoryWidgetService.php',
+        'Modules\\Story\\Traits\\StoryInteractionTrait' => __DIR__ . '/../..' . '/Modules/Story/app/Traits/StoryInteractionTrait.php',
         'Monolog\\Attribute\\AsMonologProcessor' => __DIR__ . '/..' . '/monolog/monolog/src/Monolog/Attribute/AsMonologProcessor.php',
         'Monolog\\Attribute\\WithMonologChannel' => __DIR__ . '/..' . '/monolog/monolog/src/Monolog/Attribute/WithMonologChannel.php',
         'Monolog\\DateTimeImmutable' => __DIR__ . '/..' . '/monolog/monolog/src/Monolog/DateTimeImmutable.php',
