@@ -611,9 +611,9 @@ class PackageInstallerService
     {
         try {
             $seederPath = base_path("Modules/{$moduleName}/database/seeders");
-Log::info('Teeeest ',$seederPath);
+Log::info('Teeeest ',[$seederPath]);
             if (!is_dir($seederPath)) {
-                Log::info('faild ',$seederPath.' not found'.$moduleName);
+                Log::info('faild ',['dd'=>$seederPath,' not found'=>$moduleName]);
                 Log::info('No seeders directory found', ['module' => $moduleName]);
                 return;
             }
