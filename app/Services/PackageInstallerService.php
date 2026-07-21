@@ -610,7 +610,7 @@ class PackageInstallerService
     private function runSeeders(string $moduleName): void
     {
         try {
-            $seederPath = base_path("Modules/{$moduleName}/Database/Seeders");
+            $seederPath = base_path("Modules/{$moduleName}/database/seeders");
 
             if (!is_dir($seederPath)) {
                 Log::info('No seeders directory found', ['module' => $moduleName]);
@@ -852,7 +852,7 @@ class PackageInstallerService
         try {
             Artisan::call('config:clear');
             Artisan::call('cache:clear');
-            Artisan::call('module:dump-autoload');
+            Artisan::call('dump-autoload');
         } catch (Exception $e) {
             Log::warning('Cache refresh partial failure', ['error' => $e->getMessage()]);
         }
