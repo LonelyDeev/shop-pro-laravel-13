@@ -4,16 +4,12 @@ namespace App\Services;
 
 use App\Models\InstalledModule;
 use App\Models\ModuleInstallLog;
-use App\Models\Permission;
 use Exception;
 use Illuminate\Filesystem\Filesystem;
-use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -22,7 +18,6 @@ use ZipArchive;
 class PackageInstallerService
 {
     private array $steps = [];
-    private array $backupPaths = [];
 
     public function __construct(
         private PackageApiService $api,
@@ -30,7 +25,7 @@ class PackageInstallerService
     ) {}
 
     /* ===================================================================
-     *  نصب پکیج (دانلود → استخراج → migration → seeder)
+     *  نصب پکیج (دانلود → استخراج → migration)
      * =================================================================== */
     public function install(
         string $slug,
@@ -39,10 +34,7 @@ class PackageInstallerService
         ?string $downloadToken = null
     ): InstalledModule {
         $this->steps = [];
-        $this->backupPaths = [];
         $log = $this->startLog(ModuleInstallLog::ACTION_INSTALL, $slug, $adminId);
-        $zipPath = null;
-        $moduleName = null;
 
         try {
             // 1) در صورت نیاز، دریافت download_token از API
@@ -73,61 +65,38 @@ class PackageInstallerService
             $this->step('extract', 'استخراج فایل‌های پکیج');
             $moduleName = $this->extractZip($zipPath, $slug);
 
-            // 5) اعتبارسنجی ساختار ماژول
-            $this->step('validate', 'اعتبارسنجی ساختار ماژول');
-            $this->validateModuleStructure($moduleName);
-
-            // 6) ثبت در جدول installed_modules (در صورت وجود، آپدیت)
+            // 5) ثبت در جدول installed_modules (در صورت وجود، آپدیت)
             $installed = $this->registerInstall($slug, $moduleName, $licenseKey, $verify ?? []);
 
-            // 7) ثبت Service Provider
-            $this->step('register_provider', 'ثبت Service Provider');
-            $this->registerServiceProvider($moduleName);
-
-            // 8) اجرای migrationها
+            // 6) اجرای migrationها
             $this->step('migrate', 'اجرای migrationهای ماژول');
             $this->runMigrations($moduleName);
 
-            // 9) اجرای seederها
-            $this->step('seed', 'اجرای seederهای ماژول');
-            $this->runSeeders($moduleName);
-
-            // 10) نصب پرمیژن‌های ماژول
-            $this->step('install_permissions', 'نصب پرمیژن‌های ماژول');
+            // 7) نصب پرمیژن‌های ماژول (در صورت وجود command)
             $this->installModulePermissions($moduleName);
 
-            // 11) انتشار assetهای ماژول
-            $this->step('publish_assets', 'انتشار فایل‌های استاتیک');
+            // 8) انتشار assetهای ماژول (CSS/JS) به پوشه public
             $this->publishModuleAssets($moduleName);
 
-            // 12) اجرای کامندهای سفارشی نصب
-            $this->step('custom_commands', 'اجرای کامندهای سفارشی');
-            $this->runCustomInstallCommands($moduleName);
-
-            // 13) رفرش کش‌های لاراول
+            // 9) رفرش کش‌های لاراول
             $this->step('cache_refresh', 'بروزرسانی کش‌ها');
             $this->refreshCaches();
 
-            // 14) پاکسازی فایل موقت
+            // 10) پاکسازی فایل موقت
             $this->cleanupTemp($zipPath);
 
-            // 15) به‌روزرسانی وضعیت نصب
             $installed->markAsInstalled($verify['version'] ?? $this->readModuleVersion($moduleName));
 
-            // 16) لاگ موفقیت
             $this->finishLog($log, ModuleInstallLog::STATUS_SUCCESS, $installed);
 
-            Log::info("Module installed successfully", [
-                'module' => $moduleName,
-                'slug' => $slug,
-                'version' => $installed->version
-            ]);
+            // 11) رفرش کش‌ها و restart queue worker
+            // مهم: بعد از نصب ماژول جدید، autoload باید rebuild بشه
+            // و queue worker باید restart بشه تا کلاس‌های ماژول جدید رو بشناسه
+            $this->refreshCaches();
+            $this->restartQueueWorker();
 
             return $installed;
-
         } catch (Exception $e) {
-            // پاکسازی در صورت خطا
-            $this->rollbackOnError($moduleName, $zipPath);
             $this->failLog($log, $e, $slug);
             throw $e;
         }
@@ -161,20 +130,12 @@ class PackageInstallerService
             }
 
             $newVersion = $verify['version'] ?? null;
-
             if (!$newVersion || version_compare($newVersion, $oldVersion, '<=')) {
                 throw new RuntimeException('نسخه جدیدی برای نصب وجود ندارد.');
             }
 
-            // پشتیبان‌گیری از نسخه فعلی
-            $this->step('backup', 'پشتیبان‌گیری از نسخه فعلی');
-            $this->backupModule($installed->name);
-
             // نصب نسخه جدید
             $this->install($slug, $installed->license_key, $adminId, $verify['download_token'] ?? null);
-
-            // حذف پشتیبان قدیمی
-            $this->cleanupOldBackups($installed->name);
 
             $installed->refresh();
             $log->update([
@@ -182,18 +143,8 @@ class PackageInstallerService
                 'status'     => ModuleInstallLog::STATUS_SUCCESS,
             ]);
 
-            Log::info("Module updated successfully", [
-                'module' => $installed->name,
-                'slug' => $slug,
-                'old_version' => $oldVersion,
-                'new_version' => $installed->version
-            ]);
-
             return $installed;
-
         } catch (Exception $e) {
-            // برگرداندن به نسخه قبلی در صورت خطا
-            $this->rollbackUpdate($installed->name);
             $this->failLog($log, $e, $slug);
             throw $e;
         }
@@ -216,51 +167,57 @@ class PackageInstallerService
         try {
             $moduleName = $installed->name;
 
-            // تایید حذف
-            if (!$this->confirmUninstall($moduleName)) {
-                throw new RuntimeException('عملیات حذف ماژول تأیید نشد.');
-            }
-
-            // 1) اجرای کامندهای قبل از حذف
-            $this->step('pre_uninstall', 'اجرای کامندهای قبل از حذف');
-            $this->runPreUninstallCommands($moduleName);
-
-            // 2) حذف جدول‌ها
-            $this->step('drop_tables', 'حذف جداول ماژول');
-            $this->dropAllModuleTables($moduleName);
-
-            // 3) حذف پرمیژن‌ها
-            $this->step('remove_permissions', 'حذف پرمیژن‌های ماژول');
+            // حذف پرمیژن‌های ماژول (قبل از حذف فایل‌ها)
             $this->removeModulePermissions($moduleName);
 
-            // 4) حذف assetها
-            $this->step('remove_assets', 'حذف فایل‌های استاتیک');
+            // اجرای rollback migrationها (در صورت تمایل)
+            $this->step('rollback_migrations', 'حذف جداول ماژول');
+            try {
+                // استفاده از Laravel rollback مستقیم با --realpath
+                $modulePath = config('packages.modules.path') . '/' . $moduleName;
+                $migrationsPath = $this->findMigrationsPath($modulePath);
+
+                if ($migrationsPath) {
+                    Artisan::call('migrate:rollback', [
+                        '--path' => $migrationsPath,
+                        '--realpath' => true,
+                        '--force' => true,
+                    ]);
+                    Log::info('Rollback completed', [
+                        'module' => $moduleName,
+                        'output' => Artisan::output(),
+                    ]);
+                }
+            } catch (Exception $e) {
+                Log::warning('Rollback migration failed (continuing)', [
+                    'module' => $moduleName,
+                    'error'  => $e->getMessage(),
+                ]);
+            }
+
+            // حذف assetهای منتشرشده در public
+            $this->step('remove_assets', 'حذف فایل‌های استاتیک ماژول');
             $this->removePublishedAssets($moduleName);
 
-            // 5) حذف پوشه ماژول
+            // حذف پوشه ماژول
             $this->step('remove_files', 'حذف فایل‌های ماژول');
-            $this->removeModuleFiles($moduleName);
+            $modulePath = config('packages.modules.path') . '/' . $moduleName;
+            if (File::exists($modulePath)) {
+                File::deleteDirectory($modulePath);
+            }
 
-            // 6) حذف Service Provider
-            $this->step('remove_provider', 'حذف Service Provider');
-            $this->unregisterServiceProvider($moduleName);
-
-            // 7) رفرش کش
-            $this->step('clear_cache', 'پاکسازی کش');
+            // رفرش کش
             $this->refreshCaches();
 
-            // 8) حذف رکورد
+            // حذف رکورد
             $installed->delete();
 
             $this->finishLog($log, ModuleInstallLog::STATUS_SUCCESS, null, 'ماژول با موفقیت حذف شد');
 
-            Log::info("Module uninstalled successfully", [
-                'module' => $moduleName,
-                'slug' => $slug
-            ]);
+            // restart queue worker برای پاک کردن کلاس‌های ماژول از حافظه
+            $this->restartQueueWorker();
 
             return true;
-
         } catch (Exception $e) {
             $this->failLog($log, $e, $slug);
             throw $e;
@@ -274,18 +231,12 @@ class PackageInstallerService
     {
         $installed = InstalledModule::where('slug', $slug)->firstOrFail();
 
+        // با دستور module:disable / module:enable نیدویت
         try {
-            // با دستور module:disable / module:enable
             Artisan::call(
                 $installed->is_active ? 'module:disable' : 'module:enable',
                 ['module' => $installed->name]
             );
-
-            Log::info("Module toggled via artisan", [
-                'module' => $installed->name,
-                'action' => $installed->is_active ? 'disable' : 'enable'
-            ]);
-
         } catch (Exception $e) {
             Log::warning('Module toggle failed via artisan', [
                 'module' => $installed->name,
@@ -305,68 +256,22 @@ class PackageInstallerService
     private function downloadZip(string $token): string
     {
         $url = $this->api->getDownloadUrl($token);
-        $disk = Storage::disk(config('packages.download.disk', 'local'));
-        $relPath = config('packages.download.temp_path', 'temp') . '/' . Str::uuid() . '.zip';
-        $fullPath = $disk->path($relPath);
+        $disk = Storage::disk(config('packages.download.disk'));
+        $relPath = config('packages.download.temp_path') . '/' . Str::uuid() . '.zip';
 
-        // اطمینان از وجود پوشه
-        $directory = dirname($fullPath);
-        if (!File::exists($directory)) {
-            File::makeDirectory($directory, 0755, true);
+        // استفاده از streaming برای فایل‌های بزرگ
+        $response = Http::timeout(config('packages.download.timeout', 600))
+            ->withToken(config('packages.api.token'))
+            ->withHeaders(['X-Project-Key' => config('packages.api.project_key')])
+            ->get($url);
+
+        if (!$response->successful()) {
+            throw new RuntimeException('دانلود فایل پکیج ناموفق بود (کد: ' . $response->status() . ')');
         }
 
-        Log::info('Starting package download', [
-            'url' => $url,
-            'path' => $fullPath,
-            'token_preview' => substr($token, 0, 10) . '...'
-        ]);
+        $disk->put($relPath, $response->body());
 
-        try {
-            $response = Http::timeout(config('packages.download.timeout', 300))
-                ->connectTimeout(config('packages.download.connect_timeout', 30))
-                ->withToken(config('packages.api.token'))
-                ->withHeaders([
-                    'X-Project-Key' => config('packages.api.project_key'),
-                    'Accept' => 'application/zip',
-                ])
-                ->retry(
-                    config('packages.download.retry_times', 3),
-                    config('packages.download.retry_sleep', 1000)
-                )
-                ->sink($fullPath)
-                ->get($url);
-
-            if (!$response->successful()) {
-                if (File::exists($fullPath)) {
-                    File::delete($fullPath);
-                }
-                throw new RuntimeException('دانلود فایل پکیج ناموفق بود (کد: ' . $response->status() . ')');
-            }
-
-            $fileSize = File::size($fullPath);
-            Log::info('Download completed', [
-                'status' => $response->status(),
-                'size' => $fileSize
-            ]);
-
-            if ($fileSize === 0) {
-                throw new RuntimeException('فایل دانلود شده خالی است.');
-            }
-
-            return $fullPath;
-
-        } catch (ConnectionException $e) {
-            Log::error('Download connection failed', [
-                'url' => $url,
-                'error' => $e->getMessage()
-            ]);
-
-            if (File::exists($fullPath)) {
-                File::delete($fullPath);
-            }
-
-            throw new RuntimeException('اتصال به سرور پکیج‌ها برقرار نشد. لطفاً اتصال اینترنت خود را بررسی کنید.');
-        }
+        return $disk->path($relPath);
     }
 
     /* ===================================================================
@@ -374,18 +279,12 @@ class PackageInstallerService
      * =================================================================== */
     private function verifySignature(string $zipPath, string $expectedHash): void
     {
-        if (!File::exists($zipPath)) {
-            throw new RuntimeException('فایل برای بررسی امضا وجود ندارد.');
-        }
-
         $actual = hash_file('sha256', $zipPath);
         if (!hash_equals($expectedHash, $actual)) {
             throw new RuntimeException(
                 'تأیید یکپارچگی فایل ناموفق بود! فایل احتمالاً دستکاری شده است.'
             );
         }
-
-        Log::info('Signature verified successfully');
     }
 
     /* ===================================================================
@@ -402,19 +301,7 @@ class PackageInstallerService
             throw new RuntimeException('باز کردن فایل ZIP ناموفق بود.');
         }
 
-        // دیباگ: نمایش محتویات ZIP
-        $filesInZip = [];
-        for ($i = 0; $i < min(50, $zip->numFiles); $i++) {
-            $filesInZip[] = $zip->getNameIndex($i);
-        }
-
-        Log::info('ZIP contents preview', [
-            'total_files' => $zip->numFiles,
-            'files' => $filesInZip,
-            'zip_path' => $zipPath
-        ]);
-
-        // خواندن module.json از داخل ZIP
+        // خواندن module.json از داخل ZIP برای تشخیص نام ماژول
         $moduleName = null;
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $entry = $zip->getNameIndex($i);
@@ -429,196 +316,28 @@ class PackageInstallerService
             throw new RuntimeException('فایل module.json در ZIP پیدا نشد. ساختار پکیج نامعتبر است.');
         }
 
-        $modulesPath = config('packages.modules.path', base_path('Modules'));
-
-        // اطمینان از وجود پوشه با دسترسی کامل
+        $modulesPath = config('packages.modules.path');
         if (!File::exists($modulesPath)) {
             File::makeDirectory($modulesPath, 0755, true);
         }
 
-        // تنظیم دسترسی پوشه
-        @chmod($modulesPath, 0755);
-
         $targetPath = $modulesPath . '/' . $moduleName;
 
-        // اگر پوشه وجود دارد، ابتدا آن را پاک کن
+        // backup نسخه قبلی (در صورت آپدیت)
         if (File::exists($targetPath)) {
-            Log::warning('Module directory already exists, removing', ['path' => $targetPath]);
-            File::deleteDirectory($targetPath);
+            $backupPath = $modulesPath . '/.backups/' . $moduleName . '_' . time();
+            File::makeDirectory(dirname($backupPath), 0755, true);
+            File::moveDirectory($targetPath, $backupPath);
         }
 
-        // استخراج با مسیر کامل
-        $extractPath = $modulesPath;
-        Log::info('Extracting to', ['path' => $extractPath]);
-
-        // تلاش برای استخراج با ZipArchive
-        $extracted = $zip->extractTo($extractPath);
-
-        if (!$extracted) {
-            $error = $zip->getStatusString();
+        if (!$zip->extractTo($modulesPath)) {
             $zip->close();
-
-            Log::error('ZipArchive extraction failed', [
-                'error' => $error,
-                'extract_path' => $extractPath,
-                'zip_path' => $zipPath
-            ]);
-
-            // تلاش با system command در لینوکس
-            if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
-                Log::info('Trying system unzip command');
-                $command = "unzip -o '{$zipPath}' -d '{$extractPath}' 2>&1";
-                exec($command, $output, $returnCode);
-
-                Log::info('System unzip result', [
-                    'return_code' => $returnCode,
-                    'output' => $output
-                ]);
-
-                if ($returnCode === 0) {
-                    $zip->close();
-                    $this->verifyExtractedFiles($moduleName, $targetPath);
-                    $this->setPermissions($targetPath);
-                    Log::info('Module extracted successfully with system unzip', [
-                        'module' => $moduleName,
-                        'path' => $targetPath
-                    ]);
-                    return $moduleName;
-                }
-            }
-
-            throw new RuntimeException('استخراج فایل ZIP ناموفق بود: ' . $error);
+            throw new RuntimeException('استخراج فایل ZIP ناموفق بود.');
         }
 
         $zip->close();
 
-        // بررسی اینکه آیا فایل‌ها استخراج شده‌اند
-        $this->verifyExtractedFiles($moduleName, $targetPath);
-
-        // تنظیم دسترسی‌ها
-        $this->setPermissions($targetPath);
-
-        Log::info('Module extracted successfully', [
-            'module' => $moduleName,
-            'path' => $targetPath,
-            'exists' => File::exists($targetPath),
-            'files' => File::exists($targetPath) ? count(File::allFiles($targetPath)) : 0
-        ]);
-
         return $moduleName;
-    }
-
-    /**
-     * بررسی فایل‌های استخراج شده
-     */
-    private function verifyExtractedFiles(string $moduleName, string $targetPath): void
-    {
-        if (!File::exists($targetPath)) {
-            throw new RuntimeException("پوشه ماژول پس از استخراج وجود ندارد: {$targetPath}");
-        }
-
-        // بررسی فایل module.json
-        $moduleJsonPath = $targetPath . '/module.json';
-        if (!File::exists($moduleJsonPath)) {
-            Log::error('module.json not found after extraction', [
-                'target_path' => $targetPath,
-                'contents' => $this->getDirectoryContents($targetPath)
-            ]);
-            throw new RuntimeException("فایل module.json پس از استخراج وجود ندارد: {$moduleJsonPath}");
-        }
-
-        // بررسی Service Provider
-        $providerPath = $targetPath . '/Providers/' . $moduleName . 'ServiceProvider.php';
-        if (!File::exists($providerPath)) {
-            // بررسی با حروف کوچک
-            $providerPathLower = $targetPath . '/providers/' . $moduleName . 'ServiceProvider.php';
-            if (!File::exists($providerPathLower)) {
-                Log::warning('Service Provider not found', [
-                    'expected' => $providerPath,
-                    'contents' => $this->getDirectoryContents($targetPath . '/Providers')
-                ]);
-            }
-        }
-
-        // بررسی پوشه Migration (هر دو حالت)
-        $migrationPaths = [
-            $targetPath . '/Database/Migrations',
-            $targetPath . '/database/migrations',
-        ];
-
-        $migrationExists = false;
-        foreach ($migrationPaths as $path) {
-            if (is_dir($path)) {
-                $migrationExists = true;
-                break;
-            }
-        }
-
-        if (!$migrationExists) {
-            Log::warning('Migrations directory not found after extraction', [
-                'checked_paths' => $migrationPaths,
-                'contents' => $this->getDirectoryContents($targetPath)
-            ]);
-        }
-    }
-
-    /**
-     * دریافت محتویات یک دایرکتوری برای دیباگ
-     */
-    private function getDirectoryContents(string $path): array
-    {
-        if (!File::exists($path)) {
-            return ['path_not_exists' => $path];
-        }
-
-        $contents = [];
-        try {
-            $items = File::directories($path);
-            foreach ($items as $item) {
-                $contents['directories'][] = basename($item);
-            }
-
-            $files = File::files($path);
-            foreach ($files as $file) {
-                $contents['files'][] = $file->getFilename();
-            }
-        } catch (Exception $e) {
-            $contents['error'] = $e->getMessage();
-        }
-
-        return $contents;
-    }
-
-    /* ===================================================================
-     *  اعتبارسنجی ساختار ماژول
-     * =================================================================== */
-    private function validateModuleStructure(string $moduleName): void
-    {
-        $basePath = config('packages.modules.path', base_path('Modules')) . '/' . $moduleName;
-
-        // بررسی فایل module.json
-        $moduleJsonPath = $basePath . '/module.json';
-        if (!File::exists($moduleJsonPath)) {
-            throw new RuntimeException("فایل module.json در ماژول {$moduleName} یافت نشد.");
-        }
-
-        $moduleJson = json_decode(File::get($moduleJsonPath), true);
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new RuntimeException("فایل module.json معتبر نیست: " . json_last_error_msg());
-        }
-
-        // بررسی فیلدهای ضروری
-        $requiredFields = ['name', 'version', 'providers'];
-        foreach ($requiredFields as $field) {
-            if (!isset($moduleJson[$field])) {
-                throw new RuntimeException("فیلد '{$field}' در module.json وجود ندارد.");
-            }
-        }
-
-        Log::info('Module structure validated', [
-            'module' => $moduleName,
-            'version' => $moduleJson['version']
-        ]);
     }
 
     /* ===================================================================
@@ -630,585 +349,220 @@ class PackageInstallerService
         string $licenseKey,
         array $verifyData
     ): InstalledModule {
-        $version = $verifyData['version'] ?? $this->readModuleVersion($moduleName);
-        $expiresAt = isset($verifyData['expires_at']) ? new \DateTime($verifyData['expires_at']) : null;
-
-        $installed = InstalledModule::updateOrCreate(
+        return InstalledModule::updateOrCreate(
             ['slug' => $slug],
             [
                 'name'                => $moduleName,
-                'version'             => $version,
+                'version'             => $verifyData['version'] ?? $this->readModuleVersion($moduleName),
                 'license_key'         => $licenseKey,
-                'license_expires_at'  => $expiresAt,
+                'license_expires_at'  => $verifyData['expires_at'] ?? null,
                 'installed_at'        => now(),
                 'is_active'           => true,
                 'status'              => InstalledModule::STATUS_UPDATING,
                 'last_error'          => null,
             ]
         );
-
-        Log::info("Module registered in database", [
-            'module' => $moduleName,
-            'slug' => $slug,
-            'version' => $version
-        ]);
-
-        return $installed;
-    }
-
-    /* ===================================================================
-     *  ثبت Service Provider
-     * =================================================================== */
-    private function registerServiceProvider(string $moduleName): void
-    {
-        try {
-            // استفاده از دستور module:discover
-            if ($this->artisanCommandExists('module:discover')) {
-                Artisan::call('module:discover');
-                Log::info("Module discovery completed", ['module' => $moduleName]);
-            } elseif ($this->artisanCommandExists('module:dump-autoload')) {
-                Artisan::call('module:dump-autoload');
-                Log::info("Module autoload dumped", ['module' => $moduleName]);
-            }
-
-            // فعال کردن ماژول
-            if ($this->artisanCommandExists('module:enable')) {
-                Artisan::call('module:enable', ['module' => $moduleName]);
-                Log::info("Module enabled", ['module' => $moduleName]);
-            }
-
-        } catch (Exception $e) {
-            Log::warning("Service provider registration failed", [
-                'module' => $moduleName,
-                'error' => $e->getMessage()
-            ]);
-        }
-    }
-
-    /* ===================================================================
-     *  حذف Service Provider
-     * =================================================================== */
-    private function unregisterServiceProvider(string $moduleName): void
-    {
-        try {
-            if ($this->artisanCommandExists('module:discover')) {
-                Artisan::call('module:discover');
-                Log::info("Module discovery updated after uninstall", ['module' => $moduleName]);
-            }
-        } catch (Exception $e) {
-            Log::warning("Service provider unregistration failed", [
-                'module' => $moduleName,
-                'error' => $e->getMessage()
-            ]);
-        }
     }
 
     /* ===================================================================
      *  اجرای migrationهای ماژول
+     *  مستقیماً با Laravel migrate (بدون وابستگی به nwidart cache)
      * =================================================================== */
     private function runMigrations(string $moduleName): void
     {
-        try {
-            // بررسی هر دو حالت حروف
-            $migrationPaths = [
-                base_path("Modules/{$moduleName}/Database/Migrations"),
-                base_path("Modules/{$moduleName}/database/migrations"),
-            ];
+        // بررسی وجود پوشه‌ی migrations با case-insensitive (برای لینوکس)
+        $modulePath = config('packages.modules.path') . '/' . $moduleName;
+        $migrationsPath = $this->findMigrationsPath($modulePath);
 
-            $migrationPath = null;
-            foreach ($migrationPaths as $path) {
-                if (is_dir($path)) {
-                    $migrationPath = $path;
-                    break;
-                }
-            }
-
-            if (!$migrationPath) {
-                Log::info('No migrations directory found', [
-                    'module' => $moduleName,
-                    'checked_paths' => $migrationPaths
-                ]);
-                return;
-            }
-
-            $migrationFiles = glob($migrationPath . '/*.php');
-            if (empty($migrationFiles)) {
-                Log::info('No migration files found', ['module' => $moduleName]);
-                return;
-            }
-
-            Log::info('Found migration files', [
+        if ($migrationsPath === null) {
+            Log::warning('No migrations directory found', [
                 'module' => $moduleName,
-                'path' => $migrationPath,
-                'count' => count($migrationFiles)
+                'module_path' => $modulePath,
             ]);
+            return;
+        }
 
-            // بررسی وجود ماژول در سیستم
-            if (!$this->moduleExists($moduleName)) {
-                Log::warning('Module not found in system, registering...', ['module' => $moduleName]);
-                $this->registerModule($moduleName);
+        $migrationFiles = glob($migrationsPath . '/*.php');
+
+        Log::info('Found migration files', [
+            'module' => $moduleName,
+            'path' => $migrationsPath,
+            'count' => count($migrationFiles),
+            'files' => array_map('basename', $migrationFiles),
+        ]);
+
+        if (empty($migrationFiles)) {
+            Log::info('No migration files to run', ['module' => $moduleName]);
+            return;
+        }
+
+        try {
+            // اطمینان از وجود جدول migrations
+            $migrator = app('migrator');
+            if (!$migrator->repositoryExists()) {
+                Artisan::call('migrate:install');
+                Log::info('Migration repository created');
             }
 
-            // اجرای migration با مسیر صحیح
-            $relativePath = str_replace(base_path(), '', $migrationPath);
-            $relativePath = ltrim($relativePath, '/\\');
-
+            // روش 1: استفاده از Laravel migrate با --realpath (توصیه می‌شه)
             Artisan::call('migrate', [
-                '--path' => $relativePath,
+                '--path' => $migrationsPath,
+                '--realpath' => true,
                 '--force' => true,
             ]);
 
-            $output = Artisan::output();
             Log::info('Migrations completed', [
                 'module' => $moduleName,
-                'output' => $output
+                'output' => Artisan::output(),
             ]);
-
         } catch (Exception $e) {
-            Log::error('Migration failed', [
+            Log::warning('Standard migrate failed, trying individual migrations', [
                 'module' => $moduleName,
                 'error' => $e->getMessage(),
-                'output' => Artisan::output()
             ]);
 
-            throw new RuntimeException(
-                'اجرای migrationهای ماژول ناموفق بود: ' . $e->getMessage()
-            );
+            try {
+                $this->runMigrationsIndividually($migrationFiles, $moduleName);
+                Log::info('Individual migrations completed', ['module' => $moduleName]);
+            } catch (Exception $e2) {
+                throw new RuntimeException(
+                    'اجرای migrationهای ماژول ناموفق بود: ' . $e2->getMessage()
+                );
+            }
         }
     }
 
     /**
-     * بررسی وجود ماژول در سیستم
+     * اجرای تک‌تک migrationها (fallback)
      */
-    private function moduleExists(string $moduleName): bool
+    private function runMigrationsIndividually(array $migrationFiles, string $moduleName): void
     {
-        try {
-            // استفاده از nwidart/laravel-modules
-            if (class_exists('Nwidart\Modules\Facades\Module')) {
-                $module = \Nwidart\Modules\Facades\Module::find($moduleName);
-                return $module !== null;
-            }
+        $migrator = app('migrator');
 
-            // بررسی دستی
-            $modulePath = config('packages.modules.path', base_path('Modules')) . '/' . $moduleName;
-            return is_dir($modulePath) && file_exists($modulePath . '/module.json');
+        foreach ($migrationFiles as $file) {
+            $name = basename($file);
 
-        } catch (Exception $e) {
-            return false;
-        }
-    }
-
-    /**
-     * ثبت ماژول در سیستم
-     */
-    private function registerModule(string $moduleName): void
-    {
-        try {
-            if (class_exists('Nwidart\Modules\Facades\Module')) {
-                if ($this->artisanCommandExists('module:enable')) {
-                    Artisan::call('module:enable', ['module' => $moduleName]);
-                }
-                if ($this->artisanCommandExists('module:discover')) {
-                    Artisan::call('module:discover');
-                }
-                Log::info('Module registered', ['module' => $moduleName]);
-            }
-        } catch (Exception $e) {
-            Log::warning('Module registration failed', [
-                'module' => $moduleName,
-                'error' => $e->getMessage()
-            ]);
-        }
-    }
-
-    /* ===================================================================
-     *  اجرای seederهای ماژول
-     * =================================================================== */
-    private function runSeeders(string $moduleName): void
-    {
-        try {
-            // بررسی هر دو حالت حروف
-            $seederPaths = [
-                base_path("Modules/{$moduleName}/Database/Seeders"),
-                base_path("Modules/{$moduleName}/database/seeders"),
-            ];
-
-            $seederPath = null;
-            foreach ($seederPaths as $path) {
-                if (is_dir($path)) {
-                    $seederPath = $path;
-                    break;
-                }
-            }
-
-            if (!$seederPath) {
-                Log::info('No seeders directory found', ['module' => $moduleName]);
-                return;
-            }
-
-            $seederFiles = glob($seederPath . '/*.php');
-            if (empty($seederFiles)) {
-                Log::info('No seeder files found', ['module' => $moduleName]);
-                return;
-            }
-
-            Log::info('Running seeders', [
-                'module' => $moduleName,
-                'count' => count($seederFiles),
-                'path' => $seederPath
-            ]);
-
-            // اجرای DatabaseSeeder اصلی
-            $mainSeeder = "Modules\\{$moduleName}\\Database\\Seeders\\{$moduleName}DatabaseSeeder";
-            if (!class_exists($mainSeeder)) {
-                $mainSeeder = "Modules\\{$moduleName}\\database\\seeders\\{$moduleName}DatabaseSeeder";
-            }
-
-            if (class_exists($mainSeeder)) {
-                Artisan::call('db:seed', [
-                    '--class' => $mainSeeder,
-                    '--force' => true,
-                ]);
-                Log::info("Main seeder executed", ['class' => $mainSeeder]);
-            }
-
-            // اجرای سایر seederها
-            foreach ($seederFiles as $seederFile) {
-                $seederClass = pathinfo($seederFile, PATHINFO_FILENAME);
-
-                if ($seederClass === "{$moduleName}DatabaseSeeder") {
+            // چک کردن اینکه آیا این migration قبلاً اجرا شده
+            $migrationName = pathinfo($name, PATHINFO_FILENAME);
+            if ($migrator->repositoryExists() && $migrator->repository->getRan()) {
+                $ran = $migrator->repository->getRan();
+                if (in_array($migrationName, $ran)) {
+                    Log::info('Migration already ran, skipping', [
+                        'module' => $moduleName,
+                        'migration' => $migrationName,
+                    ]);
                     continue;
                 }
-
-                $fullClass = "Modules\\{$moduleName}\\Database\\Seeders\\{$seederClass}";
-                if (!class_exists($fullClass)) {
-                    $fullClass = "Modules\\{$moduleName}\\database\\seeders\\{$seederClass}";
-                }
-
-                if (class_exists($fullClass)) {
-                    Artisan::call('db:seed', [
-                        '--class' => $fullClass,
-                        '--force' => true,
-                    ]);
-                    Log::info("Additional seeder executed", ['class' => $fullClass]);
-                }
             }
 
-        } catch (Exception $e) {
-            Log::error('Seeder execution failed', [
+            Log::info('Running migration', [
                 'module' => $moduleName,
-                'error' => $e->getMessage()
+                'migration' => $name,
             ]);
+
+            $migrator->run($file);
         }
     }
 
+    /**
+     * پیدا کردن مسیر migrations با پشتیبانی از case sensitivity
+     * (لینوکس case-sensitive هست، ویندوز نه)
+     */
+    private function findMigrationsPath(string $modulePath): ?string
+    {
+        // الگوهای ممکن برای مسیر migrations (به ترتیب اولویت)
+        $patterns = [
+            'database/migrations',  // استاندارد Laravel
+            'Database/Migrations',  // حالت PascalCase
+            'database/Migrations',  // حالت mixed
+            'Database/migrations',  // حالت mixed
+        ];
+
+        foreach ($patterns as $pattern) {
+            $path = $modulePath . '/' . $pattern;
+            if (is_dir($path)) {
+                return $path;
+            }
+        }
+
+        // اگه پوشه‌ی database وجود داره، داخلش رو بگرد
+        $databasePatterns = ['database', 'Database'];
+        foreach ($databasePatterns as $dbPattern) {
+            $dbPath = $modulePath . '/' . $dbPattern;
+            if (is_dir($dbPath)) {
+                // پوشه‌های داخل database/ رو بگرد
+                $subdirs = scandir($dbPath);
+                foreach ($subdirs as $subdir) {
+                    if ($subdir === '.' || $subdir === '..') continue;
+                    if (strtolower($subdir) === 'migrations') {
+                        $migrationsPath = $dbPath . '/' . $subdir;
+                        if (is_dir($migrationsPath)) {
+                            return $migrationsPath;
+                        }
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
     /* ===================================================================
-     *  نصب پرمیژن‌های ماژول
+     *  نصب پرمیژن‌های ماژول (در صورت وجود command اختصاصی)
+     *  Convention: هر ماژول می‌تونه command "{module-lower}:install-permissions" داشته باشه
      * =================================================================== */
     private function installModulePermissions(string $moduleName): void
     {
         $command = strtolower($moduleName) . ':install-permissions';
 
-        if (!$this->artisanCommandExists($command)) {
-            Log::info('No permission command found', ['module' => $moduleName]);
-            return;
+        if (! $this->artisanCommandExists($command)) {
+            return; // ماژول پرمیژن اختصاصی نداره - نادیده گرفته می‌شه
         }
+
+        $this->step('install_permissions', 'نصب پرمیژن‌های ماژول');
 
         try {
             Artisan::call($command);
-            Log::info("Module permissions installed", [
-                'command' => $command,
-                'output' => Artisan::output()
+            Log::info("Module permissions installed: {$command}", [
+                'output' => Artisan::output(),
             ]);
         } catch (Exception $e) {
             Log::warning('Permission install failed (continuing)', [
                 'module' => $moduleName,
                 'command' => $command,
-                'error' => $e->getMessage(),
+                'error'   => $e->getMessage(),
             ]);
         }
     }
 
-    /* ===================================================================
-     *  حذف پرمیژن‌های ماژول
-     * =================================================================== */
+    /**
+     * حذف پرمیژن‌های ماژول هنگام uninstall
+     */
     private function removeModulePermissions(string $moduleName): void
     {
-        try {
-            if (class_exists(Permission::class)) {
-                $permissions = Permission::where('name', 'like', strtolower($moduleName) . '.%')
-                    ->orWhere('name', 'like', strtolower($moduleName) . '_%')
-                    ->orWhere('name', '=', strtolower($moduleName))
-                    ->get();
+        $command = strtolower($moduleName) . ':install-permissions';
 
-                if ($permissions->isNotEmpty()) {
-                    // گرفتن IDها به صورت آرایه ساده
-                    $permissionIds = $permissions->pluck('id')->toArray();
-
-                    // حذف از role_has_permissions
-                    DB::table('role_has_permissions')
-                        ->whereIn('permission_id', $permissionIds)
-                        ->delete();
-
-                    // حذف از permissions
-                    Permission::whereIn('id', $permissionIds)->delete();
-
-                    Log::info('Permissions removed', [
-                        'module' => $moduleName,
-                        'count' => count($permissionIds)
-                    ]);
-                }
-            }
-
-            // حذف از جدول دستی permissions
-            $deleted = DB::table('permissions')
-                ->where('name', 'like', strtolower($moduleName) . '.%')
-                ->orWhere('name', 'like', strtolower($moduleName) . '_%')
-                ->orWhere('name', '=', strtolower($moduleName))
-                ->orWhere('module', '=', strtolower($moduleName))
-                ->delete();
-
-            if ($deleted > 0) {
-                Log::info('Permissions deleted from database', [
-                    'module' => $moduleName,
-                    'count' => $deleted
-                ]);
-            }
-
-        } catch (Exception $e) {
-            Log::warning('Permission removal failed', [
-                'module' => $moduleName,
-                'error' => $e->getMessage()
-            ]);
-        }
-    }
-
-    /* ===================================================================
-     *  انتشار assetهای ماژول
-     * =================================================================== */
-    private function publishModuleAssets(string $moduleName): void
-    {
-        $sourcePath = config('packages.modules.path', base_path('Modules')) . '/' . $moduleName . '/Resources/assets';
-
-        if (!File::exists($sourcePath)) {
-            Log::info('No assets found', ['module' => $moduleName]);
+        if (! $this->artisanCommandExists($command)) {
             return;
         }
 
-        $publicPath = public_path('modules/' . strtolower($moduleName));
+        $this->step('remove_permissions', 'حذف پرمیژن‌های ماژول');
 
         try {
-            if (!File::exists(dirname($publicPath))) {
-                File::makeDirectory(dirname($publicPath), 0755, true);
-            }
-
-            $this->copyDirectory($sourcePath, $publicPath);
-
-            Log::info("Assets published", [
-                'module' => $moduleName,
-                'source' => $sourcePath,
-                'target' => $publicPath,
-            ]);
-
+            Artisan::call($command, ['--remove' => true]);
+            Log::info("Module permissions removed: {$command}");
         } catch (Exception $e) {
-            Log::warning('Asset publish failed (continuing)', [
-                'module' => $moduleName,
-                'error' => $e->getMessage(),
+            Log::warning('Permission removal failed (continuing)', [
+                'module'  => $moduleName,
+                'command' => $command,
+                'error'   => $e->getMessage(),
             ]);
         }
     }
 
-    /* ===================================================================
-     *  حذف assetهای منتشرشده
-     * =================================================================== */
-    private function removePublishedAssets(string $moduleName): void
-    {
-        $publicPath = public_path('modules/' . strtolower($moduleName));
-
-        if (File::exists($publicPath)) {
-            try {
-                File::deleteDirectory($publicPath);
-                Log::info("Assets removed", ['module' => $moduleName]);
-            } catch (Exception $e) {
-                Log::warning('Asset removal failed (continuing)', [
-                    'module' => $moduleName,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        }
-    }
-
-    /* ===================================================================
-     *  حذف کامل تمام جدول‌های ماژول
-     * =================================================================== */
-    private function dropAllModuleTables(string $moduleName): void
-    {
-        // بررسی هر دو حالت حروف
-        $migrationPaths = [
-            base_path("Modules/{$moduleName}/Database/Migrations"),
-            base_path("Modules/{$moduleName}/database/migrations"),
-        ];
-
-        $migrationPath = null;
-        foreach ($migrationPaths as $path) {
-            if (is_dir($path)) {
-                $migrationPath = $path;
-                break;
-            }
-        }
-
-        if (!$migrationPath) {
-            Log::warning('Migrations directory not found', [
-                'module' => $moduleName,
-                'checked_paths' => $migrationPaths
-            ]);
-            return;
-        }
-
-        $files = glob($migrationPath . '/*.php');
-        $tableNames = [];
-        $migrationNames = [];
-
-        foreach ($files as $file) {
-            $filename = pathinfo($file, PATHINFO_FILENAME);
-            $migrationNames[] = $filename;
-
-            $content = file_get_contents($file);
-            preg_match_all(
-                "/Schema::(?:create|table)\s*\(\s*['\"]([^'\"]+)['\"]/",
-                $content,
-                $matches
-            );
-
-            if (!empty($matches[1])) {
-                $tableNames = array_merge($tableNames, $matches[1]);
-            }
-        }
-
-        $tableNames = array_unique($tableNames);
-        $tableNamesToDrop = array_filter($tableNames, function($table) {
-            return Schema::hasTable($table);
-        });
-
-        if (empty($tableNamesToDrop)) {
-            Log::info('No tables to drop', ['module' => $moduleName]);
-            return;
-        }
-
-        Log::info('Dropping tables', [
-            'module' => $moduleName,
-            'tables' => $tableNamesToDrop
-        ]);
-
-        DB::statement('SET FOREIGN_KEY_CHECKS=0');
-        foreach (array_reverse($tableNamesToDrop) as $table) {
-            try {
-                Schema::dropIfExists($table);
-                Log::info('Table dropped', ['table' => $table]);
-            } catch (Exception $e) {
-                Log::error('Failed to drop table', [
-                    'table' => $table,
-                    'error' => $e->getMessage()
-                ]);
-            }
-        }
-        DB::statement('SET FOREIGN_KEY_CHECKS=1');
-
-        // حذف رکوردهای migration
-        if (!empty($migrationNames)) {
-            try {
-                $deleted = DB::table('migrations')
-                    ->whereIn('migration', $migrationNames)
-                    ->delete();
-                Log::info('Migration records deleted', [
-                    'module' => $moduleName,
-                    'count' => $deleted
-                ]);
-            } catch (Exception $e) {
-                Log::warning('Failed to delete migration records', [
-                    'module' => $moduleName,
-                    'error' => $e->getMessage()
-                ]);
-            }
-        }
-    }
-
-    /* ===================================================================
-     *  حذف فایل‌های ماژول
-     * =================================================================== */
-    private function removeModuleFiles(string $moduleName): void
-    {
-        $modulePath = config('packages.modules.path', base_path('Modules')) . '/' . $moduleName;
-
-        if (File::exists($modulePath)) {
-            try {
-                File::deleteDirectory($modulePath);
-                Log::info("Module files removed", ['path' => $modulePath]);
-            } catch (Exception $e) {
-                Log::error('Failed to remove module files', [
-                    'path' => $modulePath,
-                    'error' => $e->getMessage()
-                ]);
-                throw new RuntimeException('حذف فایل‌های ماژول ناموفق بود: ' . $e->getMessage());
-            }
-        }
-    }
-
-    /* ===================================================================
-     *  اجرای کامندهای سفارشی نصب
-     * =================================================================== */
-    private function runCustomInstallCommands(string $moduleName): void
-    {
-        $commands = [
-            strtolower($moduleName) . ':install',
-            strtolower($moduleName) . ':setup',
-            strtolower($moduleName) . ':init',
-        ];
-
-        foreach ($commands as $command) {
-            if ($this->artisanCommandExists($command)) {
-                try {
-                    Artisan::call($command, ['--force' => true]);
-                    Log::info("Custom install command executed", [
-                        'command' => $command,
-                        'output' => Artisan::output()
-                    ]);
-                } catch (Exception $e) {
-                    Log::warning('Custom install command failed (continuing)', [
-                        'command' => $command,
-                        'error' => $e->getMessage()
-                    ]);
-                }
-            }
-        }
-    }
-
-    /* ===================================================================
-     *  اجرای کامندهای قبل از حذف
-     * =================================================================== */
-    private function runPreUninstallCommands(string $moduleName): void
-    {
-        $command = strtolower($moduleName) . ':uninstall';
-
-        if ($this->artisanCommandExists($command)) {
-            try {
-                Artisan::call($command, ['--force' => true]);
-                Log::info("Pre-uninstall command executed", [
-                    'command' => $command,
-                    'output' => Artisan::output()
-                ]);
-            } catch (Exception $e) {
-                Log::warning('Pre-uninstall command failed (continuing)', [
-                    'command' => $command,
-                    'error' => $e->getMessage()
-                ]);
-            }
-        }
-    }
-
-    /* ===================================================================
-     *  بررسی وجود artisan command
-     * =================================================================== */
+    /**
+     * بررسی وجود یک artisan command
+     */
     private function artisanCommandExists(string $command): bool
     {
         try {
@@ -1219,11 +573,107 @@ class PackageInstallerService
     }
 
     /* ===================================================================
-     *  کپی کامل دایرکتوری
+     *  انتشار assetهای ماژول (CSS/JS) به پوشه public/modules/{module}
      * =================================================================== */
+    private function publishModuleAssets(string $moduleName): void
+    {
+        $modulePath = config('packages.modules.path') . '/' . $moduleName;
+        $sourcePath = $this->findAssetsPath($modulePath);
+
+        if (! $sourcePath) {
+            return; // ماژول asset نداره
+        }
+
+        $this->step('publish_assets', 'انتشار فایل‌های استاتیک ماژول');
+
+        $publicPath = public_path('modules/' . strtolower($moduleName));
+
+        try {
+            if (! File::exists(dirname($publicPath))) {
+                File::makeDirectory(dirname($publicPath), 0755, true);
+            }
+            // کپی کل پوشه assets به public
+            $this->copyDirectory($sourcePath, $publicPath);
+
+            Log::info("Module assets published: {$moduleName}", [
+                'source' => $sourcePath,
+                'target' => $publicPath,
+            ]);
+        } catch (Exception $e) {
+            Log::warning('Asset publish failed (continuing)', [
+                'module' => $moduleName,
+                'error'  => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * پیدا کردن مسیر assets با پشتیبانی از case sensitivity
+     */
+    private function findAssetsPath(string $modulePath): ?string
+    {
+        // الگوهای ممکن (به ترتیب اولویت)
+        $patterns = [
+            'Resources/assets',
+            'resources/assets',
+            'Resources/Assets',
+            'resources/assets',
+        ];
+
+        foreach ($patterns as $pattern) {
+            $path = $modulePath . '/' . $pattern;
+            if (is_dir($path)) {
+                return $path;
+            }
+        }
+
+        // اگه پوشه‌ی Resources یا resources وجود داره، داخلش رو بگرد
+        $resourcePatterns = ['Resources', 'resources'];
+        foreach ($resourcePatterns as $resPattern) {
+            $resPath = $modulePath . '/' . $resPattern;
+            if (is_dir($resPath)) {
+                $subdirs = scandir($resPath);
+                foreach ($subdirs as $subdir) {
+                    if ($subdir === '.' || $subdir === '..') continue;
+                    if (strtolower($subdir) === 'assets') {
+                        $assetsPath = $resPath . '/' . $subdir;
+                        if (is_dir($assetsPath)) {
+                            return $assetsPath;
+                        }
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * حذف assetهای منتشرشده هنگام uninstall
+     */
+    private function removePublishedAssets(string $moduleName): void
+    {
+        $publicPath = public_path('modules/' . strtolower($moduleName));
+
+        if (File::exists($publicPath)) {
+            try {
+                File::deleteDirectory($publicPath);
+                Log::info("Module assets removed: {$moduleName}");
+            } catch (Exception $e) {
+                Log::warning('Asset removal failed (continuing)', [
+                    'module' => $moduleName,
+                    'error'  => $e->getMessage(),
+                ]);
+            }
+        }
+    }
+
+    /**
+     * کپی کامل یک دایرکتوری (شامل زیرپوشه‌ها)
+     */
     private function copyDirectory(string $source, string $destination): void
     {
-        if (!File::exists($destination)) {
+        if (! File::exists($destination)) {
             File::makeDirectory($destination, 0755, true);
         }
 
@@ -1235,7 +685,7 @@ class PackageInstallerService
         foreach ($items as $item) {
             $target = $destination . '/' . $items->getSubPathName();
             if ($item->isDir()) {
-                if (!File::exists($target)) {
+                if (! File::exists($target)) {
                     File::makeDirectory($target, 0755, true);
                 }
             } else {
@@ -1245,178 +695,49 @@ class PackageInstallerService
     }
 
     /* ===================================================================
-     *  تنظیم دسترسی‌ها
+     *  رفرش کش‌های لاراول
      * =================================================================== */
-    private function setPermissions(string $path): void
+    private function refreshCaches(): void
     {
         try {
-            if (File::isDirectory($path)) {
-                @chmod($path, 0755);
+            Artisan::call('config:clear');
+            Artisan::call('cache:clear');
 
-                $files = File::allFiles($path);
-                foreach ($files as $file) {
-                    @chmod($file, 0644);
-                }
+            // rebuild modules cache (برای شناسایی ماژول جدید توسط nwidart)
+            try {
+                Artisan::call('module:dump-autoload');
+            } catch (\Throwable $e) {
+                // ممکنه در برخی نسخه‌ها وجود نداشته باشه
+            }
 
-                $directories = File::directories($path);
-                foreach ($directories as $directory) {
-                    $this->setPermissions($directory);
-                }
+            // اگه ماژول جدیدی نصب شده، cache modules رو پاک کن
+            $modulesCachePath = base_path('bootstrap/cache/modules.php');
+            if (file_exists($modulesCachePath)) {
+                @unlink($modulesCachePath);
             }
         } catch (Exception $e) {
-            Log::warning('Failed to set permissions', [
-                'path' => $path,
-                'error' => $e->getMessage()
-            ]);
+            Log::warning('Cache refresh partial failure', ['error' => $e->getMessage()]);
         }
     }
 
-    /* ===================================================================
-     *  پشتیبان‌گیری از ماژول
-     * =================================================================== */
-    private function backupModule(string $moduleName): void
+    /**
+     * Restart کردن queue worker
+     * بعد از نصب ماژول جدید، worker باید restart بشه تا کلاس‌های ماژول جدید رو بشناسه
+     * (از طریق signal queue:restart)
+     */
+    private function restartQueueWorker(): void
     {
-        $modulePath = config('packages.modules.path', base_path('Modules')) . '/' . $moduleName;
-        $backupPath = storage_path('backups/modules/' . $moduleName . '_' . date('Y-m-d_H-i-s'));
-
-        if (File::exists($modulePath)) {
-            try {
-                if (!File::exists(dirname($backupPath))) {
-                    File::makeDirectory(dirname($backupPath), 0755, true);
-                }
-
-                File::copyDirectory($modulePath, $backupPath);
-                $this->backupPaths[] = $backupPath;
-
-                Log::info("Module backed up", [
-                    'module' => $moduleName,
-                    'backup_path' => $backupPath
-                ]);
-            } catch (Exception $e) {
-                Log::warning('Module backup failed', [
-                    'module' => $moduleName,
-                    'error' => $e->getMessage()
-                ]);
-            }
-        }
-    }
-
-    /* ===================================================================
-     *  برگرداندن به نسخه قبلی در صورت خطای آپدیت
-     * =================================================================== */
-    private function rollbackUpdate(string $moduleName): void
-    {
-        $backupPath = null;
-
-        // پیدا کردن آخرین پشتیبان
-        $backupDir = storage_path('backups/modules');
-        if (File::exists($backupDir)) {
-            $backups = File::glob($backupDir . '/' . $moduleName . '_*');
-            if (!empty($backups)) {
-                $backupPath = end($backups);
-            }
-        }
-
-        if ($backupPath && File::exists($backupPath)) {
-            try {
-                $modulePath = config('packages.modules.path', base_path('Modules')) . '/' . $moduleName;
-
-                // حذف نسخه جدید
-                if (File::exists($modulePath)) {
-                    File::deleteDirectory($modulePath);
-                }
-
-                // برگرداندن پشتیبان
-                File::copyDirectory($backupPath, $modulePath);
-
-                Log::info("Module rolled back", [
-                    'module' => $moduleName,
-                    'from' => $backupPath
-                ]);
-            } catch (Exception $e) {
-                Log::error('Rollback failed', [
-                    'module' => $moduleName,
-                    'error' => $e->getMessage()
-                ]);
-            }
-        }
-    }
-
-    /* ===================================================================
-     *  پاکسازی پشتیبان‌های قدیمی
-     * =================================================================== */
-    private function cleanupOldBackups(string $moduleName): void
-    {
-        $backupDir = storage_path('backups/modules');
-        if (!File::exists($backupDir)) {
-            return;
-        }
-
         try {
-            $backups = File::glob($backupDir . '/' . $moduleName . '_*');
-            $keep = config('packages.backup.keep', 3);
-
-            if (count($backups) > $keep) {
-                $toDelete = array_slice($backups, 0, count($backups) - $keep);
-                foreach ($toDelete as $backup) {
-                    File::deleteDirectory($backup);
-                    Log::info("Old backup deleted", ['path' => $backup]);
-                }
-            }
-        } catch (Exception $e) {
-            Log::warning('Failed to cleanup old backups', [
-                'module' => $moduleName,
-                'error' => $e->getMessage()
+            // ارسال signal restart به queue worker
+            // worker فعلی بعد از اتمام job فعلی restart می‌شه
+            Artisan::call('queue:restart');
+            Log::info('Queue restart signal sent');
+        } catch (\Throwable $e) {
+            Log::warning('Could not restart queue worker', [
+                'error' => $e->getMessage(),
+                'hint'  => 'You may need to manually restart: php artisan queue:restart',
             ]);
         }
-    }
-
-    /* ===================================================================
-     *  رول‌بک در صورت خطای نصب
-     * =================================================================== */
-    private function rollbackOnError(?string $moduleName, ?string $zipPath): void
-    {
-        // پاکسازی فایل‌های ماژول در صورت وجود
-        if ($moduleName) {
-            $modulePath = config('packages.modules.path', base_path('Modules')) . '/' . $moduleName;
-            if (File::exists($modulePath)) {
-                try {
-                    File::deleteDirectory($modulePath);
-                    Log::info("Module directory cleaned after error", ['module' => $moduleName]);
-                } catch (Exception $e) {
-                    // نادیده
-                }
-            }
-        }
-
-        // پاکسازی فایل ZIP موقت
-        if ($zipPath && File::exists($zipPath)) {
-            try {
-                File::delete($zipPath);
-                Log::info("Temp file cleaned after error", ['path' => $zipPath]);
-            } catch (Exception $e) {
-                // نادیده
-            }
-        }
-
-        // پاکسازی پشتیبان‌ها
-        foreach ($this->backupPaths as $backupPath) {
-            if (File::exists($backupPath)) {
-                try {
-                    File::deleteDirectory($backupPath);
-                } catch (Exception $e) {
-                    // نادیده
-                }
-            }
-        }
-    }
-
-    /* ===================================================================
-     *  تایید حذف ماژول
-     * =================================================================== */
-    private function confirmUninstall(string $moduleName): bool
-    {
-        return true;
     }
 
     /* ===================================================================
@@ -1424,21 +745,12 @@ class PackageInstallerService
      * =================================================================== */
     private function readModuleVersion(string $moduleName): ?string
     {
-        $path = config('packages.modules.path', base_path('Modules')) . '/' . $moduleName . '/module.json';
+        $path = config('packages.modules.path') . '/' . $moduleName . '/module.json';
         if (!File::exists($path)) {
             return null;
         }
-
-        try {
-            $data = json_decode(File::get($path), true);
-            return $data['version'] ?? null;
-        } catch (Exception $e) {
-            Log::warning('Failed to read module version', [
-                'module' => $moduleName,
-                'error' => $e->getMessage()
-            ]);
-            return null;
-        }
+        $data = json_decode(File::get($path), true);
+        return $data['version'] ?? null;
     }
 
     /* ===================================================================
@@ -1447,49 +759,9 @@ class PackageInstallerService
     private function cleanupTemp(string $zipPath): void
     {
         try {
-            if (File::exists($zipPath)) {
-                File::delete($zipPath);
-                Log::info("Temp file cleaned up", ['path' => $zipPath]);
-            }
+            @unlink($zipPath);
         } catch (Exception $e) {
-            Log::warning('Failed to cleanup temp file', [
-                'path' => $zipPath,
-                'error' => $e->getMessage()
-            ]);
-        }
-    }
-
-    /* ===================================================================
-     *  رفرش کش‌های لاراول
-     * =================================================================== */
-    private function refreshCaches(): void
-    {
-        try {
-            // فقط دستوراتی که وجود دارند را اجرا کن
-            $commands = [
-                'config:clear',
-                'cache:clear',
-                'view:clear',
-                'route:clear',
-            ];
-
-            foreach ($commands as $command) {
-                if ($this->artisanCommandExists($command)) {
-                    Artisan::call($command);
-                }
-            }
-
-            // بررسی وجود دستور module:dump-autoload
-            if ($this->artisanCommandExists('module:dump-autoload')) {
-                Artisan::call('module:dump-autoload');
-            } elseif ($this->artisanCommandExists('module:discover')) {
-                Artisan::call('module:discover');
-            }
-
-            Log::info('Caches refreshed');
-
-        } catch (Exception $e) {
-            Log::warning('Cache refresh partial failure', ['error' => $e->getMessage()]);
+            // نادیده
         }
     }
 
@@ -1498,11 +770,7 @@ class PackageInstallerService
      * =================================================================== */
     private function step(string $name, string $label): void
     {
-        $this->steps[] = [
-            'name' => $name,
-            'label' => $label,
-            'at' => now()->toDateTimeString()
-        ];
+        $this->steps[] = ['name' => $name, 'label' => $label, 'at' => now()->toDateTimeString()];
     }
 
     private function startLog(
@@ -1527,65 +795,31 @@ class PackageInstallerService
         ?InstalledModule $installed = null,
         ?string $message = null
     ): void {
-        try {
-            $log->update([
-                'status'     => $status,
-                'to_version' => $installed?->version,
-                'message'    => $message,
-                'details'    => ['steps' => $this->steps],
-            ]);
-        } catch (Exception $e) {
-            Log::error('Failed to update install log', [
-                'log_id' => $log->id,
-                'error' => $e->getMessage()
-            ]);
-        }
+        $log->update([
+            'status'     => $status,
+            'to_version' => $installed?->version,
+            'message'    => $message,
+            'details'    => ['steps' => $this->steps],
+        ]);
     }
 
     private function failLog(ModuleInstallLog $log, Exception $e, string $slug): void
     {
-        try {
-            $errorData = [
-                'slug' => $slug,
-                'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'code' => $e->getCode(),
-                'steps' => $this->steps
-            ];
+        Log::error('Package install/update failed', [
+            'slug'  => $slug,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
 
-            Log::error('Package install/update failed', $errorData);
+        $log->update([
+            'status'  => ModuleInstallLog::STATUS_FAILED,
+            'message' => $e->getMessage(),
+            'details' => ['steps' => $this->steps, 'trace' => $e->getTraceAsString()],
+        ]);
 
-            // ذخیره در فایل لاگ ساده (امن‌تر)
-            $logFile = storage_path('logs/package_errors.log');
-            $logEntry = date('Y-m-d H:i:s') . " | " . json_encode($errorData) . PHP_EOL;
-            @file_put_contents($logFile, $logEntry, FILE_APPEND);
-
-            $log->update([
-                'status' => ModuleInstallLog::STATUS_FAILED,
-                'message' => substr($e->getMessage(), 0, 500),
-                'details' => [
-                    'steps' => $this->steps,
-                    'error' => [
-                        'message' => substr($e->getMessage(), 0, 200),
-                        'file' => $e->getFile(),
-                        'line' => $e->getLine()
-                    ]
-                ],
-            ]);
-
-            $installed = InstalledModule::where('slug', $slug)->first();
-            if ($installed) {
-                $installed->markAsFailed(substr($e->getMessage(), 0, 500));
-            }
-
-        } catch (Exception $logError) {
-            // اگر لاگ‌گیری هم مشکل داشت، حداقل یک فایل ساده بنویسیم
-            @file_put_contents(
-                storage_path('logs/critical_error.log'),
-                date('Y-m-d H:i:s') . " | " . $e->getMessage() . " | " . $e->getFile() . ":" . $e->getLine() . PHP_EOL,
-                FILE_APPEND
-            );
+        $installed = InstalledModule::where('slug', $slug)->first();
+        if ($installed) {
+            $installed->markAsFailed($e->getMessage());
         }
     }
 }
