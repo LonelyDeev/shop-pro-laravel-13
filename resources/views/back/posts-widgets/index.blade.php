@@ -77,11 +77,11 @@
                                                 @endif
                                             </td>
                                             <td class="text-center">
-                                                <a href="{{ route('admin.posts-widgets.edit', ['widget' => $widget]) }}" class="icon-btn edit">
+                                                <a href="{{ route('admin.posts-widgets.edit',$widget) }}" class="icon-btn edit">
                                                     <i class="feather icon-edit-2"></i> ویرایش
                                                 </a>
                                                 <button type="button"
-                                                        data-action="{{ route('admin.posts-widgets.destroy', ['widget' => $widget]) }}"
+                                                        data-action="{{ route('admin.posts-widgets.destroy',$widget) }}"
                                                         class="icon-btn delete btn-delete"
                                                         data-toggle="modal" data-target="#delete-modal">
                                                     <i class="feather icon-trash-2"></i> حذف
