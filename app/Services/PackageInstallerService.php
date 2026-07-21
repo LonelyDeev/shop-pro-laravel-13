@@ -611,8 +611,6 @@ class PackageInstallerService
     {
         try {
             $seederPath = base_path("Modules/{$moduleName}/database/seeders");
-            error_log("Seeder path: " . $seederPath);
-            error_log("Module: " . $moduleName);
             if (!is_dir($seederPath)) {
                 Log::info('No seeders directory found', ['module' => $moduleName]);
                 return;
@@ -631,7 +629,7 @@ class PackageInstallerService
             ]);
 
             // روش 2: یا اجرای seederهای خاص
-            foreach ($seederFiles as $seederFile) {
+           /* foreach ($seederFiles as $seederFile) {
                 $seederClass = pathinfo($seederFile, PATHINFO_FILENAME);
                 $fullClass = "Modules\\{$moduleName}\\Database\\Seeders\\{$seederClass}";
 
@@ -642,7 +640,7 @@ class PackageInstallerService
                     ]);
                     Log::info("Seeder executed: {$fullClass}");
                 }
-            }
+            }*/
 
         } catch (Exception $e) {
             Log::error('Seeder execution failed', [
