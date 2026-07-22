@@ -523,19 +523,17 @@ class PackageInstallerService
         $this->step('install_permissions', 'نصب پرمیژن‌های ماژول');
 
         try {
-            $artisan = \Illuminate\Support\Facades\Artisan::getArtisan();
+            // اجرای مستقیم کامند (دور زدن Artisan Kernel)
             $commandInstance = app($commandClass);
-            $commandName = $commandInstance->getName();
-
-            // ثبت دستی کامند در Artisan (چون queue worker قبلاً بوت شده و نمی‌شناسدش)
-            if (!$artisan->has($commandName)) {
-                $artisan->add($commandInstance);
-            }
-
-            \Illuminate\Support\Facades\Artisan::call($commandName);
+            $commandInstance->setLaravel(app());
+            
+            $input = new \Symfony\Component\Console\Input\ArrayInput([]);
+            $output = new \Symfony\Component\Console\Output\BufferedOutput();
+            
+            $commandInstance->run($input, $output);
 
             Log::info("Module permissions installed: {$moduleName}", [
-                'output' => \Illuminate\Support\Facades\Artisan::output(),
+                'output' => $output->fetch()
             ]);
         } catch (\Exception $e) {
             Log::warning('Permission install failed (continuing)', [
@@ -559,18 +557,16 @@ class PackageInstallerService
         $this->step('remove_permissions', 'حذف پرمیژن‌های ماژول');
 
         try {
-            $artisan = \Illuminate\Support\Facades\Artisan::getArtisan();
             $commandInstance = app($commandClass);
-            $commandName = $commandInstance->getName();
-
-            if (!$artisan->has($commandName)) {
-                $artisan->add($commandInstance);
-            }
-
-            \Illuminate\Support\Facades\Artisan::call($commandName, ['--remove' => true]);
+            $commandInstance->setLaravel(app());
+            
+            $input = new \Symfony\Component\Console\Input\ArrayInput(['--remove' => true]);
+            $output = new \Symfony\Component\Console\Output\BufferedOutput();
+            
+            $commandInstance->run($input, $output);
 
             Log::info("Module permissions removed: {$moduleName}", [
-                'output' => \Illuminate\Support\Facades\Artisan::output(),
+                'output' => $output->fetch()
             ]);
         } catch (\Exception $e) {
             Log::warning('Permission removal failed (continuing)', [
@@ -586,7 +582,7 @@ class PackageInstallerService
     private function artisanCommandExists(string $command): bool
     {
         try {
-            return collect(\Illuminate\Support\Facades\Artisan::all())->has($command);
+            return collect(Artisan::all())->has($command);
         } catch (\Throwable $e) {
             return false;
         }
