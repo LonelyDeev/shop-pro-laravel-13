@@ -515,7 +515,7 @@ class PackageInstallerService
     private function installModulePermissions(string $moduleName): void
     {
         // مسیر کلاس کامند طبق convention
-        $commandClass = "Modules\\{$moduleName}\\Console\\Commands\\Install" . ucfirst($moduleName) . "PermissionsCommand";
+        $commandClass = "Modules\\{$moduleName}\\Console\\Commands\\InstallPermissionsCommand";
 
         if (!class_exists($commandClass)) {
             return; // ماژول پرمیژن اختصاصی نداره
@@ -527,10 +527,10 @@ class PackageInstallerService
             // اجرای مستقیم کامند (دور زدن Artisan Kernel)
             $commandInstance = app($commandClass);
             $commandInstance->setLaravel(app());
-            
+
             $input = new \Symfony\Component\Console\Input\ArrayInput([]);
             $output = new \Symfony\Component\Console\Output\BufferedOutput();
-            
+
             $commandInstance->run($input, $output);
 
             Log::info("Module permissions installed: {$moduleName}", [
@@ -560,10 +560,10 @@ class PackageInstallerService
         try {
             $commandInstance = app($commandClass);
             $commandInstance->setLaravel(app());
-            
+
             $input = new \Symfony\Component\Console\Input\ArrayInput(['--remove' => true]);
             $output = new \Symfony\Component\Console\Output\BufferedOutput();
-            
+
             $commandInstance->run($input, $output);
 
             Log::info("Module permissions removed: {$moduleName}", [
