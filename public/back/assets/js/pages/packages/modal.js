@@ -309,12 +309,12 @@
         if (pkg.long_description || pkg.description) {
             var descContent = pkg.long_description || pkg.description;
 
-            // پاکسازی HTML برای امنیت
-            var cleanHtml = DOMPurify ? DOMPurify.sanitize(descContent) : descContent;
+            // استفاده از jQuery برای تنظیم HTML
+            var $desc = $('<div class="pkg-long-desc"></div>').html(descContent);
 
             html += '<div class="pkg-section">';
             html += '<h6 class="pkg-section-title"><i class="feather icon-file-text"></i> توضیحات کامل</h6>';
-            html += '<div class="pkg-long-desc">' + cleanHtml + '</div>';
+            html += $desc[0].outerHTML;
             html += '</div>';
         }
         // changelog
