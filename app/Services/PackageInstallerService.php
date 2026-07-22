@@ -513,24 +513,34 @@ class PackageInstallerService
      * =================================================================== */
     private function installModulePermissions(string $moduleName): void
     {
-        $command = strtolower($moduleName) . ':install-permissions';
+        // مسیر کلاس کامند طبق convention
+        $commandClass = "Modules\\{$moduleName}\\Console\\Commands\\Install" . ucfirst($moduleName) . "PermissionsCommand";
 
-        if (! $this->artisanCommandExists($command)) {
-            return; // ماژول پرمیژن اختصاصی نداره - نادیده گرفته می‌شه
+        if (!class_exists($commandClass)) {
+            return; // ماژول پرمیژن اختصاصی نداره
         }
 
         $this->step('install_permissions', 'نصب پرمیژن‌های ماژول');
 
         try {
-            Artisan::call($command);
-            Log::info("Module permissions installed: {$command}", [
-                'output' => Artisan::output(),
+            $artisan = \Illuminate\Support\Facades\Artisan::getArtisan();
+            $commandInstance = app($commandClass);
+            $commandName = $commandInstance->getName();
+
+            // ثبت دستی کامند در Artisan (چون queue worker قبلاً بوت شده و نمی‌شناسدش)
+            if (!$artisan->has($commandName)) {
+                $artisan->add($commandInstance);
+            }
+
+            \Illuminate\Support\Facades\Artisan::call($commandName);
+
+            Log::info("Module permissions installed: {$moduleName}", [
+                'output' => \Illuminate\Support\Facades\Artisan::output(),
             ]);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             Log::warning('Permission install failed (continuing)', [
                 'module' => $moduleName,
-                'command' => $command,
-                'error'   => $e->getMessage(),
+                'error'  => $e->getMessage(),
             ]);
         }
     }
@@ -540,21 +550,31 @@ class PackageInstallerService
      */
     private function removeModulePermissions(string $moduleName): void
     {
-        $command = strtolower($moduleName) . ':install-permissions';
+        $commandClass = "Modules\\{$moduleName}\\Console\\Commands\\Install" . ucfirst($moduleName) . "PermissionsCommand";
 
-        if (! $this->artisanCommandExists($command)) {
+        if (!class_exists($commandClass)) {
             return;
         }
 
         $this->step('remove_permissions', 'حذف پرمیژن‌های ماژول');
 
         try {
-            Artisan::call($command, ['--remove' => true]);
-            Log::info("Module permissions removed: {$command}");
-        } catch (Exception $e) {
+            $artisan = \Illuminate\Support\Facades\Artisan::getArtisan();
+            $commandInstance = app($commandClass);
+            $commandName = $commandInstance->getName();
+
+            if (!$artisan->has($commandName)) {
+                $artisan->add($commandInstance);
+            }
+
+            \Illuminate\Support\Facades\Artisan::call($commandName, ['--remove' => true]);
+
+            Log::info("Module permissions removed: {$moduleName}", [
+                'output' => \Illuminate\Support\Facades\Artisan::output(),
+            ]);
+        } catch (\Exception $e) {
             Log::warning('Permission removal failed (continuing)', [
                 'module'  => $moduleName,
-                'command' => $command,
                 'error'   => $e->getMessage(),
             ]);
         }
@@ -566,7 +586,7 @@ class PackageInstallerService
     private function artisanCommandExists(string $command): bool
     {
         try {
-            return collect(Artisan::all())->has($command);
+            return collect(\Illuminate\Support\Facades\Artisan::all())->has($command);
         } catch (\Throwable $e) {
             return false;
         }
