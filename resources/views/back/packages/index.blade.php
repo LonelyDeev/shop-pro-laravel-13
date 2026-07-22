@@ -176,7 +176,7 @@
                                             <span class="pkg-card-version">v{{ $latestVersion }}</span>
                                         </div>
                                         <p class="pkg-card-desc">
-                                            {{ \Illuminate\Support\Str::limit($pkg['description'] ?? 'بدون توضیحات', 90) }}
+                                            {!! $pkg['short_description'] ?? 'بدون توضیحات' !!}
                                         </p>
                                     @endif
 

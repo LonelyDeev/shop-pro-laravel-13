@@ -281,8 +281,10 @@
         if (pkg.downloads) html += '<span class="pkg-modal-meta-chip"><i class="feather icon-download"></i> ' + number_format(pkg.downloads) + ' دانلود</span>';
         html += '</div>';
 
-        if (pkg.description) {
-            html += '<p class="pkg-modal-desc">' + escapeHtml(pkg.short_description) + '</p>';
+        if (pkg.short_description) {
+            // استفاده از jQuery برای append
+            var $desc = $('<p class="pkg-modal-desc"></p>').html(pkg.short_description);
+            html += $desc[0].outerHTML;
         }
         html += '</div></div></div>';
 
@@ -305,12 +307,16 @@
 
         // long description
         if (pkg.long_description || pkg.description) {
+            var descContent = pkg.long_description || pkg.description;
+
+            // پاکسازی HTML برای امنیت
+            var cleanHtml = DOMPurify ? DOMPurify.sanitize(descContent) : descContent;
+
             html += '<div class="pkg-section">';
             html += '<h6 class="pkg-section-title"><i class="feather icon-file-text"></i> توضیحات کامل</h6>';
-            html += '<div class="pkg-long-desc">' + nl2br(escapeHtml(pkg.long_description || pkg.description)) + '</div>';
+            html += '<div class="pkg-long-desc">' + cleanHtml + '</div>';
             html += '</div>';
         }
-
         // changelog
         if (pkg.changelog && (Object.keys(pkg.changelog).length > 0 || Array.isArray(pkg.changelog))) {
             html += '<div class="pkg-section">';
