@@ -282,7 +282,7 @@
         html += '</div>';
 
         if (pkg.description) {
-            html += '<p class="pkg-modal-desc">' + escapeHtml(pkg.description) + '</p>';
+            html += '<p class="pkg-modal-desc">' + escapeHtml(pkg.short_description) + '</p>';
         }
         html += '</div></div></div>';
 

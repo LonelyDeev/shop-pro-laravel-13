@@ -58,7 +58,7 @@
                                                 <span class="pkg-meta-chip"><i class="feather icon-download"></i> {{ number_format($package['downloads']) }} دانلود</span>
                                             @endif
                                         </div>
-                                        <p class="pkg-desc text-muted mb-0">{{ $package['description'] ?? '' }}</p>
+                                        <p class="pkg-desc text-muted mb-0">{!! $package['short_description'] ?? '' !!}</p>
                                     </div>
                                 </div>
                             </div>
