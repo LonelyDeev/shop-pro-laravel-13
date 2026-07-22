@@ -326,7 +326,8 @@ class PackageInstallerService
         // backup نسخه قبلی (در صورت آپدیت)
         if (File::exists($targetPath)) {
             $backupPath = $modulesPath . '/.backups/' . $moduleName . '_' . time();
-            File::makeDirectory(dirname($backupPath), 0755, true);
+            // استفاده از ensureDirectoryExists برای جلوگیری از ارور mkdir اگر پوشه وجود داشت
+            File::ensureDirectoryExists(dirname($backupPath), 0755);
             File::moveDirectory($targetPath, $backupPath);
         }
 
@@ -605,9 +606,7 @@ class PackageInstallerService
         $publicPath = public_path('modules/' . strtolower($moduleName));
 
         try {
-            if (! File::exists(dirname($publicPath))) {
-                File::makeDirectory(dirname($publicPath), 0755, true);
-            }
+            File::ensureDirectoryExists(dirname($publicPath), 0755, true);
             // کپی کل پوشه assets به public
             $this->copyDirectory($sourcePath, $publicPath);
 
@@ -690,7 +689,7 @@ class PackageInstallerService
     private function copyDirectory(string $source, string $destination): void
     {
         if (! File::exists($destination)) {
-            File::makeDirectory($destination, 0755, true);
+            File::ensureDirectoryExists($destination, 0755, true);
         }
 
         $items = new \RecursiveIteratorIterator(
@@ -702,7 +701,7 @@ class PackageInstallerService
             $target = $destination . '/' . $items->getSubPathName();
             if ($item->isDir()) {
                 if (! File::exists($target)) {
-                    File::makeDirectory($target, 0755, true);
+                    File::ensureDirectoryExists($target, 0755, true);
                 }
             } else {
                 File::copy($item->getRealPath(), $target);
