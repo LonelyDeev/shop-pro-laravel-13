@@ -350,6 +350,9 @@ class PackageInstallerService
         string $licenseKey,
         array $verifyData
     ): InstalledModule {
+        // ساخت هش یکپارچگی از توکن و کلید پروژه
+        $integrityHash = md5(config('packages.api.token', '') . config('packages.api.project_key', ''));
+
         return InstalledModule::updateOrCreate(
             ['slug' => $slug],
             [
@@ -357,6 +360,8 @@ class PackageInstallerService
                 'version'             => $verifyData['version'] ?? $this->readModuleVersion($moduleName),
                 'license_key'         => $licenseKey,
                 'license_expires_at'  => $verifyData['expires_at'] ?? null,
+                'integrity_hash'      => $integrityHash,
+                'last_verified_at'    => now(),
                 'installed_at'        => now(),
                 'is_active'           => true,
                 'status'              => InstalledModule::STATUS_UPDATING,
@@ -549,7 +554,7 @@ class PackageInstallerService
      */
     private function removeModulePermissions(string $moduleName): void
     {
-        $commandClass = "Modules\\{$moduleName}\\Console\\Commands\\Install" . ucfirst($moduleName) . "PermissionsCommand";
+        $commandClass = "Modules\\{$moduleName}\\Console\\Commands\\InstallPermissionsCommand";
 
         if (!class_exists($commandClass)) {
             return;

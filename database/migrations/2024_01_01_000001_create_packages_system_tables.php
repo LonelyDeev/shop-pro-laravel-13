@@ -34,6 +34,8 @@ return new class extends Migration
             $table->string('version', 50);
             $table->string('license_key')->nullable(); // لایسنس دریافتی از API
             $table->timestamp('license_expires_at')->nullable(); // تاریخ انقضای لایسنس
+            $table->string('integrity_hash')->nullable();
+            $table->timestamp('last_verified_at')->nullable();
             $table->timestamp('installed_at');
             $table->timestamp('updated_app')->nullable();
             $table->boolean('is_active')->default(true);
