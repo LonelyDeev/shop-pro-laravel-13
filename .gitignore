@@ -11,6 +11,7 @@
 .env
 .env.backup
 modules_statuses.json
+/modules_statuses.json
 .phpunit.result.cache
 docker-compose.override.yml
 Homestead.json
