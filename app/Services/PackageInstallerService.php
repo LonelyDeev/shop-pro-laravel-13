@@ -75,10 +75,13 @@ class PackageInstallerService
             // 7) نصب پرمیژن‌های ماژول (در صورت وجود command)
             $this->installModulePermissions($moduleName);
 
-            // 8) انتشار assetهای ماژول (CSS/JS) به پوشه public
+            // 8) اجرای seederهای ماژول (در صورت وجود)
+            $this->runModuleSeeders($moduleName);
+
+            // 9) انتشار assetهای ماژول (CSS/JS) به پوشه public
             $this->publishModuleAssets($moduleName);
 
-            // 9) رفرش کش‌های لاراول
+            // 10) رفرش کش‌های لاراول
             $this->step('cache_refresh', 'بروزرسانی کش‌ها');
             $this->refreshCaches();
 
@@ -886,5 +889,137 @@ class PackageInstallerService
         if ($installed) {
             $installed->markAsFailed($e->getMessage());
         }
+    }
+
+    /* ===================================================================
+ *  اجرای seederهای ماژول
+ *  Convention: کلاس اصلی seeder باید Modules\{Module}\Database\Seeders\{Module}DatabaseSeeder باشه
+ * =================================================================== */
+    private function runModuleSeeders(string $moduleName): void
+    {
+        $modulePath = config('packages.modules.path') . '/' . $moduleName;
+        $seedersPath = $this->findSeedersPath($modulePath);
+
+        if ($seedersPath === null) {
+            Log::info('No seeders directory found', [
+                'module' => $moduleName,
+            ]);
+            return;
+        }
+
+        $this->step('run_seeders', 'اجرای seederهای ماژول');
+
+        try {
+            // کلاس seeder اصلی ماژول (طبق convention)
+            $mainSeederClass = "Modules\\{$moduleName}\\Database\\Seeders\\{$moduleName}DatabaseSeeder";
+
+            if (!class_exists($mainSeederClass)) {
+                Log::info('Main seeder class not found', [
+                    'module' => $moduleName,
+                    'class'  => $mainSeederClass,
+                ]);
+                return;
+            }
+
+            // ایجاد instance از seeder
+            $seeder = app($mainSeederClass);
+            $seeder->setContainer(app());
+
+            // ساخت command موقت برای output (seederها برای چاپ info به $this->command نیاز دارن)
+            $output = new \Symfony\Component\Console\Output\BufferedOutput();
+            $command = new \Illuminate\Console\Command();
+            $command->setLaravel(app());
+            $command->setOutput(
+                new \Illuminate\Console\OutputStyle(
+                    new \Symfony\Component\Console\Input\ArgvInput(),
+                    $output
+                )
+            );
+            $seeder->setCommand($command);
+
+            // اجرای seeder (متد __invoke خودش run() رو صدا می‌زنه)
+            $seeder->__invoke();
+
+            Log::info("Module seeders executed: {$moduleName}", [
+                'output' => $output->fetch(),
+            ]);
+        } catch (\Exception $e) {
+            Log::warning('Seeder execution failed (continuing)', [
+                'module' => $moduleName,
+                'error'  => $e->getMessage(),
+                'trace'  => $e->getTraceAsString(),
+            ]);
+        }
+    }
+
+    /**
+     * پیدا کردن مسیر seeders با پشتیبانی از case sensitivity
+     */
+    private function findSeedersPath(string $modulePath): ?string
+    {
+        $patterns = [
+            'database/seeders',
+            'Database/Seeders',
+            'database/Seeders',
+            'Database/seeders',
+        ];
+
+        foreach ($patterns as $pattern) {
+            $path = $modulePath . '/' . $pattern;
+            if (is_dir($path)) {
+                return $path;
+            }
+        }
+
+        // fallback: جستجوی case-insensitive داخل database
+        $dbPatterns = ['database', 'Database'];
+        foreach ($dbPatterns as $dbPattern) {
+            $dbPath = $modulePath . '/' . $dbPattern;
+            if (is_dir($dbPath)) {
+                $subdirs = scandir($dbPath);
+                foreach ($subdirs as $subdir) {
+                    if ($subdir === '.' || $subdir === '..') continue;
+                    if (strtolower($subdir) === 'seeders') {
+                        $seedersPath = $dbPath . '/' . $subdir;
+                        if (is_dir($seedersPath)) {
+                            return $seedersPath;
+                        }
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * ثبت autoloader موقت برای کلاس‌های ماژول
+     *
+     * مشکل: queue worker در ابتدای کار autoloader رو load می‌کنه و در حافظه نگه می‌داره.
+     * وقتی ماژول جدیدی extract می‌شه، حتی با وجود composer dump-autoload،
+     * PHP process فعلی نمی‌تونه کلاس‌های ماژول جدید رو autoload کنه.
+     *
+     * راه‌حل: ثبت یک SPL autoloader موقت که کلاس‌های ماژول رو به صورت PSR-4 لود کنه.
+     * این autoloader فقط برای کلاس‌هایی هست که با "Modules\{moduleName}\" شروع می‌شن.
+     */
+    private function registerModuleAutoloader(string $moduleName): void
+    {
+        $modulePath = config('packages.modules.path') . '/' . $moduleName;
+        $prefix = "Modules\\{$moduleName}\\";
+
+        spl_autoload_register(function ($class) use ($prefix, $modulePath) {
+            // فقط کلاس‌های این ماژول رو پردازش کن
+            if (strpos($class, $prefix) !== 0) {
+                return;
+            }
+
+            // تبدیل namespace به مسیر فایل (PSR-4)
+            $relativeClass = substr($class, strlen($prefix));
+            $file = $modulePath . '/' . str_replace('\\', '/', $relativeClass) . '.php';
+
+            if (file_exists($file)) {
+                require_once $file;
+            }
+        });
     }
 }
