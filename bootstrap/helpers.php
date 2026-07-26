@@ -1003,7 +1003,10 @@ function aparat_iframe($string)
 function module_asset(string $module, string $path): string
 {
     $moduleLower = strtolower($module);
-    return asset('modules/' . $moduleLower . '/' . ltrim($path, '/'));
+    $path = ltrim($path, '/');
+
+    // مسیر صحیح برای فایل‌های assets
+    return asset('modules/' . $moduleLower . '/' . $path);
 }
 function theme_asset($path)
 {

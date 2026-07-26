@@ -720,21 +720,66 @@ class PackageInstallerService
     private function refreshCaches(): void
     {
         try {
+            // ========== پاک کردن کش‌های لاراول ==========
             Artisan::call('config:clear');
             Artisan::call('cache:clear');
+            Artisan::call('view:clear');
+            Artisan::call('route:clear');
 
-            // rebuild modules cache (برای شناسایی ماژول جدید توسط nwidart)
+            // ========== بازسازی کش ماژول‌ها ==========
             try {
+                // کامند صحیح برای پاک کردن کش ماژول
                 Artisan::call('module:dump-autoload');
+                Artisan::call('module:clear-compiled');
             } catch (\Throwable $e) {
-                // ممکنه در برخی نسخه‌ها وجود نداشته باشه
+                Log::debug('module:clear-compiled not available, trying alternative');
+
+                // روش جایگزین: پاک کردن مستقیم فایل
+                $modulesCachePath = base_path('bootstrap/cache/modules.php');
+                if (file_exists($modulesCachePath)) {
+                    @unlink($modulesCachePath);
+                    Log::info('Modules cache file removed directly');
+                }
             }
 
-            // اگه ماژول جدیدی نصب شده، cache modules رو پاک کن
-            $modulesCachePath = base_path('bootstrap/cache/modules.php');
-            if (file_exists($modulesCachePath)) {
-                @unlink($modulesCachePath);
+            // ========== اجرای composer dump-autoload برای ماژول ==========
+            try {
+                // این کامند composer dump-autoload را برای ماژول اجرا میکند
+                Artisan::call('module:dump');
+            } catch (\Throwable $e) {
+                Log::debug('module:dump not available');
+
+                // روش جایگزین: اجرای مستقیم composer
+                try {
+                    exec('composer dump-autoload -o 2>&1', $output, $returnCode);
+                    Log::info('Composer dump-autoload executed', ['return_code' => $returnCode]);
+                } catch (\Throwable $e2) {
+                    Log::debug('Composer dump-autoload failed');
+                }
             }
+
+            // ========== پاک کردن کش روت ==========
+            $routesCachePath = base_path('bootstrap/cache/routes-v7.php');
+            if (file_exists($routesCachePath)) {
+                @unlink($routesCachePath);
+                Log::info('Routes cache v7 removed');
+            }
+
+            $routesCachePathOld = base_path('bootstrap/cache/routes.php');
+            if (file_exists($routesCachePathOld)) {
+                @unlink($routesCachePathOld);
+                Log::info('Routes cache old removed');
+            }
+
+            // ========== پاک کردن کش سرویس‌ها ==========
+            $servicesCachePath = base_path('bootstrap/cache/services.php');
+            if (file_exists($servicesCachePath)) {
+                @unlink($servicesCachePath);
+                Log::info('Services cache removed');
+            }
+
+            Log::info('✅ All caches refreshed successfully');
+
         } catch (Exception $e) {
             Log::warning('Cache refresh partial failure', ['error' => $e->getMessage()]);
         }

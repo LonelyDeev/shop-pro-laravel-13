@@ -173,6 +173,10 @@ class ComposerStaticInita79a6346a5a295f183402461d60fc86b
             'Modules\\Story\\Database\\Seeders\\' => 31,
             'Modules\\Story\\Database\\Factories\\' => 33,
             'Modules\\Story\\' => 14,
+            'Modules\\SmartAssembly\\Tests\\' => 28,
+            'Modules\\SmartAssembly\\Database\\Seeders\\' => 39,
+            'Modules\\SmartAssembly\\Database\\Factories\\' => 41,
+            'Modules\\SmartAssembly\\' => 22,
             'Modules\\SeoAudit\\Tests\\' => 23,
             'Modules\\SeoAudit\\Database\\Seeders\\' => 34,
             'Modules\\SeoAudit\\Database\\Factories\\' => 36,
@@ -632,6 +636,22 @@ class ComposerStaticInita79a6346a5a295f183402461d60fc86b
         'Modules\\Story\\' =>
         array (
             0 => __DIR__ . '/../..' . '/Modules/Story/app',
+        ),
+        'Modules\\SmartAssembly\\Tests\\' =>
+        array (
+            0 => __DIR__ . '/../..' . '/Modules/SmartAssembly/tests',
+        ),
+        'Modules\\SmartAssembly\\Database\\Seeders\\' =>
+        array (
+            0 => __DIR__ . '/../..' . '/Modules/SmartAssembly/database/seeders',
+        ),
+        'Modules\\SmartAssembly\\Database\\Factories\\' =>
+        array (
+            0 => __DIR__ . '/../..' . '/Modules/SmartAssembly/database/factories',
+        ),
+        'Modules\\SmartAssembly\\' =>
+        array (
+            0 => __DIR__ . '/../..' . '/Modules/SmartAssembly/app',
         ),
         'Modules\\SeoAudit\\Tests\\' =>
         array (
@@ -6753,9 +6773,27 @@ class ComposerStaticInita79a6346a5a295f183402461d60fc86b
         'Modules\\SeoAudit\\Providers\\EventServiceProvider' => __DIR__ . '/../..' . '/Modules/SeoAudit/app/Providers/EventServiceProvider.php',
         'Modules\\SeoAudit\\Providers\\RouteServiceProvider' => __DIR__ . '/../..' . '/Modules/SeoAudit/app/Providers/RouteServiceProvider.php',
         'Modules\\SeoAudit\\Providers\\SeoAuditServiceProvider' => __DIR__ . '/../..' . '/Modules/SeoAudit/app/Providers/SeoAuditServiceProvider.php',
+        'Modules\\SmartAssembly\\Console\\Commands\\InstallPermissionsCommand' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Console/Commands/InstallPermissionsCommand.php',
+        'Modules\\SmartAssembly\\Database\\Seeders\\SmartAssemblyDatabaseSeeder' => __DIR__ . '/../..' . '/Modules/SmartAssembly/database/seeders/SmartAssemblyDatabaseSeeder.php',
+        'Modules\\SmartAssembly\\Database\\Seeders\\SmartAssemblySettingSeeder' => __DIR__ . '/../..' . '/Modules/SmartAssembly/database/seeders/SmartAssemblySettingSeeder.php',
+        'Modules\\SmartAssembly\\Http\\Controllers\\Back\\RulesController' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Http/Controllers/Back/RulesController.php',
+        'Modules\\SmartAssembly\\Http\\Controllers\\Back\\SettingsController' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Http/Controllers/Back/SettingsController.php',
+        'Modules\\SmartAssembly\\Http\\Controllers\\SmartAssemblyController' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Http/Controllers/SmartAssemblyController.php',
+        'Modules\\SmartAssembly\\Http\\Middleware\\CheckSmartAssemblyLicense' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Http/Middleware/CheckSmartAssemblyLicense.php',
+        'Modules\\SmartAssembly\\Models\\SmartAssemblyCache' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Models/SmartAssemblyCache.php',
+        'Modules\\SmartAssembly\\Models\\SmartAssemblyCategory' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Models/SmartAssemblyCategory.php',
+        'Modules\\SmartAssembly\\Models\\SmartAssemblyRule' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Models/SmartAssemblyRule.php',
+        'Modules\\SmartAssembly\\Models\\SmartAssemblySaved' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Models/SmartAssemblySaved.php',
+        'Modules\\SmartAssembly\\Models\\SmartAssemblySetting' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Models/SmartAssemblySetting.php',
+        'Modules\\SmartAssembly\\Permissions\\SmartAssemblyPermissions' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Permissions/SmartAssemblyPermissions.php',
+        'Modules\\SmartAssembly\\Providers\\EventServiceProvider' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Providers/EventServiceProvider.php',
+        'Modules\\SmartAssembly\\Providers\\RouteServiceProvider' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Providers/RouteServiceProvider.php',
+        'Modules\\SmartAssembly\\Providers\\SmartAssemblyServiceProvider' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Providers/SmartAssemblyServiceProvider.php',
+        'Modules\\SmartAssembly\\Services\\AiService' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Services/AiService.php',
+        'Modules\\SmartAssembly\\Services\\CompatibilityService' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Services/CompatibilityService.php',
+        'Modules\\SmartAssembly\\Services\\LicenseGuard' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Services/LicenseGuard.php',
         'Modules\\Story\\Console\\Commands\\InstallStoryPermissionsCommand' => __DIR__ . '/../..' . '/Modules/Story/app/Console/Commands/InstallStoryPermissionsCommand.php',
         'Modules\\Story\\Database\\Seeders\\StoryDatabaseSeeder' => __DIR__ . '/../..' . '/Modules/Story/database/seeders/StoryDatabaseSeeder.php',
-        'Modules\\Story\\Database\\Seeders\\StoryPermissionSeeder' => __DIR__ . '/../..' . '/Modules/Story/database/seeders/StoryPermissionSeeder.php',
         'Modules\\Story\\Http\\Controllers\\Back\\StoryController' => __DIR__ . '/../..' . '/Modules/Story/app/Http/Controllers/Back/StoryController.php',
         'Modules\\Story\\Http\\Controllers\\Front\\FrontStoryController' => __DIR__ . '/../..' . '/Modules/Story/app/Http/Controllers/Front/FrontStoryController.php',
         'Modules\\Story\\Models\\Story' => __DIR__ . '/../..' . '/Modules/Story/app/Models/Story.php',
