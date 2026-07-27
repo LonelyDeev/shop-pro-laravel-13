@@ -176,23 +176,22 @@ class PackageInstallerService
             // اجرای rollback migrationها (در صورت تمایل)
             $this->step('rollback_migrations', 'حذف جداول ماژول');
             try {
-                // استفاده از Laravel rollback مستقیم با --realpath
-                $modulePath = config('packages.modules.path') . '/' . $moduleName;
-                $migrationsPath = $this->findMigrationsPath($modulePath);
+                $module = Module::find($moduleName);
 
-                if ($migrationsPath) {
-                    Artisan::call('migrate:rollback', [
-                        '--path' => $migrationsPath,
-                        '--realpath' => true,
+                if ($module) {
+                    // حذف همه مایگریشن‌های ماژول
+                    Artisan::call('module:migrate-reset', [
+                        'module' => $moduleName,
                         '--force' => true,
                     ]);
-                    Log::info('Rollback completed', [
+
+                    Log::info('Module migrations reset', [
                         'module' => $moduleName,
                         'output' => Artisan::output(),
                     ]);
                 }
             } catch (Exception $e) {
-                Log::warning('Rollback migration failed (continuing)', [
+                Log::warning('Module migration reset failed', [
                     'module' => $moduleName,
                     'error'  => $e->getMessage(),
                 ]);
