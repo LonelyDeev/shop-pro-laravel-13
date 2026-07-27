@@ -7,12 +7,13 @@ use App\Models\ModuleInstallLog;
 use Exception;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Nwidart\Modules\Module;
 use RuntimeException;
 use ZipArchive;
 
@@ -177,25 +178,79 @@ class PackageInstallerService
             // اجرای rollback migrationها (در صورت تمایل)
             $this->step('rollback_migrations', 'حذف جداول ماژول');
             try {
-                $module = Module::find($moduleName);
+                $modulePath = config('packages.modules.path') . '/' . $moduleName;
+                $migrationsPath = $this->findMigrationsPath($modulePath);
 
-                if ($module) {
-                    // حذف همه مایگریشن‌های ماژول
-                    Artisan::call('module:migrate-reset', [
-                        'module' => $moduleName,
+                if ($migrationsPath) {
+                    // ابتدا با reset امتحان کن
+                    Artisan::call('migrate:reset', [
+                        '--path' => $migrationsPath,
+                        '--realpath' => true,
                         '--force' => true,
                     ]);
 
-                    Log::info('Module migrations reset', [
+                    $output = Artisan::output();
+
+                    // اگه reset جواب نداد، یکی‌یکی برو
+                    if (str_contains($output, 'Nothing to rollback')) {
+                        Log::warning('Reset had nothing to rollback, trying file-by-file', [
+                            'module' => $moduleName,
+                        ]);
+
+                        $files = File::files($migrationsPath);
+                        $files = array_reverse($files);
+
+                        foreach ($files as $file) {
+                            if (!str_ends_with($file->getFilename(), '.php')) continue;
+
+                            Artisan::call('migrate:rollback', [
+                                '--path' => $migrationsPath . '/' . $file->getFilename(),
+                                '--realpath' => true,
+                                '--force' => true,
+                            ]);
+                        }
+                    }
+
+                    Log::info('Rollback completed successfully', [
                         'module' => $moduleName,
                         'output' => Artisan::output(),
                     ]);
                 }
             } catch (Exception $e) {
-                Log::warning('Module migration reset failed', [
+                Log::warning('Rollback migration failed', [
                     'module' => $moduleName,
                     'error'  => $e->getMessage(),
                 ]);
+
+                // اگر همه چیز شکست خورد، مستقیم جدول‌ها رو پاک کن
+                try {
+                    DB::statement('SET FOREIGN_KEY_CHECKS=0');
+
+                    $tables = ['smart_assembly_games', 'smart_assembly_benchmarks',
+                        'smart_assembly_saved', 'smart_assembly_cache',
+                        'smart_assembly_rules', 'smart_assembly_categories',
+                        'smart_assembly_settings'];
+
+                    foreach ($tables as $table) {
+                        if (Schema::hasTable($table)) {
+                            Schema::drop($table);
+                            Log::info("Dropped table: {$table}");
+                        }
+                    }
+
+                    // حذف از جدول migrations
+                    DB::table('migrations')
+                        ->where('migration', 'like', '%smart_assembly%')
+                        ->delete();
+
+                    DB::statement('SET FOREIGN_KEY_CHECKS=1');
+
+                    Log::info('Tables dropped manually as fallback');
+                } catch (Exception $e2) {
+                    Log::error('Manual table drop failed', [
+                        'error' => $e2->getMessage(),
+                    ]);
+                }
             }
 
             // حذف assetهای منتشرشده در public
