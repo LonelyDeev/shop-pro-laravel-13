@@ -191,9 +191,15 @@ $("#get-product-from-site").submit(function(e){
         data: formData,
         success: function (data) {
             data=data[0];
-            console.log(typeG);
-            console.log(data);
             if(typeG == "digikala"){
+
+                if (data.error){
+                    toastr.error(data.error, 'خطا', {
+                        positionClass: 'toast-bottom-left',
+                        containerId: 'toast-bottom-left'
+                    });
+                    return
+                }
                 $("#base-image input[name='base_image_fromSite']").remove();
 
                 // مقداردهی ایمن با optional chaining و nullish coalescing
