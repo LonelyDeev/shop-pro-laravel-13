@@ -191,18 +191,21 @@ $("#get-product-from-site").submit(function(e){
         data: formData,
         success: function (data) {
             data=data[0];
+            console.log(typeG);
+            console.log(data);
             if(typeG == "digikala"){
                 $("#base-image input[name='base_image_fromSite']").remove();
 
-                $("#product-create-form input[name='title']").val(data['product'].title_fa);
-                $("#product-create-form input[name='title_en']").val(data['product'].title_en);
-                $("#product-create-form input[name='brand']").val(data['brands'].name);
-                $("#product-create-form input[name='weight']").val(data['weight']);
-                $("#product-create-form textarea[name='short_description']").val(data['product'].expert_reviews.description);
-                CKEDITOR.instances['description'].insertHtml(data['description'].toString());
-                $("#product-create-form input[name='meta_title']").val(data['seo'].meta_title);
-                $("#product-create-form input[name='image_alt']").val(data['seo'].meta_title);
-                $("#product-create-form textarea[name='meta_description']").val(data['seo'].meta_description);
+                // مقداردهی ایمن با optional chaining و nullish coalescing
+                $("#product-create-form input[name='title']").val(data?.product?.title_fa ?? null);
+                $("#product-create-form input[name='title_en']").val(data?.product?.title_en ?? null);
+                $("#product-create-form input[name='brand']").val(data?.brands?.name ?? null);
+                $("#product-create-form input[name='weight']").val(data?.weight ?? null);
+                $("#product-create-form textarea[name='short_description']").val(data?.product?.expert_reviews?.description ?? null);
+                CKEDITOR.instances['description'].insertHtml((data?.description?.toString()) ?? '');
+                $("#product-create-form input[name='meta_title']").val(data?.seo?.meta_title ?? null);
+                $("#product-create-form input[name='image_alt']").val(data?.seo?.meta_title ?? null);
+                $("#product-create-form textarea[name='meta_description']").val(data?.seo?.meta_description ?? null);
                 $("#product-create-form input[name='FromSite']").val('yes');
                 $("#base-image label").text(data['image']);
                 $("#base-image").append('<input name="base_image_fromSite" type="hidden" value="'+data['image']+'">');
@@ -230,16 +233,28 @@ $("#get-product-from-site").submit(function(e){
                     priceCount=data['colors'].length;
                 }
 
-                if (data['category'].length){
+                // بررسی و انتخاب دسته بندی در select2
+                if (data['category'] && data['category'].id) {
                     var categoryId = data['category'].id;
+                    var categoryTitle = data['category'].title || 'بدون عنوان';
 
-                        $('#product-create-form select[name="category_id"]').val(categoryId).trigger('change');
+                    var $select = $('#product-create-form select[name="category_id"]');
 
-                    $('#product-create-form select[name="category_id"]').val(categoryId).trigger('change.select2');
+                    // بررسی اینکه آیا گزینه با این id در select وجود دارد یا خیر
+                    var exists = $select.find('option[value="' + categoryId + '"]').length > 0;
 
+                    if (!exists) {
+                        // اگر گزینه وجود نداشت، آن را به select اضافه می‌کنیم
+                        var newOption = new Option(categoryTitle, categoryId, true, true);
+                        $select.append(newOption);
+                    }
 
+                    // مقداردهی و تریگر کردن تغییرات select2
+                    $select.val(categoryId).trigger('change');
+
+                    // اگر باز هم کار نکرد، از متد مخصوص select2 استفاده کنید
+                    // $select.val(categoryId).trigger('change.select2');
                 }
-
                 if (data['specifications'].length){
                     $('#specifications-area').empty();
                     $.each(data['specifications'],function(index, val){
