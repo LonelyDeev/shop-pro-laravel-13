@@ -246,18 +246,68 @@
                                                         @endphp
                                                         <tr>
                                                             <td style="color:var(--d-muted)">{{ $loop->iteration }}</td>
-                                                            <td><span class="d-order-id">#{{ $order->id }}</span></td>
+                                                            <td><span class="d-order-id color-white">#{{ $order->id }}</span></td>
                                                             <td style="color:var(--d-muted)">
                                                                 {{ jdate($order->created_at)->format('%d %B %Y') }}
                                                             </td>
                                                             <td style="font-weight:600;">
-                                                                {{ trans('messages.currency.prefix') . number_format($order->price) . trans('messages.currency.suffix') }}
+                                                                <span class="d-badge d-badge--info"> {{ trans('messages.currency.prefix') . number_format($order->price) . trans('messages.currency.suffix') }}</span>
+
                                                             </td>
                                                             <td><span class="d-badge d-badge--{{ $sc }}">{{ $order->statusText() }}</span></td>
-                                                            <td>
-                                                                <a href="{{ route('admin.orders.show', ['order' => $order]) }}" class="d-btn">
-                                                                    <i class="feather icon-eye"></i> مشاهده
-                                                                </a>
+                                                            <td class="orders-badge">
+                                                                <span class="d-block" style="overflow: visible; position: relative; width: 249px;">
+                                                                     <ul class="mb-0">
+                                                                    @foreach($order->items as $order_item)
+                                                                             @php
+                                                                                 if ($order_item->seller_id && $order_item->seller) {
+                        // با فروشنده
+                        $seller = $order_item->seller->seller_info;
+                        $itemsArray = [
+                            'id' => $order_item->id,
+                            'status' => $order_item->shipping_status,
+                            'sellerName' => $seller->business_name ?? 'فروشنده',
+                            'sellerId' => $order_item->seller_id,
+                            'link' => route('admin.orders.show-item', $order_item->id),
+                        ];
+                    } else {
+                        // بدون فروشنده (فروشگاه اصلی)
+                        $itemsArray = [
+                            'id' => $order_item->id,
+                            'status' => $order_item->shipping_status,
+                            'sellerName' => 'فروشگاه اصلی',
+                            'sellerId' => null,
+                            'link' => route('admin.orders.show-item', $order_item->id),
+                        ];
+                    }
+                                                                             @endphp
+                                                                             <li class="d-inline-flex align-items-center justify-content-between w-100 border-bottom">
+                                                                            <div class="d-flex flex-column justify-content-center">
+                                                                                <div class="lts-05">
+                                                                                    <span class="fs-9 text-gray">شناسه مرسوله: </span>
+                                                                                    <span class="fw-bold text-dark fs-8">{{$itemsArray['id']}}</span>
+                                                                                </div>
+                                                                                <div class="lts-05">
+                                                                                    <span class="fs-9 text-gray">ارسال توسط: </span>
+                                                                                    <span class="text-dark fw-bold fs-8">{{$itemsArray['sellerName']}}</span>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="d-flex flex-column justify-content-center ms-4">
+                                                                                <div class="status lts-05">
+                                                                                    <span class="badge badge-secondary">{{$itemsArray['status']}}</span>
+                                                                                </div>
+                                                                                <a href="{{ $itemsArray['link'] }}" class="btn btn-outline-light pt-1 pb-1 lts-05" type="button" onclick="viewShipment(22)">
+                                                                                    <span>بررسی</span>
+                                                                                </a>
+                                                                            </div>
+                                                                        </li>
+
+                                                                         @endforeach
+                                                                </ul>
+                                                                </span>
+
+
+
                                                             </td>
                                                         </tr>
                                                     @endforeach

@@ -634,3 +634,28 @@
 .form-group.align-items-baseline{
     padding-left: 10px;
 }
+.orders-badge ul li {
+    background-color: #e5ecf1;
+    margin: 2.5px 0 2.5px 5px;
+    padding: 8px 12px;
+    border-radius: 10px;
+}
+.orders-badge ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    padding-right: 0;
+}
+ .orders-badge ul li .btn-outline-light {
+    padding: 3px 10px 5px 8px !important;
+    border-radius: 8px !important;
+    align-items: center;
+    justify-content: center;
+    color: #000;
+}
+.text-gray {
+    color: #8f9bad !important;
+}
+.color-white{
+    color: white;
+}
