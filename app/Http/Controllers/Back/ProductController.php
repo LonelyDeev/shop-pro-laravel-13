@@ -1638,40 +1638,20 @@ class ProductController extends Controller
     public function digikala($siteCode, $autoCreateCategory = false)
     {
         try {
-            $response = Http::withOptions([
-                'verify' => false,
-                'timeout' => 30,
-                'connect_timeout' => 10,
-                'allow_redirects' => false,
-            ])->withHeaders([
-                'Accept' => 'application/json',
-                'Accept-Charset' => 'utf-8',
-                'Accept-Language' => 'fa-IR,fa;q=0.9,en-US;q=0.8,en;q=0.7',
-                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                'Cache-Control' => 'no-cache',
-            ])->get('https://api.digikala.com/v2/product/' . $siteCode . '/');
+            $ch = curl_init('https://api.digikala.com/v2/product/'.$siteCode.'/');
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+            curl_setopt($ch, CURLOPT_ENCODING, '');
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Accept: application/json',
+                'Accept-Charset: utf-8',
+                'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            ]);
 
-            if ($response->status() === 307) {
-                // اگر 307 بود، یعنی ریدایرکت - با هدرهای مختلف دوباره تلاش کنید
-                $response = Http::withOptions([
-                    'verify' => false,
-                    'timeout' => 30,
-                    'allow_redirects' => false,
-                ])->withHeaders([
-                    'Accept' => 'application/json',
-                    'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-                    'Accept-Language' => 'en-US,en;q=0.9',
-                    'X-Forwarded-For' => '185.165.29.101', // IP خارجی
-                ])->get('https://api.digikala.com/v2/product/' . $siteCode . '/');
-            }
+            $result = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-            if ($response->status() !== 200) {
-                throw new \Exception('API returned HTTP code: ' . $response->status());
-            }
-
-            $result = $response->json();
-            //$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-dd($result);
             if (curl_errno($ch)) {
                 throw new \Exception('Curl error: ' . curl_error($ch));
             }
