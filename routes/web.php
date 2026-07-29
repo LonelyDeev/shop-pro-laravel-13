@@ -370,7 +370,7 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
 
     Route::get('products/import', [ImportsController::class, 'productsExcelImport'])->name('import.products');
     Route::post('products/import', [ImportsController::class, 'productsExcelImport_Store'])->name('import.products.store');
-    Route::post('user/import/delete-error', [ImportsController::class, 'deleteProductErrorFile'])->name('import.products.delete-error');
+    Route::post('products/import/delete-error', [ImportsController::class, 'deleteProductErrorFile'])->name('import.products.delete-error');
     Route::get('user/import', [ImportsController::class, 'usersExcelImport'])->name('import.users');
     Route::post('user/import', [ImportsController::class, 'usersExcelImport_Store'])->name('import.users.store');
     Route::post('user/import/delete-error', [ImportsController::class, 'deleteUserErrorFile'])->name('import.users.delete-error');
