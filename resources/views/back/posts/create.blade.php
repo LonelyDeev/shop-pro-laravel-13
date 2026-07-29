@@ -112,7 +112,7 @@
 
 
 
-                                                        <div class="col-md-6 col-12">
+                                                       {{-- <div class="col-md-6 col-12">
                                                             <div class="form-group">
                                                                 <label>ایجاد نوشته توسط:</label>
                                                                 <select name="created_by" id="created_by" class="form-control">
@@ -127,7 +127,7 @@
                                                                     @endcan
                                                                 </select>
                                                             </div>
-                                                        </div>
+                                                        </div>--}}
                                                     </div>
 
                                                     <!-- ادامه کدهای قبلی شما -->
