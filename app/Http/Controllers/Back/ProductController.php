@@ -1638,43 +1638,50 @@ class ProductController extends Controller
     public function digikala($siteCode, $autoCreateCategory = false)
     {
         try {
-            $ch = curl_init('https://api.digikala.com/v2/product/'.$siteCode.'/');
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false); // غیرفعال کردن دنبال کردن ریدایرکت
-            curl_setopt($ch, CURLOPT_ENCODING, '');
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'Accept: application/json',
-                'Accept-Charset: utf-8',
-                'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                'Accept-Language: fa-IR,fa;q=0.9,en-US;q=0.8,en;q=0.7',
-                'Cache-Control: no-cache',
-            ]);
+            $response = Http::withOptions([
+                'verify' => false,
+                'timeout' => 30,
+                'connect_timeout' => 10,
+                'allow_redirects' => false,
+            ])->withHeaders([
+                'Accept' => 'application/json',
+                'Accept-Charset' => 'utf-8',
+                'Accept-Language' => 'fa-IR,fa;q=0.9,en-US;q=0.8,en;q=0.7',
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Cache-Control' => 'no-cache',
+            ])->get('https://api.digikala.com/v2/product/' . $siteCode . '/');
 
-            $result = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $redirectUrl = curl_getinfo($ch, CURLINFO_REDIRECT_URL);
+            if ($response->status() === 307) {
+                // اگر 307 بود، یعنی ریدایرکت - با هدرهای مختلف دوباره تلاش کنید
+                $response = Http::withOptions([
+                    'verify' => false,
+                    'timeout' => 30,
+                    'allow_redirects' => false,
+                ])->withHeaders([
+                    'Accept' => 'application/json',
+                    'User-Agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+                    'Accept-Language' => 'en-US,en;q=0.9',
+                    'X-Forwarded-For' => '185.165.29.101', // IP خارجی
+                ])->get('https://api.digikala.com/v2/product/' . $siteCode . '/');
+            }
 
+            if ($response->status() !== 200) {
+                throw new \Exception('API returned HTTP code: ' . $response->status());
+            }
+
+            $result = $response->json();
+            //$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+dd($result);
             if (curl_errno($ch)) {
                 throw new \Exception('Curl error: ' . curl_error($ch));
             }
 
             curl_close($ch);
 
-            // اگر ریدایرکت 307 بود و آدرس ریدایرکت با آدرس فعلی یکی بود
-            if ($httpCode === 307 && $redirectUrl === 'https://api.digikala.com/v2/product/'.$siteCode.'/') {
-                // یعنی ریدایرکت به خودش است - احتمالاً مشکل سرور دیجیکالاست
-                // یا نیاز به هدرهای خاص دارد
-                \Log::warning('Redirect loop detected for product: ' . $siteCode);
-
-                // راه حل: درخواست با هدرهای خاص
-                return $this->digikalaWithSpecialHeaders($siteCode);
-            }
-
             if ($httpCode !== 200) {
                 throw new \Exception("API returned HTTP code: " . $httpCode);
             }
+
             // حذف BOM و کاراکترهای مشکل‌دار
             if (substr($result, 0, 3) === "\xEF\xBB\xBF") {
                 $result = substr($result, 3);
@@ -2025,49 +2032,6 @@ class ProductController extends Controller
                 'specifications' => [],
             ];
         }
-    }
-
-    public function digikalaWithSpecialHeaders($siteCode)
-    {
-        $ch = curl_init('https://api.digikala.com/v2/product/'.$siteCode.'/');
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
-        curl_setopt($ch, CURLOPT_ENCODING, 'gzip,deflate,br');
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'Accept: application/json, text/plain, */*',
-            'Accept-Charset: utf-8',
-            'Accept-Encoding: gzip, deflate, br',
-            'Accept-Language: fa-IR,fa;q=0.9,en-US;q=0.8,en;q=0.7',
-            'Cache-Control: no-cache',
-            'Connection: keep-alive',
-            'Sec-Fetch-Dest: empty',
-            'Sec-Fetch-Mode: cors',
-            'Sec-Fetch-Site: same-origin',
-            'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'sec-ch-ua: "Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
-            'sec-ch-ua-mobile: ?0',
-            'sec-ch-ua-platform: "Windows"',
-        ]);
-
-        // اضافه کردن کوکی‌های خاص
-        curl_setopt($ch, CURLOPT_COOKIE, 'language=fa; currency=IRR');
-
-        $result = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-        if (curl_errno($ch)) {
-            throw new \Exception('Curl error: ' . curl_error($ch));
-        }
-
-        curl_close($ch);
-
-        if ($httpCode !== 200) {
-            throw new \Exception("API returned HTTP code: " . $httpCode);
-        }
-
-        return $this->processDigikalaResponse($result, $siteCode);
     }
 
     protected static function requestTranslation($source, $target, $text)
