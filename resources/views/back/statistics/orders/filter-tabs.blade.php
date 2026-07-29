@@ -10,7 +10,7 @@
     </div>
     <div class="col-md-6">
         <div class="row mx-0 form-group align-items-baseline">
-            <div class="col-md-6 px-0 d-flex align-items-baseline">
+            <div class="col-md-6 px-0 d-flex align-items-baseline mb-1">
                 <label class="pre-space ml-1" for="from">از تاریخ : </label>
                 <input class="form-control persian_date_picker" name="from_date" type="text">
                 <i class="fa fa-calendar in-calendar"></i>

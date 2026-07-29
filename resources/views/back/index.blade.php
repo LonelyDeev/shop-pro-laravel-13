@@ -1,7 +1,6 @@
 @extends('back.layouts.master')
 @push('styles')
     <link rel="stylesheet" type="text/css" href="{{asset('back/assets/css/pages/dashboard.css')}}">
-
 @endpush
 
 @section('content')
@@ -88,10 +87,10 @@
                     </div>
 
                     {{-- ═══ Main Two-Column Grid ═══ --}}
-                    <div class="d-grid">
+                    <div class="row">
 
                         {{-- ── Left/Main column ── --}}
-                        <div>
+                        <div class="col-md-8">
 
                             @can('orders.index')
                                 {{-- Statistics Tabs Card --}}
@@ -433,7 +432,7 @@
                         </div>{{-- /main column --}}
 
                         {{-- ── Right Sidebar column ── --}}
-                        <div>
+                        <div class="col-md-4">
 
                             @can('statistics.users')
                                 {{-- Weekly Views Chart --}}

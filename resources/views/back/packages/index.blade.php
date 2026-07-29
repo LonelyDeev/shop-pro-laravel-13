@@ -32,7 +32,7 @@
                 <div class="pkg-hero mb-3">
                     <div class="pkg-hero-bg"></div>
                     <div class="pkg-hero-content d-flex align-items-center justify-content-between gap-2 flex-wrap">
-                        <div class="d-flex align-items-center gap-2">
+                        <div class="d-flex align-items-center gap-2 mb-1">
                             <div class="pkg-hero-icon mr-1">
                                 <i class="feather icon-package"></i>
                             </div>
@@ -61,7 +61,7 @@
                 @endphp
 
                 <div class="row match-height mb-3">
-                    <div class="col-6 col-xl-3">
+                    <div class="col-6 col-xl-3 mb-1">
                         <div class="pkg-stat" style="--accent:#6366f1; --accent-soft:rgba(99,102,241,0.1)">
                             <div class="pkg-stat-icon"><i class="feather icon-package"></i></div>
                             <div class="pkg-stat-meta">
@@ -103,7 +103,7 @@
                 <div class="pkg-filter mb-3">
                     <form id="pkg-filter-form" method="GET" class="d-flex align-items-center gap-1 flex-wrap">
                         <div class="flex-grow-1 mr-1" style="min-width: 240px;">
-                            <div class="pkg-search-box">
+                            <div class="pkg-search-box mb-1">
                                 <i class="feather icon-search"></i>
                                 <input type="text" name="search" value="{{ request('search') }}"
                                        placeholder="جستجو در پکیج‌ها...">

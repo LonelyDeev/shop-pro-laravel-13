@@ -526,7 +526,7 @@
             }
         }
 
-        let footerHtml = '<div class="pkg-modal-price" id="modal-price-display">';
+        let footerHtml = '<div class="pkg-modal-price p-1" id="modal-price-display">';
         if (isFree) {
             footerHtml += '<span class="pkg-modal-price-free">رایگان</span>';
         } else if (initialPlanIsFree) {

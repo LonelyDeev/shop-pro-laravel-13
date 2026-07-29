@@ -32,7 +32,7 @@
                 {{-- Hero header --}}
                 <div class="pkg-hero mb-3" style="background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);">
                     <div class="pkg-hero-content d-flex align-items-center justify-content-between gap-2 flex-wrap">
-                        <div class="d-flex align-items-center gap-2">
+                        <div class="d-flex align-items-center gap-2 mb-1">
                             <div class="pkg-hero-icon mr-1">
                                 <i class="feather icon-grid"></i>
                             </div>
@@ -229,7 +229,7 @@
 <div class="modal fade pkg-modal" id="package-detail-modal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" role="document">
         <div class="modal-content pkg-modal-content">
-            <div class="modal-header pkg-modal-header">
+            <div class="modal-header pkg-modal-header p-1">
                 <h5 class="modal-title pkg-modal-title" id="modal-pkg-title"></h5>
                 <button type="button" class="close pkg-modal-close-btn" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>

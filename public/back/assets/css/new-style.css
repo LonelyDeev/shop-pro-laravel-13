@@ -701,3 +701,45 @@ body.semi-dark-layout .main-menu .shadow-bottom{
     z-index: 9999;
 }
 .custom-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+
+
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 ;
+    padding: 0;
+    scrollbar-width: thin; /* فایرفاکس */
+}
+
+.table-responsive table {
+    min-width: 700px;
+    width: 100%;
+    margin-bottom: 0;
+}
+
+/* استایل اسکرول‌بار کوچک */
+.table-responsive::-webkit-scrollbar {
+    height: 4px; /* ارتفاع کم */
+    width: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: #e8e8e8;
+    border-radius: 10px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 10px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+@media (max-width: 576px) {
+    .table-responsive table {
+        min-width: 550px;
+    }
+}

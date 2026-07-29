@@ -20,7 +20,7 @@
         <div class="ad-grid">
             <div class="ad-info-card">
                 <div class="ad-info-icon">
-                    <i class=" fas fa-hashtag"></i>
+                    <i class="fas fa-hashtag"></i>
                 </div>
                 <div class="ad-info-content">
                     <span class="ad-label">شناسه فعالیت</span>
@@ -30,7 +30,7 @@
 
             <div class="ad-info-card">
                 <div class="ad-info-icon">
-                    <i class=" fas fa-database"></i>
+                    <i class="fas fa-database"></i>
                 </div>
                 <div class="ad-info-content">
                     <span class="ad-label">نوع مدل</span>
@@ -49,7 +49,7 @@
 
             <div class="ad-info-card">
                 <div class="ad-info-icon">
-                    <i class=" fas fa-barcode"></i>
+                    <i class="fas fa-barcode"></i>
                 </div>
                 <div class="ad-info-content">
                     <span class="ad-label">شناسه مدل</span>
@@ -59,7 +59,7 @@
 
             <div class="ad-info-card">
                 <div class="ad-info-icon">
-                    <i class=" fas fa-clock-rotate-left"></i>
+                    <i class="fas fa-clock-rotate-left"></i>
                 </div>
                 <div class="ad-info-content">
                     <span class="ad-label">زمان ثبت</span>
@@ -103,7 +103,7 @@
         @if(isset($activity['description']) && $activity['description'])
             <div class="ad-description-box">
                 <div class="ad-desc-icon">
-                    <i class=" fas fa-box-archive"></i>
+                    <i class="fas fa-box-archive"></i>
                 </div>
                 <div class="ad-desc-content">
                     <span class="ad-label">توضیحات</span>
@@ -113,22 +113,69 @@
         @endif
     </div>
 
-    @if($activity['event']!="deleted" and $activity['event']!="حذف")
+    @if($activity['event'] != "deleted" && $activity['event'] != "حذف")
 
-    <!-- بخش تغییرات -->
+        <!-- بخش تغییرات -->
+        @php
+            // ========== تعریف توابع کمکی برای پردازش JSON ==========
+
+            // تابع بازگشتی برای فرمت کردن مقادیر آرایه‌ای
+            function formatArrayValue($value, $translate, $depth = 0) {
+                if (is_array($value)) {
+                    $parts = [];
+                    foreach ($value as $k => $v) {
+                        $prefix = str_repeat('&nbsp;&nbsp;&nbsp;', $depth);
+                        $translatedKey = is_callable($translate) ? $translate($k) : $k;
+
+                        if (is_array($v)) {
+                            $parts[] = $prefix . "<strong>{$translatedKey}</strong>:<br>" . formatArrayValue($v, $translate, $depth + 1);
+                        } else {
+                            $formattedValue = is_numeric($v) ? number_format((int)$v) : e($v);
+                            $parts[] = $prefix . "<strong>{$translatedKey}</strong>: {$formattedValue}";
+                        }
+                    }
+                    return implode('<br>', $parts);
+                }
+                return is_numeric($value) ? number_format((int)$value) : e($value);
+            }
+
+            // تابع پردازش مقدار JSON
+            function processJsonValue($value, $translate) {
+                if ($value === null || $value === '') {
+                    return '—';
+                }
+
+                if (is_string($value) && (str_starts_with($value, '{') || str_starts_with($value, '['))) {
+                    $decoded = json_decode($value, true);
+                    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                        return formatArrayValue($decoded, $translate);
+                    }
+                }
+
+                // اگر آرایه بود ولی JSON نبود
+                if (is_array($value)) {
+                    return formatArrayValue($value, $translate);
+                }
+
+                return is_numeric($value) ? number_format((int)$value) : e($value);
+            }
+
+            // دریافت تابع ترجمه
+            $translate = $activity['translateFieldName'] ?? function($key) { return $key; };
+        @endphp
 
         @if(isset($activity['properties']) && ($activity['properties']['old'] || $activity['properties']['attributes']))
             <div class="ad-section ad-changes-section">
                 <div class="ad-header">
                     <div class="ad-header-icon ad-changes-icon">
-                        <i class=" fas fa-arrow-right-arrow-left"></i>
+                        <i class="fas fa-arrow-right-arrow-left"></i>
                     </div>
                     <div class="ad-header-text">
                         <h6 class="ad-title">تغییرات انجام شده</h6>
                         <span class="ad-badge info-badge">
-                    <i class="bi bi-info-circle"></i>
-                    جزئیات تغییرات فیلدها
-                </span>
+                            <i class="bi bi-info-circle"></i>
+                            جزئیات تغییرات فیلدها
+                        </span>
                     </div>
                 </div>
 
@@ -136,76 +183,31 @@
                     <div class="ad-changes-list">
                         @foreach($activity['properties']['old'] as $key => $oldValue)
                             @php
-                                $newValue = $activity['properties']['attributes'][$key] ?? '-';
+                                $newValue = $activity['properties']['attributes'][$key] ?? null;
+                                $translatedKey = is_callable($translate) ? $translate($key) : $key;
+                                $displayOld = processJsonValue($oldValue, $translate);
+                                $displayNew = processJsonValue($newValue, $translate);
                             @endphp
                             <div class="ad-change-item">
                                 <div class="ad-change-field">
                                     <i class="fa-solid fa-pencil"></i>
-                                    <strong>{{ $key }}</strong>
+                                    <strong>{{ $translatedKey }}</strong>
                                 </div>
                                 <div class="ad-change-values">
                                     <div class="ad-value-old">
                                         <span class="ad-change-label">قبلی:</span>
                                         <span class="ad-change-text">
-            @php
-                $displayOld = $oldValue ?? '—';
-                  $translate = $activity['translateFieldName'] ?? function($key) { return $key; };
-                if (is_string($displayOld) && (str_starts_with($displayOld, '{') || str_starts_with($displayOld, '['))) {
-                    $decoded = json_decode($displayOld, true);
-                    if (json_last_error() === JSON_ERROR_NONE) {
-                        $items = [];
-                        foreach ($decoded as $key => $val) {
-                            // ترجمه کلید اصلی
-
-                             $translatedKey = $translate($key);
-                            if (is_array($val)) {
-                                foreach ($val as $subKey => $subVal) {
-                                    // ترجمه کلید فرعی
-                                    $items[] = "{$translatedKey} : " . (is_numeric($subVal) ? number_format((int)$subVal) : $subVal);
-                                }
-                            } else {
-                                $items[] = "{$translatedKey}: {$val}";
-                            }
-                        }
-                        $displayOld = implode(' <br> ', $items);
-                    }
-                }
-            @endphp
                                             {!! $displayOld !!}
-        </span>
+                                        </span>
                                     </div>
                                     <div class="ad-change-arrow">
-                                        <i class=" fas fa-arrow-left-long"></i>
+                                        <i class="fas fa-arrow-left-long"></i>
                                     </div>
                                     <div class="ad-value-new">
                                         <span class="ad-change-label">جدید:</span>
                                         <span class="ad-change-text">
-            @php
-                $displayNew = $newValue;
-                 $translate = $activity['translateFieldName'] ?? function($key) { return $key; };
-
-                if (is_string($displayNew) && (str_starts_with($displayNew, '{') || str_starts_with($displayNew, '['))) {
-                    $decoded = json_decode($displayNew, true);
-                    if (json_last_error() === JSON_ERROR_NONE) {
-                        $items = [];
-                        foreach ($decoded as $key => $val) {
-                            // ترجمه کلید اصلی
-                            $translatedKey = $translate($key);
-                            if (is_array($val)) {
-                                foreach ($val as $subKey => $subVal) {
-                                    // ترجمه کلید فرعی
-                                    $items[] = "{$translatedKey} : " . (is_numeric($subVal) ? number_format((int)$subVal) : $subVal);
-                                }
-                            } else {
-                                $items[] = "{$translatedKey}: {$val}";
-                            }
-                        }
-                        $displayNew = implode(' <br> ', $items);
-                    }
-                }
-            @endphp
                                             {!! $displayNew !!}
-        </span>
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -213,7 +215,7 @@
                     </div>
                 @elseif(isset($activity['properties']['attributes']) && count($activity['properties']['attributes']) > 0)
                     <div class="ad-create-alert">
-                        <i class=" fas fa-circle-plus"></i>
+                        <i class="fas fa-circle-plus"></i>
                         <div>
                             <strong>عملیات ایجاد</strong>
                             <p>مقادیر زیر برای این آیتم ثبت شده است</p>
@@ -221,9 +223,13 @@
                     </div>
                     <div class="ad-created-list">
                         @foreach($activity['properties']['attributes'] as $key => $value)
+                            @php
+                                $translatedKey = is_callable($translate) ? $translate($key) : $key;
+                                $displayValue = processJsonValue($value, $translate);
+                            @endphp
                             <div class="ad-created-item">
-                                <span class="ad-created-key">{{ $key }}</span>
-                                <span class="ad-created-value">{!! $value !!}</span>
+                                <span class="ad-created-key">{{ $translatedKey }}</span>
+                                <span class="ad-created-value">{!! $displayValue !!}</span>
                             </div>
                         @endforeach
                     </div>
@@ -237,21 +243,25 @@
                 <div class="ad-section ad-changes-section">
                     <div class="ad-header">
                         <div class="ad-header-icon ad-changes-icon" style="background: linear-gradient(135deg, #28a745, #20c997);">
-                            <i class=" fas fa-cube"></i>
+                            <i class="fas fa-cube"></i>
                         </div>
                         <div class="ad-header-text">
                             <h6 class="ad-title">جزئیات تنوع جدید</h6>
                             <span class="ad-badge info-badge" style="background: #e8f5e9; color: #2e7d32;">
-                        <i class="bi bi-info-circle"></i>
-                        اطلاعات کامل تنوع ایجاد شده
-                    </span>
+                                <i class="bi bi-info-circle"></i>
+                                اطلاعات کامل تنوع ایجاد شده
+                            </span>
                         </div>
                     </div>
                     <div class="ad-created-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 0.75rem;">
                         @foreach($activity['properties']['attributes'] as $key => $value)
+                            @php
+                                $translatedKey = is_callable($translate) ? $translate($key) : $key;
+                                $displayValue = processJsonValue($value, $translate);
+                            @endphp
                             <div class="ad-created-item" style="background: #f8f9fa; border-radius: 10px; padding: 0.75rem; display: flex; justify-content: space-between; align-items: center; border: 1px solid #e9ecef;">
-                                <span class="ad-created-key" style="font-size: 0.8rem; font-weight: 600; color: #6c757d;">{{ $key }}</span>
-                                <span class="ad-created-value" style="font-size: 0.85rem; color: #2c3e50; font-weight: 500;">{!! $value !!}</span>
+                                <span class="ad-created-key" style="font-size: 0.8rem; font-weight: 600; color: #6c757d;">{{ $translatedKey }}</span>
+                                <span class="ad-created-value" style="font-size: 0.85rem; color: #2c3e50; font-weight: 500;">{!! $displayValue !!}</span>
                             </div>
                         @endforeach
                     </div>
@@ -265,28 +275,31 @@
                 <div class="ad-section ad-changes-section">
                     <div class="ad-header">
                         <div class="ad-header-icon ad-changes-icon" style="background: linear-gradient(135deg, #dc3545, #c82333);">
-                            <i class=" fas fa-trash-alt"></i>
+                            <i class="fas fa-trash-alt"></i>
                         </div>
                         <div class="ad-header-text">
                             <h6 class="ad-title">تنوع حذف شده</h6>
                             <span class="ad-badge info-badge" style="background: #fbe9e7; color: #c62828;">
-                        <i class="bi bi-exclamation-triangle"></i>
-                        اطلاعات تنوع حذف شده
-                    </span>
+                                <i class="bi bi-exclamation-triangle"></i>
+                                اطلاعات تنوع حذف شده
+                            </span>
                         </div>
                     </div>
                     <div class="ad-created-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 0.75rem;">
                         @foreach($activity['properties']['old'] as $key => $value)
+                            @php
+                                $translatedKey = is_callable($translate) ? $translate($key) : $key;
+                                $displayValue = processJsonValue($value, $translate);
+                            @endphp
                             <div class="ad-created-item" style="background: #fff5f5; border-radius: 10px; padding: 0.75rem; display: flex; justify-content: space-between; align-items: center; border: 1px solid #ffcdd2;">
-                                <span class="ad-created-key" style="font-size: 0.8rem; font-weight: 600; color: #c62828;">{{ $key }}</span>
-                                <span class="ad-created-value" style="font-size: 0.85rem; color: #c62828; font-weight: 500;">{!! $value !!}</span>
+                                <span class="ad-created-key" style="font-size: 0.8rem; font-weight: 600; color: #c62828;">{{ $translatedKey }}</span>
+                                <span class="ad-created-value" style="font-size: 0.85rem; color: #c62828; font-weight: 500;">{!! $displayValue !!}</span>
                             </div>
                         @endforeach
                     </div>
                 </div>
             @endif
         @endif
-
 
     @endif
 </div>
