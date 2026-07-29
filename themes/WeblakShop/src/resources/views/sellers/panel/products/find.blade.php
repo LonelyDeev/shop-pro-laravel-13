@@ -21,7 +21,6 @@
             <form id="filter-products-form" method="GET"
                   action="{{ route('admin.products.index') }}">
             <div class="card">
-
                 <div class="card-content collapse show">
                     <div class="card-body">
                         <div class="users-list-filter">

@@ -239,8 +239,11 @@ class SellerController extends Controller
                 ]);
             }
 
-            Seller::where('id', $seller->id)->update(['updated_at' => Carbon::now()->format('Y-m-d H:m:s')]);
+            Seller::where('id', $seller->id)->update(['updated_at' => Carbon::now()->format('Y-m-d H:i:s')]);
+
+            // راه‌حل ۲: Regenerate و لاگین مجدد
             $request->session()->regenerate();
+            Auth::guard('seller')->login($seller, $request->remember);
 
             return response([
                 'status' => 'success',

@@ -88,20 +88,30 @@ class ProductSellerController extends Controller
             session()->put('toast-warning', 'اظلاعات شما در حال برسی می باشد.');
             return redirect()->route('seller.dashboard');
         }
+
         $categories      = Category::detectLang()->where('type', 'productcat')->orderBy('ordering')->get();
         return view('front::sellers.panel.products.find',compact('categories'));
     }
 
     public function apiIndexFind(Request $request)
     {
-        //$this->authorize('products.index');
+        // فقط اگر کاربر ادمین است، authorize را اجرا کن
+        if (auth()->guard('adminPanel')->check()) {
+            $this->authorize('products.index');
+        }
 
-        $products = Product::with('category','lowestPrice')->published()->detectLang()->datatableFilter($request);
-        $count=$products->count();
-        $products = datatable($request, $products,$count);
-        return new ProductCollection($products);
+        // اگر فروشنده است، اجازه دسترسی کامل بده
+        $products = Product::with('category','lowestPrice')
+            ->published()
+            ->detectLang()
+            ->datatableFilter($request);
+
+        $count = $products->count();
+        $products = datatable($request, $products, $count);
+        $pro = new ProductCollection($products);
+
+        return $pro; // یا dd($pro->get());
     }
-
     public function create(Request $request)
     {
         if (seller()->status_documents!="Accept"){
