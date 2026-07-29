@@ -198,6 +198,8 @@ $("#get-product-from-site").submit(function(e){
                         positionClass: 'toast-bottom-left',
                         containerId: 'toast-bottom-left'
                     });
+                    unblock('#get-product-from-site');
+                    unblock('#main-card');
                     return
                 }
                 $("#base-image input[name='base_image_fromSite']").remove();
