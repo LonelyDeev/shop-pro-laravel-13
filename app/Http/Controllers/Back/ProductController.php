@@ -1642,11 +1642,24 @@ class ProductController extends Controller
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true); // اضافه کنید
+            curl_setopt($ch, CURLOPT_MAXREDIRS, 5); // حداکثر ریدایرکت
             curl_setopt($ch, CURLOPT_ENCODING, '');
             curl_setopt($ch, CURLOPT_HTTPHEADER, [
                 'Accept: application/json',
                 'Accept-Charset: utf-8',
                 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            ]);
+
+            $result = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $redirectUrl = curl_getinfo($ch, CURLINFO_REDIRECT_URL); // آدرس ریدایرکت
+
+            // لاگ اطلاعات برای دیباگ
+            \Log::info('CURL Info', [
+                'http_code' => $httpCode,
+                'redirect_url' => $redirectUrl,
+                'error' => curl_error($ch)
             ]);
 
             $result = curl_exec($ch);
