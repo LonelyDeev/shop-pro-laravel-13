@@ -1642,28 +1642,19 @@ class ProductController extends Controller
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true); // اضافه کنید
-            curl_setopt($ch, CURLOPT_MAXREDIRS, 5); // حداکثر ریدایرکت
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false); // غیرفعال کردن دنبال کردن ریدایرکت
             curl_setopt($ch, CURLOPT_ENCODING, '');
             curl_setopt($ch, CURLOPT_HTTPHEADER, [
                 'Accept: application/json',
                 'Accept-Charset: utf-8',
-                'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Accept-Language: fa-IR,fa;q=0.9,en-US;q=0.8,en;q=0.7',
+                'Cache-Control: no-cache',
             ]);
 
             $result = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $redirectUrl = curl_getinfo($ch, CURLINFO_REDIRECT_URL); // آدرس ریدایرکت
-
-            // لاگ اطلاعات برای دیباگ
-            \Log::info('CURL Info', [
-                'http_code' => $httpCode,
-                'redirect_url' => $redirectUrl,
-                'error' => curl_error($ch)
-            ]);
-
-            $result = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $redirectUrl = curl_getinfo($ch, CURLINFO_REDIRECT_URL);
 
             if (curl_errno($ch)) {
                 throw new \Exception('Curl error: ' . curl_error($ch));
@@ -1671,10 +1662,19 @@ class ProductController extends Controller
 
             curl_close($ch);
 
+            // اگر ریدایرکت 307 بود و آدرس ریدایرکت با آدرس فعلی یکی بود
+            if ($httpCode === 307 && $redirectUrl === 'https://api.digikala.com/v2/product/'.$siteCode.'/') {
+                // یعنی ریدایرکت به خودش است - احتمالاً مشکل سرور دیجیکالاست
+                // یا نیاز به هدرهای خاص دارد
+                \Log::warning('Redirect loop detected for product: ' . $siteCode);
+
+                // راه حل: درخواست با هدرهای خاص
+                return $this->digikalaWithSpecialHeaders($siteCode);
+            }
+
             if ($httpCode !== 200) {
                 throw new \Exception("API returned HTTP code: " . $httpCode);
             }
-
             // حذف BOM و کاراکترهای مشکل‌دار
             if (substr($result, 0, 3) === "\xEF\xBB\xBF") {
                 $result = substr($result, 3);
