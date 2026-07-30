@@ -12072,7 +12072,11 @@ ul.faq-list li .footer em {
     .header-left .btn-login, .mini-cart-header {
         display: none;
     }
+    .header-left .front-dropdown-notification {
+        display: none;
+    }
     .responsive-header-left {
+        height: fit-content;
         display: block;
         position: relative;
         float: left;
@@ -12081,6 +12085,9 @@ ul.faq-list li .footer em {
         font-size: 35px;
         padding-left: 0;
         top: 48px;
+    }
+    .btn-login-responsive .front-dropdown-notification {
+        display: block;
     }
     .responsive-header-left .btn-login-responsive {
         background: #fff;

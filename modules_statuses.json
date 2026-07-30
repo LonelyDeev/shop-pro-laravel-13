@@ -1,5 +1,6 @@
 {
     "Story": true,
     "SeoAudit": true,
-    "SmartAssembly": true
+    "SmartAssembly": true,
+    "AIWriter": true
 }

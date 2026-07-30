@@ -108,26 +108,9 @@
                                                 <div class="form-body">
                                                     <!-- نوع مقاله -->
                                                     <div class="row">
-
-
-
-
-                                                       {{-- <div class="col-md-6 col-12">
-                                                            <div class="form-group">
-                                                                <label>ایجاد نوشته توسط:</label>
-                                                                <select name="created_by" id="created_by" class="form-control">
-                                                                    <option value="admin">خودم</option>
-                                                                    @can('posts.createAi')
-                                                                        @if(option('AI_TOKEN_KEY'))
-                                                                            <option value="ai">هوش مصنویی</option>
-                                                                            <option value="ai-pro">هوش مصنویی پیشرفته</option>
-                                                                        @else
-                                                                            <option disabled>برای استفاده از هوش مصنویی ابتدا توکن را وارد کنید</option>
-                                                                        @endif
-                                                                    @endcan
-                                                                </select>
-                                                            </div>
-                                                        </div>--}}
+                                                        @if(function_exists('module_is_active') && module_is_active('AIWriter'))
+                                                            @include('ai-writer::back.partials.post_creator_field')
+                                                        @endif
                                                     </div>
 
                                                     <!-- ادامه کدهای قبلی شما -->

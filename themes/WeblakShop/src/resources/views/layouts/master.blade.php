@@ -393,6 +393,12 @@
                             @endif
                         </div>
 
+                        <div class="btn-login-responsive">
+
+                            @include('front::partials.notifications')
+
+                        </div>
+
                         <a href='{{route('front.cart')}}' class="mini-cart-header-responsive">
                             <span class="mdi mdi-basket"></span>
                             @include('front::partials.cart')
@@ -470,6 +476,8 @@
 
                             @endif
                         </div>
+
+
                     </div>
                     <!-- responsive header-->
                 </div>

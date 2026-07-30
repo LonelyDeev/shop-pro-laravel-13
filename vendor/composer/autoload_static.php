@@ -169,18 +169,14 @@ class ComposerStaticInita79a6346a5a295f183402461d60fc86b
         array (
             'Morilog\\Jalali\\' => 15,
             'Monolog\\' => 8,
-            'Modules\\Story\\Tests\\' => 20,
-            'Modules\\Story\\Database\\Seeders\\' => 31,
-            'Modules\\Story\\Database\\Factories\\' => 33,
-            'Modules\\Story\\' => 14,
             'Modules\\SmartAssembly\\Tests\\' => 28,
             'Modules\\SmartAssembly\\Database\\Seeders\\' => 39,
             'Modules\\SmartAssembly\\Database\\Factories\\' => 41,
             'Modules\\SmartAssembly\\' => 22,
-            'Modules\\SeoAudit\\Tests\\' => 23,
-            'Modules\\SeoAudit\\Database\\Seeders\\' => 34,
-            'Modules\\SeoAudit\\Database\\Factories\\' => 36,
-            'Modules\\SeoAudit\\' => 17,
+            'Modules\\AIWriter\\Tests\\' => 23,
+            'Modules\\AIWriter\\Database\\Seeders\\' => 34,
+            'Modules\\AIWriter\\Database\\Factories\\' => 36,
+            'Modules\\AIWriter\\' => 17,
             'Mockery\\' => 8,
             'Minishlink\\WebPush\\' => 19,
             'Mews\\Captcha\\' => 13,
@@ -621,22 +617,6 @@ class ComposerStaticInita79a6346a5a295f183402461d60fc86b
         array (
             0 => __DIR__ . '/..' . '/monolog/monolog/src/Monolog',
         ),
-        'Modules\\Story\\Tests\\' =>
-        array (
-            0 => __DIR__ . '/../..' . '/Modules/Story/tests',
-        ),
-        'Modules\\Story\\Database\\Seeders\\' =>
-        array (
-            0 => __DIR__ . '/../..' . '/Modules/Story/database/seeders',
-        ),
-        'Modules\\Story\\Database\\Factories\\' =>
-        array (
-            0 => __DIR__ . '/../..' . '/Modules/Story/database/factories',
-        ),
-        'Modules\\Story\\' =>
-        array (
-            0 => __DIR__ . '/../..' . '/Modules/Story/app',
-        ),
         'Modules\\SmartAssembly\\Tests\\' =>
         array (
             0 => __DIR__ . '/../..' . '/Modules/SmartAssembly/tests',
@@ -653,21 +633,21 @@ class ComposerStaticInita79a6346a5a295f183402461d60fc86b
         array (
             0 => __DIR__ . '/../..' . '/Modules/SmartAssembly/app',
         ),
-        'Modules\\SeoAudit\\Tests\\' =>
+        'Modules\\AIWriter\\Tests\\' =>
         array (
-            0 => __DIR__ . '/../..' . '/Modules/SeoAudit/tests',
+            0 => __DIR__ . '/../..' . '/Modules/AIWriter/tests',
         ),
-        'Modules\\SeoAudit\\Database\\Seeders\\' =>
+        'Modules\\AIWriter\\Database\\Seeders\\' =>
         array (
-            0 => __DIR__ . '/../..' . '/Modules/SeoAudit/database/seeders',
+            0 => __DIR__ . '/../..' . '/Modules/AIWriter/database/seeders',
         ),
-        'Modules\\SeoAudit\\Database\\Factories\\' =>
+        'Modules\\AIWriter\\Database\\Factories\\' =>
         array (
-            0 => __DIR__ . '/../..' . '/Modules/SeoAudit/database/factories',
+            0 => __DIR__ . '/../..' . '/Modules/AIWriter/database/factories',
         ),
-        'Modules\\SeoAudit\\' =>
+        'Modules\\AIWriter\\' =>
         array (
-            0 => __DIR__ . '/../..' . '/Modules/SeoAudit/app',
+            0 => __DIR__ . '/../..' . '/Modules/AIWriter/app',
         ),
         'Mockery\\' =>
         array (
@@ -6762,50 +6742,34 @@ class ComposerStaticInita79a6346a5a295f183402461d60fc86b
         'Mockery\\Undefined' => __DIR__ . '/..' . '/mockery/mockery/library/Mockery/Undefined.php',
         'Mockery\\VerificationDirector' => __DIR__ . '/..' . '/mockery/mockery/library/Mockery/VerificationDirector.php',
         'Mockery\\VerificationExpectation' => __DIR__ . '/..' . '/mockery/mockery/library/Mockery/VerificationExpectation.php',
-        'Modules\\SeoAudit\\Database\\Seeders\\PermissionSeeder' => __DIR__ . '/../..' . '/Modules/SeoAudit/database/seeders/PermissionSeeder.php',
-        'Modules\\SeoAudit\\Database\\Seeders\\SeoAuditDatabaseSeeder' => __DIR__ . '/../..' . '/Modules/SeoAudit/database/seeders/SeoAuditDatabaseSeeder.php',
-        'Modules\\SeoAudit\\Http\\Controllers\\Back\\PageSeoController' => __DIR__ . '/../..' . '/Modules/SeoAudit/app/Http/Controllers/Back/PageSeoController.php',
-        'Modules\\SeoAudit\\Http\\Controllers\\Back\\PostSeoController' => __DIR__ . '/../..' . '/Modules/SeoAudit/app/Http/Controllers/Back/PostSeoController.php',
-        'Modules\\SeoAudit\\Http\\Controllers\\Back\\ProductsSeoController' => __DIR__ . '/../..' . '/Modules/SeoAudit/app/Http/Controllers/Back/ProductsSeoController.php',
-        'Modules\\SeoAudit\\Http\\Controllers\\Back\\SeoAuditController' => __DIR__ . '/../..' . '/Modules/SeoAudit/app/Http/Controllers/Back/SeoAuditController.php',
-        'Modules\\SeoAudit\\Http\\Controllers\\SeoAuditController' => __DIR__ . '/../..' . '/Modules/SeoAudit/app/Http/Controllers/SeoAuditController.php',
-        'Modules\\SeoAudit\\Permissions\\ModulePermissions' => __DIR__ . '/../..' . '/Modules/SeoAudit/app/Permissions/ModulePermissions.php',
-        'Modules\\SeoAudit\\Providers\\EventServiceProvider' => __DIR__ . '/../..' . '/Modules/SeoAudit/app/Providers/EventServiceProvider.php',
-        'Modules\\SeoAudit\\Providers\\RouteServiceProvider' => __DIR__ . '/../..' . '/Modules/SeoAudit/app/Providers/RouteServiceProvider.php',
-        'Modules\\SeoAudit\\Providers\\SeoAuditServiceProvider' => __DIR__ . '/../..' . '/Modules/SeoAudit/app/Providers/SeoAuditServiceProvider.php',
+        'Modules\\AIWriter\\Database\\Seeders\\AIWriterDatabaseSeeder' => __DIR__ . '/../..' . '/Modules/AIWriter/database/seeders/AIWriterDatabaseSeeder.php',
+        'Modules\\AIWriter\\Http\\Controllers\\AIWriterController' => __DIR__ . '/../..' . '/Modules/AIWriter/app/Http/Controllers/AIWriterController.php',
+        'Modules\\AIWriter\\Providers\\AIWriterServiceProvider' => __DIR__ . '/../..' . '/Modules/AIWriter/app/Providers/AIWriterServiceProvider.php',
+        'Modules\\AIWriter\\Providers\\EventServiceProvider' => __DIR__ . '/../..' . '/Modules/AIWriter/app/Providers/EventServiceProvider.php',
+        'Modules\\AIWriter\\Providers\\RouteServiceProvider' => __DIR__ . '/../..' . '/Modules/AIWriter/app/Providers/RouteServiceProvider.php',
         'Modules\\SmartAssembly\\Console\\Commands\\InstallPermissionsCommand' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Console/Commands/InstallPermissionsCommand.php',
+        'Modules\\SmartAssembly\\Database\\Seeders\\SmartAssemblyAiGameSeeder' => __DIR__ . '/../..' . '/Modules/SmartAssembly/database/seeders/SmartAssemblyAiGameSeeder.php',
         'Modules\\SmartAssembly\\Database\\Seeders\\SmartAssemblyDatabaseSeeder' => __DIR__ . '/../..' . '/Modules/SmartAssembly/database/seeders/SmartAssemblyDatabaseSeeder.php',
         'Modules\\SmartAssembly\\Database\\Seeders\\SmartAssemblySettingSeeder' => __DIR__ . '/../..' . '/Modules/SmartAssembly/database/seeders/SmartAssemblySettingSeeder.php',
+        'Modules\\SmartAssembly\\Http\\Controllers\\Back\\BenchmarksController' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Http/Controllers/Back/BenchmarksController.php',
         'Modules\\SmartAssembly\\Http\\Controllers\\Back\\RulesController' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Http/Controllers/Back/RulesController.php',
         'Modules\\SmartAssembly\\Http\\Controllers\\Back\\SettingsController' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Http/Controllers/Back/SettingsController.php',
         'Modules\\SmartAssembly\\Http\\Controllers\\SmartAssemblyController' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Http/Controllers/SmartAssemblyController.php',
-        'Modules\\SmartAssembly\\Http\\Middleware\\CheckSmartAssemblyLicense' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Http/Middleware/CheckSmartAssemblyLicense.php',
+        'Modules\\SmartAssembly\\Http\\Middleware\\CheckModuleLicense' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Http/Middleware/CheckModuleLicense.php',
+        'Modules\\SmartAssembly\\Models\\SmartAssemblyBenchmark' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Models/SmartAssemblyBenchmark.php',
         'Modules\\SmartAssembly\\Models\\SmartAssemblyCache' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Models/SmartAssemblyCache.php',
         'Modules\\SmartAssembly\\Models\\SmartAssemblyCategory' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Models/SmartAssemblyCategory.php',
+        'Modules\\SmartAssembly\\Models\\SmartAssemblyGame' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Models/SmartAssemblyGame.php',
         'Modules\\SmartAssembly\\Models\\SmartAssemblyRule' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Models/SmartAssemblyRule.php',
         'Modules\\SmartAssembly\\Models\\SmartAssemblySaved' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Models/SmartAssemblySaved.php',
         'Modules\\SmartAssembly\\Models\\SmartAssemblySetting' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Models/SmartAssemblySetting.php',
-        'Modules\\SmartAssembly\\Permissions\\SmartAssemblyPermissions' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Permissions/SmartAssemblyPermissions.php',
+        'Modules\\SmartAssembly\\Permissions\\ModulesPermissions' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Permissions/ModulesPermissions.php',
         'Modules\\SmartAssembly\\Providers\\EventServiceProvider' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Providers/EventServiceProvider.php',
         'Modules\\SmartAssembly\\Providers\\RouteServiceProvider' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Providers/RouteServiceProvider.php',
         'Modules\\SmartAssembly\\Providers\\SmartAssemblyServiceProvider' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Providers/SmartAssemblyServiceProvider.php',
         'Modules\\SmartAssembly\\Services\\AiService' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Services/AiService.php',
         'Modules\\SmartAssembly\\Services\\CompatibilityService' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Services/CompatibilityService.php',
         'Modules\\SmartAssembly\\Services\\LicenseGuard' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Services/LicenseGuard.php',
-        'Modules\\Story\\Console\\Commands\\InstallStoryPermissionsCommand' => __DIR__ . '/../..' . '/Modules/Story/app/Console/Commands/InstallStoryPermissionsCommand.php',
-        'Modules\\Story\\Database\\Seeders\\StoryDatabaseSeeder' => __DIR__ . '/../..' . '/Modules/Story/database/seeders/StoryDatabaseSeeder.php',
-        'Modules\\Story\\Http\\Controllers\\Back\\StoryController' => __DIR__ . '/../..' . '/Modules/Story/app/Http/Controllers/Back/StoryController.php',
-        'Modules\\Story\\Http\\Controllers\\Front\\FrontStoryController' => __DIR__ . '/../..' . '/Modules/Story/app/Http/Controllers/Front/FrontStoryController.php',
-        'Modules\\Story\\Models\\Story' => __DIR__ . '/../..' . '/Modules/Story/app/Models/Story.php',
-        'Modules\\Story\\Models\\StoryComment' => __DIR__ . '/../..' . '/Modules/Story/app/Models/StoryComment.php',
-        'Modules\\Story\\Models\\StoryInteraction' => __DIR__ . '/../..' . '/Modules/Story/app/Models/StoryInteraction.php',
-        'Modules\\Story\\Models\\StoryLike' => __DIR__ . '/../..' . '/Modules/Story/app/Models/StoryLike.php',
-        'Modules\\Story\\Permissions\\StoryPermissions' => __DIR__ . '/../..' . '/Modules/Story/app/Permissions/StoryPermissions.php',
-        'Modules\\Story\\Providers\\EventServiceProvider' => __DIR__ . '/../..' . '/Modules/Story/app/Providers/EventServiceProvider.php',
-        'Modules\\Story\\Providers\\RouteServiceProvider' => __DIR__ . '/../..' . '/Modules/Story/app/Providers/RouteServiceProvider.php',
-        'Modules\\Story\\Providers\\StoryServiceProvider' => __DIR__ . '/../..' . '/Modules/Story/app/Providers/StoryServiceProvider.php',
-        'Modules\\Story\\Services\\StoryWidgetService' => __DIR__ . '/../..' . '/Modules/Story/app/Services/StoryWidgetService.php',
-        'Modules\\Story\\Traits\\StoryInteractionTrait' => __DIR__ . '/../..' . '/Modules/Story/app/Traits/StoryInteractionTrait.php',
         'Monolog\\Attribute\\AsMonologProcessor' => __DIR__ . '/..' . '/monolog/monolog/src/Monolog/Attribute/AsMonologProcessor.php',
         'Monolog\\Attribute\\WithMonologChannel' => __DIR__ . '/..' . '/monolog/monolog/src/Monolog/Attribute/WithMonologChannel.php',
         'Monolog\\DateTimeImmutable' => __DIR__ . '/..' . '/monolog/monolog/src/Monolog/DateTimeImmutable.php',
