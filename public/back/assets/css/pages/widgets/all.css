@@ -365,10 +365,63 @@
 @media (max-width:768px){
     .widgets-page table.widget-table thead{ display:none; }
     .widgets-page table.widget-table, .widgets-page table.widget-table tbody, .widgets-page table.widget-table tr, .widgets-page table.widget-table td{
-        display:block; width:100%;
+        display:block;padding-right: 0;
+    }
+    .widgets-page table.widget-table tbody td:first-child{
+        display: none;
+    }
+    .table-responsive{
+        overflow: hidden !important;
     }
     .widgets-page table.widget-table tbody td{ border:none !important; padding:6px 14px; }
     .widgets-page table.widget-table tbody tr{ padding:10px 0; }
+    .widgets-page table.widget-table tbody td{
+        text-align: right !important;
+    }
+    .table-responsive tr {
+        display: flex !important;
+        flex-wrap: wrap;
+        border-bottom: 1px solid #dee2e6;
+        padding: 10px 0;
+        gap: 4px;
+    }
+
+    /* همه tdها به صورت پیش‌فرض */
+    .table-responsive td {
+        display: flex;
+        flex: 0 0 100%;
+        border: none;
+        padding: 5px 10px;
+        align-items: center;
+    }
+
+    /* 2 تای اول - کنار هم */
+    .table-responsive td:nth-child(-n+2) {
+        flex: 0 0 auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #e3f2fd;
+        margin: 3px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 13px;
+        border: 1px solid #90caf9;
+    }
+
+    /* 2 تای آخر - کنار هم */
+    .table-responsive td:nth-last-child(-n+2) {
+        flex: 0 0 auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #f1f3f5;
+        margin: 3px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 13px;
+        border: 1px solid #dee2e6;
+    }
 }
 .btn-fullscreen{
     position: absolute;
