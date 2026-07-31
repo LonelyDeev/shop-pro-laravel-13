@@ -99,7 +99,7 @@ class PackageInstallerService
             // و queue worker باید restart بشه تا کلاس‌های ماژول جدید رو بشناسه
             $this->refreshCaches();
             $this->restartQueueWorker();
-
+            $this->toggleActivation($slug);
             return $installed;
         } catch (Exception $e) {
             $this->failLog($log, $e, $slug);
