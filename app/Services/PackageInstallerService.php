@@ -101,8 +101,7 @@ class PackageInstallerService
             $this->restartQueueWorker();
             $this->toggleActivation($slug);
 
-
-            // 12) ایجاد/به‌روزرسانی فایل modules_statuses.json
+            // 13) ایجاد/به‌روزرسانی فایل modules_statuses.json
             $this->step('update_statuses', 'به‌روزرسانی وضعیت ماژول‌ها');
             $this->ensureModulesStatusesFile();
 
@@ -1099,16 +1098,20 @@ class PackageInstallerService
 
             $statuses = [];
             foreach ($installedModules as $module) {
-                // نام ماژول را از مسیر یا نام ماژول استخراج کن
-                $moduleName = $module->module_name ?? $module->slug;
-                $statuses[$moduleName] = true; // یا false بر اساس وضعیت فعال بودن
+                // استفاده از module_name به جای slug
+                $moduleName = $module->name;
+                if ($moduleName) {
+                    $statuses[$moduleName] = (bool) ($module->is_active ?? true);
+                }
             }
 
-            // اگر ماژول فعلی در لیست نیست، آن را اضافه کن
-            // (این حالت برای زمانی است که ماژول جدید نصب شده و هنوز در دیتابیس ثبت نشده)
-            if (!empty($this->currentModuleName)) {
+            // اگر ماژول فعلی در حال نصب است و در لیست نیست، اضافه کن
+            if (!empty($this->currentModuleName) && !isset($statuses[$this->currentModuleName])) {
                 $statuses[$this->currentModuleName] = true;
             }
+
+            // مرتب‌سازی بر اساس نام ماژول
+            ksort($statuses);
 
             // نوشتن فایل JSON
             file_put_contents(
@@ -1121,7 +1124,9 @@ class PackageInstallerService
         }
 
         // اگر فایل وجود دارد، وضعیت ماژول فعلی را به‌روز کن
-        $this->updateModuleStatusInFile($this->currentModuleName ?? '');
+        if (!empty($this->currentModuleName)) {
+            $this->updateModuleStatusInFile($this->currentModuleName, true);
+        }
     }
 
     /**
@@ -1142,6 +1147,9 @@ class PackageInstallerService
         // به‌روزرسانی وضعیت ماژول
         $statuses[$moduleName] = $status;
 
+        // مرتب‌سازی بر اساس نام ماژول
+        ksort($statuses);
+
         file_put_contents(
             $statusesPath,
             json_encode($statuses, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
@@ -1160,10 +1168,12 @@ class PackageInstallerService
 
         $statuses = [];
         foreach ($installedModules as $module) {
-            $moduleName = $module->module_name ?? $module->slug;
-            // بررسی کنید که ماژول فعال است یا خیر
-            $isActive = $module->is_active ?? true;
-            $statuses[$moduleName] = $isActive;
+            // استفاده از module_name به جای slug
+            $moduleName = $module->name;
+            if ($moduleName) {
+                $isActive = $module->is_active ?? true;
+                $statuses[$moduleName] = (bool) $isActive;
+            }
         }
 
         // اگر ماژول فعلی در حال نصب است و در لیست نیست، اضافه کن
@@ -1171,10 +1181,42 @@ class PackageInstallerService
             $statuses[$this->currentModuleName] = true;
         }
 
+        // مرتب‌سازی بر اساس نام ماژول
+        ksort($statuses);
+
         file_put_contents(
             $statusesPath,
             json_encode($statuses, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
         );
     }
 
+    /**
+     * Rebuild modules_statuses.json from database (for manual use)
+     */
+    public function rebuildModulesStatusesFile(): void
+    {
+        $statusesPath = base_path('modules_statuses.json');
+
+        // دریافت همه ماژول‌های نصب شده
+        $installedModules = InstalledModule::all();
+
+        $statuses = [];
+        foreach ($installedModules as $module) {
+            // استفاده از module_name به جای slug
+            $moduleName = $module->name;
+            if ($moduleName) {
+                $statuses[$moduleName] = (bool) ($module->is_active ?? true);
+            }
+        }
+
+        // مرتب‌سازی بر اساس نام ماژول
+        ksort($statuses);
+
+        file_put_contents(
+            $statusesPath,
+            json_encode($statuses, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
+        );
+
+        $this->step('rebuild_statuses', 'بازسازی فایل وضعیت ماژول‌ها');
+    }
 }
