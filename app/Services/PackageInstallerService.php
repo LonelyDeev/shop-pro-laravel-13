@@ -100,6 +100,12 @@ class PackageInstallerService
             $this->refreshCaches();
             $this->restartQueueWorker();
             $this->toggleActivation($slug);
+
+
+            // 12) ایجاد/به‌روزرسانی فایل modules_statuses.json
+            $this->step('update_statuses', 'به‌روزرسانی وضعیت ماژول‌ها');
+            $this->ensureModulesStatusesFile();
+
             return $installed;
         } catch (Exception $e) {
             $this->failLog($log, $e, $slug);
@@ -1077,4 +1083,98 @@ class PackageInstallerService
             }
         });
     }
+
+
+    /**
+     * Ensure modules_statuses.json exists and update it with installed modules
+     */
+    private function ensureModulesStatusesFile(): void
+    {
+        $statusesPath = base_path('modules_statuses.json');
+
+        // اگر فایل وجود نداشت، ایجاد کن
+        if (!file_exists($statusesPath)) {
+            // دریافت لیست ماژول‌های نصب شده از دیتابیس
+            $installedModules = InstalledModule::where('status', 'installed')->get();
+
+            $statuses = [];
+            foreach ($installedModules as $module) {
+                // نام ماژول را از مسیر یا نام ماژول استخراج کن
+                $moduleName = $module->module_name ?? $module->slug;
+                $statuses[$moduleName] = true; // یا false بر اساس وضعیت فعال بودن
+            }
+
+            // اگر ماژول فعلی در لیست نیست، آن را اضافه کن
+            // (این حالت برای زمانی است که ماژول جدید نصب شده و هنوز در دیتابیس ثبت نشده)
+            if (!empty($this->currentModuleName)) {
+                $statuses[$this->currentModuleName] = true;
+            }
+
+            // نوشتن فایل JSON
+            file_put_contents(
+                $statusesPath,
+                json_encode($statuses, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
+            );
+
+            $this->step('create_statuses', 'ایجاد فایل وضعیت ماژول‌ها');
+            return;
+        }
+
+        // اگر فایل وجود دارد، وضعیت ماژول فعلی را به‌روز کن
+        $this->updateModuleStatusInFile($this->currentModuleName ?? '');
+    }
+
+    /**
+     * Update a single module status in modules_statuses.json
+     */
+    private function updateModuleStatusInFile(string $moduleName, bool $status = true): void
+    {
+        $statusesPath = base_path('modules_statuses.json');
+
+        if (!file_exists($statusesPath)) {
+            $this->ensureModulesStatusesFile();
+            return;
+        }
+
+        $content = file_get_contents($statusesPath);
+        $statuses = json_decode($content, true) ?? [];
+
+        // به‌روزرسانی وضعیت ماژول
+        $statuses[$moduleName] = $status;
+
+        file_put_contents(
+            $statusesPath,
+            json_encode($statuses, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
+        );
+    }
+
+    /**
+     * Get all installed modules from database and sync with modules_statuses.json
+     */
+    private function syncModulesStatusesFile(): void
+    {
+        $statusesPath = base_path('modules_statuses.json');
+
+        // دریافت لیست ماژول‌های نصب شده از دیتابیس
+        $installedModules = InstalledModule::where('status', 'installed')->get();
+
+        $statuses = [];
+        foreach ($installedModules as $module) {
+            $moduleName = $module->module_name ?? $module->slug;
+            // بررسی کنید که ماژول فعال است یا خیر
+            $isActive = $module->is_active ?? true;
+            $statuses[$moduleName] = $isActive;
+        }
+
+        // اگر ماژول فعلی در حال نصب است و در لیست نیست، اضافه کن
+        if (!empty($this->currentModuleName) && !isset($statuses[$this->currentModuleName])) {
+            $statuses[$this->currentModuleName] = true;
+        }
+
+        file_put_contents(
+            $statusesPath,
+            json_encode($statuses, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
+        );
+    }
+
 }
