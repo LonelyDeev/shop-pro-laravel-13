@@ -43,6 +43,50 @@ $app->singleton(
 
 /*
 |--------------------------------------------------------------------------
+| Dynamic Module Autoloader
+|--------------------------------------------------------------------------
+| این autoloader در هر request اجرا می‌شه و خودش ماژول‌های نصب‌شده رو پیدا می‌کنه
+| کاملاً مستقل از composer dump-autoload - مناسب سرورهای shared hosting
+|--------------------------------------------------------------------------
+*/
+$modulesBasePath = dirname(__DIR__) . '/Modules';
+if (is_dir($modulesBasePath)) {
+    spl_autoload_register(function (string $class) use ($modulesBasePath): void {
+        // فقط کلاس‌های Modules\* رو پردازش کن
+        if (strpos($class, 'Modules\\') !== 0) {
+            return;
+        }
+
+        // تجزیه namespace: Modules\Story\Providers\StoryServiceProvider
+        $parts = explode('\\', $class);
+        if (count($parts) < 3) {
+            return;
+        }
+
+        $moduleName = $parts[1]; // Story
+        $relativePath = implode('/', array_slice($parts, 2)); // Providers/StoryServiceProvider
+
+        // مسیرهای ممکن برای پیدا کردن فایل
+        $candidates = [
+            // 1. استاندارد PSR-4 با app/ (پیش‌فرض nwidart)
+            $modulesBasePath . '/' . $moduleName . '/app/' . $relativePath . '.php',
+            // 2. بدون app/ (برای موارد خاص)
+            $modulesBasePath . '/' . $moduleName . '/' . $relativePath . '.php',
+            // 3. حالت PascalCase (برخی ماژول‌ها)
+            $modulesBasePath . '/' . $moduleName . '/app/' . $relativePath . '.php',
+        ];
+
+        foreach ($candidates as $file) {
+            if (is_file($file)) {
+                require_once $file;
+                return;
+            }
+        }
+    });
+}
+
+/*
+|--------------------------------------------------------------------------
 | Return The Application
 |--------------------------------------------------------------------------
 |

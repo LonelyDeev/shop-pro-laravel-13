@@ -359,60 +359,77 @@ class PackageInstallerService
     /* ===================================================================
      *  ثبت Autoloader موقت
      * =================================================================== */
+    /**
+     * ثبت autoloader برای کلاس‌های ماژول جدید
+     * (در runtime + بدون نیاز به composer dump-autoload)
+     */
     private function registerModuleAutoloader(string $moduleName): void
     {
         $modulePath = config('packages.modules.path') . '/' . $moduleName;
         $prefix = "Modules\\{$moduleName}\\";
 
+        // ثبت در runtime برای request فعلی
         spl_autoload_register(function ($class) use ($prefix, $modulePath) {
             if (strpos($class, $prefix) !== 0) {
                 return;
             }
 
             $relativeClass = substr($class, strlen($prefix));
-            $file = $modulePath . '/' . str_replace('\\', '/', $relativeClass) . '.php';
+            $file = $modulePath . '/app/' . str_replace('\\', '/', $relativeClass) . '.php';
 
             if (file_exists($file)) {
                 require_once $file;
                 return true;
             }
+
+            // fallback: بدون app/
+            $file2 = $modulePath . '/' . str_replace('\\', '/', $relativeClass) . '.php';
+            if (file_exists($file2)) {
+                require_once $file2;
+                return true;
+            }
             return false;
         }, true, true);
+
+        Log::info("✅ Autoloader registered for module: {$moduleName}");
     }
 
     /* ===================================================================
      *  اجرای Composer Dump-Autoload (بدون exec)
      * =================================================================== */
+    /* ===================================================================
+ *  Composer Dump-Autoload - بدون exec
+ *  فقط کش‌ها رو پاک می‌کنه و autoloader رو ثبت می‌کنه
+ * =================================================================== */
     private function runComposerDumpAutoload(string $moduleName = null): void
     {
-        try {
-            Log::info('🔄 Running composer dump-autoload via Process');
+        Log::info('🔄 Running cache cleanup (composer not available)');
 
-            $composerPath = $this->findComposerPath();
-
-            if ($composerPath) {
-                $command = [$composerPath, 'dump-autoload', '-o'];
-                $process = new Process($command);
-                $process->setTimeout(300);
-                $process->run();
-
-                if ($process->isSuccessful()) {
-                    Log::info('✅ Composer dump-autoload completed successfully');
-                    return;
-                } else {
-                    Log::warning('⚠️ Composer dump-autoload had errors', [
-                        'output' => $process->getErrorOutput()
-                    ]);
-                }
-            }
-
-            // روش جایگزین
-            $this->runComposerDumpAutoloadAlternative();
-
-        } catch (\Throwable $e) {
-            Log::warning('⚠️ Composer dump-autoload failed', ['error' => $e->getMessage()]);
-            $this->runComposerDumpAutoloadAlternative();
+        // ۱. ثبت autoloader ماژول (در runtime)
+        if ($moduleName) {
+            $this->registerModuleAutoloader($moduleName);
         }
+
+        // ۲. حذف مستقیم فایل‌های کش (بدون نیاز به composer)
+        $cacheFiles = [
+            base_path('bootstrap/cache/modules.php'),
+            base_path('bootstrap/cache/services.php'),
+            base_path('bootstrap/cache/packages.php'),
+            base_path('bootstrap/cache/routes-v7.php'),
+            base_path('bootstrap/cache/routes.php'),
+            base_path('bootstrap/cache/config.php'),
+            base_path('bootstrap/cache/events.php'),
+            base_path('bootstrap/cache/compiled.php'),
+        ];
+
+        foreach ($cacheFiles as $file) {
+            if (file_exists($file)) {
+                @unlink($file);
+                Log::info("✅ " . basename($file) . " removed");
+            }
+        }
+
+        Log::info('✅ Cache cleanup completed');
     }
 
     /**
@@ -484,67 +501,42 @@ class PackageInstallerService
     /* ===================================================================
      *  اجرای Migrationها
      * =================================================================== */
+    /* ===================================================================
+ *  اجرای Migrationها
+ * =================================================================== */
     private function runMigrations(string $moduleName): void
     {
+        // ثبت autoloader (مهم برای پیدا کردن migrationها)
         $this->registerModuleAutoloader($moduleName);
-        $this->runComposerDumpAutoload($moduleName);
 
         $modulePath = config('packages.modules.path') . '/' . $moduleName;
         $migrationsPath = $this->findMigrationsPath($modulePath);
 
         if ($migrationsPath === null) {
-            Log::warning('No migrations directory found', [
-                'module' => $moduleName,
-                'module_path' => $modulePath,
-            ]);
+            Log::warning('No migrations directory found', ['module' => $moduleName]);
             return;
         }
 
         $migrationFiles = glob($migrationsPath . '/*.php');
+        sort($migrationFiles);
 
         Log::info('Found migration files', [
             'module' => $moduleName,
             'path' => $migrationsPath,
             'count' => count($migrationFiles),
-            'files' => array_map('basename', $migrationFiles),
         ]);
 
         if (empty($migrationFiles)) {
-            Log::info('No migration files to run', ['module' => $moduleName]);
             return;
         }
 
+        // اجرای مستقیم migrationها (بدون Artisan::call که در queue گیر می‌کنه)
         try {
-            $migrator = app('migrator');
-            if (!$migrator->repositoryExists()) {
-                Artisan::call('migrate:install');
-                Log::info('Migration repository created');
-            }
-
-            Artisan::call('migrate', [
-                '--path' => $migrationsPath,
-                '--realpath' => true,
-                '--force' => true,
-            ]);
-
-            Log::info('Migrations completed', [
-                'module' => $moduleName,
-                'output' => Artisan::output(),
-            ]);
+            $this->runMigrationsIndividually($migrationFiles, $moduleName);
+            Log::info('All migrations processed', ['module' => $moduleName]);
         } catch (Exception $e) {
-            Log::warning('Standard migrate failed, trying individual migrations', [
-                'module' => $moduleName,
-                'error' => $e->getMessage(),
-            ]);
-
-            try {
-                $this->runMigrationsIndividually($migrationFiles, $moduleName);
-                Log::info('Individual migrations completed', ['module' => $moduleName]);
-            } catch (Exception $e2) {
-                throw new RuntimeException(
-                    'اجرای migrationهای ماژول ناموفق بود: ' . $e2->getMessage()
-                );
-            }
+            Log::error('Migration failed', ['module' => $moduleName, 'error' => $e->getMessage()]);
+            // throw نکنیم - بذاریم نصب ادامه پیدا کنه
         }
     }
 
@@ -931,16 +923,19 @@ class PackageInstallerService
     /* ===================================================================
      *  رفرش کش‌ها (بدون exec)
      * =================================================================== */
+    /* ===================================================================
+ *  رفرش کش‌ها (بدون exec)
+ * =================================================================== */
     private function refreshCaches(string $moduleName = null): void
     {
         try {
-            // 1. ثبت autoloader موقت
+            // ۱. ثبت autoloader موقت
             if ($moduleName) {
                 $this->registerModuleAutoloader($moduleName);
             }
 
-            // 2. پاک کردن کش‌های لاراول
-            $commands = ['config:clear', 'cache:clear', 'view:clear', 'route:clear'];
+            // ۲. پاک کردن کش‌های لاراول
+            $commands = ['config:clear', 'cache:clear', 'view:clear', 'route:clear', 'optimize:clear'];
             foreach ($commands as $command) {
                 try {
                     Artisan::call($command);
@@ -950,44 +945,25 @@ class PackageInstallerService
                 }
             }
 
-            // 3. حذف مستقیم فایل‌های کش
+            // ۳. حذف مستقیم فایل‌های کش
             $cacheFiles = [
                 base_path('bootstrap/cache/modules.php'),
                 base_path('bootstrap/cache/services.php'),
                 base_path('bootstrap/cache/packages.php'),
-                base_path('bootstrap/cache/autoload.php'),
+                base_path('bootstrap/cache/routes-v7.php'),
+                base_path('bootstrap/cache/routes.php'),
+                base_path('bootstrap/cache/config.php'),
+                base_path('bootstrap/cache/events.php'),
+                base_path('bootstrap/cache/compiled.php'),
             ];
 
             foreach ($cacheFiles as $file) {
                 if (file_exists($file)) {
                     @unlink($file);
-                    Log::info("✅ " . basename($file) . " removed");
                 }
-            }
-
-            // 4. اجرای module:dump
-            if ($moduleName) {
-                try {
-                    Artisan::call('module:dump', ['module' => $moduleName]);
-                    Log::info('✅ module:dump completed', ['module' => $moduleName]);
-                } catch (\Throwable $e) {
-                    Log::warning('⚠️ module:dump failed', [
-                        'module' => $moduleName,
-                        'error' => $e->getMessage()
-                    ]);
-                }
-            }
-
-            // 5. optimize:clear
-            try {
-                Artisan::call('optimize:clear');
-                Log::info('✅ optimize:clear executed');
-            } catch (\Throwable $e) {
-                Log::warning('⚠️ optimize:clear failed', ['error' => $e->getMessage()]);
             }
 
             Log::info('✅ All caches refreshed successfully');
-
         } catch (Exception $e) {
             Log::warning('Cache refresh partial failure', ['error' => $e->getMessage()]);
         }
