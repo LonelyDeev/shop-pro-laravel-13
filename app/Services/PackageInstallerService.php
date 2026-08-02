@@ -939,10 +939,7 @@ class PackageInstallerService
                 $this->registerModuleAutoloader($moduleName);
             }
 
-            // 2. اجرای composer dump-autoload
-            $this->runComposerDumpAutoload($moduleName);
-
-            // 3. پاک کردن کش‌های لاراول
+            // 2. پاک کردن کش‌های لاراول
             $commands = ['config:clear', 'cache:clear', 'view:clear', 'route:clear'];
             foreach ($commands as $command) {
                 try {
@@ -953,7 +950,7 @@ class PackageInstallerService
                 }
             }
 
-            // 4. حذف مستقیم فایل‌های کش
+            // 3. حذف مستقیم فایل‌های کش
             $cacheFiles = [
                 base_path('bootstrap/cache/modules.php'),
                 base_path('bootstrap/cache/services.php'),
@@ -968,7 +965,7 @@ class PackageInstallerService
                 }
             }
 
-            // 5. اجرای module:dump
+            // 4. اجرای module:dump
             if ($moduleName) {
                 try {
                     Artisan::call('module:dump', ['module' => $moduleName]);
@@ -981,7 +978,7 @@ class PackageInstallerService
                 }
             }
 
-            // 6. optimize:clear
+            // 5. optimize:clear
             try {
                 Artisan::call('optimize:clear');
                 Log::info('✅ optimize:clear executed');
