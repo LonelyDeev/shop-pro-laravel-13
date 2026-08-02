@@ -59,12 +59,13 @@
                                     <li>
                                         <a href="{{ route('front.wallet.index') }}" class="profile-menu-url @if($active=="wallet")active-profile @endif"><span class="mdi mdi-credit-card-outline"></span>کیف پول</a>
                                     </li>
-                                    @if(module_is_active('InstallmentPayment'))
-                                        <li>
-                                            <a href="{{ route('front.installments.index') }}" class="list-group-item">
-                                                <i class="fas fa-money-check-alt"></i> اقساط من
-                                            </a>
-                                        </li>
+
+                                    @if(class_exists(\App\Services\FrontModuleMenuRegistry::class))
+                                        @foreach(\App\Services\FrontModuleMenuRegistry::all() as $menuView)
+                                            @if(view()->exists($menuView))
+                                                @include($menuView)
+                                            @endif
+                                        @endforeach
                                     @endif
 
 
@@ -117,7 +118,17 @@
                                 class="mdi mdi-account-outline"></span>پروفایل</a></li>
                     <li><a href="{{ route('front.orders.index') }}" class="profile-menu-url @if($active=="orders")active-profile @endif"><span
                                 class="mdi mdi-basket"></span>همه سفارش ها</a></li>
+
+                    @if(class_exists(\App\Services\FrontModuleMenuRegistry::class))
+                        @foreach(\App\Services\FrontModuleMenuRegistry::all() as $menuView)
+                            @if(view()->exists($menuView))
+                                @include($menuView)
+                            @endif
+                        @endforeach
+                    @endif
+
                     <li><a href="{{ route('front.wallet.index') }}" class="profile-menu-url @if($active=="wallet")active-profile @endif"><span class="mdi mdi-credit-card-outline"></span>کیف پول</a></li>
+
                     <li><a href="{{ route('front.favorites.index') }}" class="profile-menu-url @if($active=="favorites")active-profile @endif"><span class="mdi mdi-heart-outline"></span>لیست
                             علاقه مندی ها</a></li>
                     <li>
