@@ -39,6 +39,15 @@ class PackageInstallerService
         $log = $this->startLog(ModuleInstallLog::ACTION_INSTALL, $slug, $adminId);
 
         try {
+            try {
+                $output = [];
+                $returnCode = 0;
+                exec('composer dump-autoload -o 2>&1', $output, $returnCode);
+                Log::info('Initial composer dump-autoload executed', ['return_code' => $returnCode]);
+            } catch (\Throwable $e) {
+                Log::warning('Initial composer dump-autoload failed', ['error' => $e->getMessage()]);
+            }
+
             // 1) در صورت نیاز، دریافت download_token از API
             if (!$downloadToken) {
                 $this->step('verify_license', 'بررسی لایسنس');
@@ -780,19 +789,20 @@ class PackageInstallerService
     {
         try {
             // ========== 0. اول composer dump-autoload اجرا کن ==========
-            // این کار باعث می‌شود کلاس‌های ماژول جدید شناخته شوند
             try {
                 Log::info('🔄 Running composer dump-autoload before cache refresh');
+
+                // اجرای با مسیر کامل composer
+                $composerPath = 'composer';
+                if (PHP_OS_FAMILY === 'Windows') {
+                    $composerPath = 'composer.bat';
+                }
 
                 $output = [];
                 $returnCode = 0;
 
-                if (PHP_OS_FAMILY === 'Windows') {
-                    $command = 'composer dump-autoload -o 2>&1';
-                } else {
-                    $command = 'composer dump-autoload -o 2>&1';
-                }
-
+                // استفاده از -o برای optimize
+                $command = "{$composerPath} dump-autoload -o 2>&1";
                 exec($command, $output, $returnCode);
 
                 if ($returnCode === 0) {
@@ -807,36 +817,23 @@ class PackageInstallerService
                 Log::warning('⚠️ Composer dump-autoload failed', ['error' => $e->getMessage()]);
             }
 
-            // ========== 1. پاک کردن کش‌های لاراول ==========
-            try {
-                Artisan::call('config:clear');
-                Log::info('✅ پاک کردن کش کانفیگ executed');
-            } catch (\Throwable $e) {
-                Log::warning('⚠️ config:clear failed', ['error' => $e->getMessage()]);
+            // ========== 1. ثبت autoloader موقت ==========
+            if ($moduleName) {
+                $this->registerModuleAutoloader($moduleName);
             }
 
-            try {
-                Artisan::call('cache:clear');
-                Log::info('✅ پاک کردن کش اپلیکیشن executed');
-            } catch (\Throwable $e) {
-                Log::warning('⚠️ cache:clear failed', ['error' => $e->getMessage()]);
+            // ========== 2. پاک کردن کش‌های لاراول ==========
+            $commands = ['config:clear', 'cache:clear', 'view:clear', 'route:clear'];
+            foreach ($commands as $command) {
+                try {
+                    Artisan::call($command);
+                    Log::info("✅ {$command} executed");
+                } catch (\Throwable $e) {
+                    Log::warning("⚠️ {$command} failed", ['error' => $e->getMessage()]);
+                }
             }
 
-            try {
-                Artisan::call('view:clear');
-                Log::info('✅ پاک کردن کش ویوها executed');
-            } catch (\Throwable $e) {
-                Log::warning('⚠️ view:clear failed', ['error' => $e->getMessage()]);
-            }
-
-            try {
-                Artisan::call('route:clear');
-                Log::info('✅ پاک کردن کش روت‌ها executed');
-            } catch (\Throwable $e) {
-                Log::warning('⚠️ route:clear failed', ['error' => $e->getMessage()]);
-            }
-
-            // ========== 2. حذف مستقیم فایل‌های کش ==========
+            // ========== 3. حذف مستقیم فایل‌های کش ==========
             $cacheFiles = [
                 base_path('bootstrap/cache/modules.php'),
                 base_path('bootstrap/cache/services.php'),
@@ -854,21 +851,28 @@ class PackageInstallerService
                 }
             }
 
-            // ========== 3. اجرای module:dump با اسم ماژول ==========
+            // ========== 4. اجرای module:dump ==========
             if ($moduleName) {
                 try {
-                    Log::info('🔄 Running module:dump for module', ['module' => $moduleName]);
-                    Artisan::call('module:dump', ['module' => $moduleName]);
-                    Log::info('✅ module:dump completed', ['module' => $moduleName]);
+                    // ابتدا با exec برای اطمینان بیشتر
+                    $output = [];
+                    $returnCode = 0;
+                    exec("php artisan module:dump {$moduleName} 2>&1", $output, $returnCode);
+
+                    if ($returnCode === 0) {
+                        Log::info('✅ module:dump completed via exec', ['module' => $moduleName]);
+                    } else {
+                        Log::warning('⚠️ module:dump via exec had issues', [
+                            'module' => $moduleName,
+                            'return_code' => $returnCode
+                        ]);
+                    }
                 } catch (\Throwable $e) {
-                    Log::warning('⚠️ module:dump failed', [
-                        'module' => $moduleName,
-                        'error' => $e->getMessage()
-                    ]);
+                    Log::warning('⚠️ module:dump failed', ['error' => $e->getMessage()]);
                 }
             }
 
-            // ========== 4. به‌روزرسانی کش‌های اپلیکیشن ==========
+            // ========== 5. optimize:clear ==========
             try {
                 Artisan::call('optimize:clear');
                 Log::info('✅ optimize:clear executed');
