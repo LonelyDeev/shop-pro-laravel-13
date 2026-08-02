@@ -64,5 +64,10 @@
     </div>
 
 
+    {{-- Hook برای پرداخت اقساطی --}}
+    @if(function_exists('module_is_active') && module_is_active('InstallmentPayment'))
+        @include('installment-payment::front.checkout_hook', ['cart' => $cart])
+    @endif
+
 
 </div>

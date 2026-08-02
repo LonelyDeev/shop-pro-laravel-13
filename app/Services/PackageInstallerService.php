@@ -97,7 +97,7 @@ class PackageInstallerService
             // 11) رفرش کش‌ها و restart queue worker
             // مهم: بعد از نصب ماژول جدید، autoload باید rebuild بشه
             // و queue worker باید restart بشه تا کلاس‌های ماژول جدید رو بشناسه
-            $this->refreshCaches();
+            $this->refreshCaches($moduleName);
             $this->restartQueueWorker();
             $this->toggleActivation($slug);
 
@@ -507,21 +507,18 @@ class PackageInstallerService
     private function runMigrationsIndividually(array $migrationFiles, string $moduleName): void
     {
         $migrator = app('migrator');
+        $repository = $migrator->getRepository(); // به‌جای $migrator->repository
 
         foreach ($migrationFiles as $file) {
             $name = basename($file);
-
-            // چک کردن اینکه آیا این migration قبلاً اجرا شده
             $migrationName = pathinfo($name, PATHINFO_FILENAME);
-            if ($migrator->repositoryExists() && $migrator->repository->getRan()) {
-                $ran = $migrator->repository->getRan();
-                if (in_array($migrationName, $ran)) {
-                    Log::info('Migration already ran, skipping', [
-                        'module' => $moduleName,
-                        'migration' => $migrationName,
-                    ]);
-                    continue;
-                }
+
+            if ($repository->repositoryExists() && in_array($migrationName, $repository->getRan())) {
+                Log::info('Migration already ran, skipping', [
+                    'module' => $moduleName,
+                    'migration' => $migrationName,
+                ]);
+                continue;
             }
 
             Log::info('Running migration', [
@@ -532,7 +529,6 @@ class PackageInstallerService
             $migrator->run($file);
         }
     }
-
     /**
      * پیدا کردن مسیر migrations با پشتیبانی از case sensitivity
      * (لینوکس case-sensitive هست، ویندوز نه)
@@ -780,65 +776,104 @@ class PackageInstallerService
     /* ===================================================================
      *  رفرش کش‌های لاراول
      * =================================================================== */
-    private function refreshCaches(): void
+    private function refreshCaches(string $moduleName = null): void
     {
         try {
-            // ========== پاک کردن کش‌های لاراول ==========
-            Artisan::call('config:clear');
-            Artisan::call('cache:clear');
-            Artisan::call('view:clear');
-            Artisan::call('route:clear');
-
-            // ========== بازسازی کش ماژول‌ها ==========
+            // ========== 0. اول composer dump-autoload اجرا کن ==========
+            // این کار باعث می‌شود کلاس‌های ماژول جدید شناخته شوند
             try {
-                // کامند صحیح برای پاک کردن کش ماژول
-                Artisan::call('module:dump-autoload');
-                Artisan::call('module:clear-compiled');
-            } catch (\Throwable $e) {
-                Log::debug('module:clear-compiled not available, trying alternative');
+                Log::info('🔄 Running composer dump-autoload before cache refresh');
 
-                // روش جایگزین: پاک کردن مستقیم فایل
-                $modulesCachePath = base_path('bootstrap/cache/modules.php');
-                if (file_exists($modulesCachePath)) {
-                    @unlink($modulesCachePath);
-                    Log::info('Modules cache file removed directly');
+                $output = [];
+                $returnCode = 0;
+
+                if (PHP_OS_FAMILY === 'Windows') {
+                    $command = 'composer dump-autoload -o 2>&1';
+                } else {
+                    $command = 'composer dump-autoload -o 2>&1';
                 }
+
+                exec($command, $output, $returnCode);
+
+                if ($returnCode === 0) {
+                    Log::info('✅ Composer dump-autoload completed successfully');
+                } else {
+                    Log::warning('⚠️ Composer dump-autoload completed with errors', [
+                        'return_code' => $returnCode,
+                        'output' => implode("\n", $output)
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('⚠️ Composer dump-autoload failed', ['error' => $e->getMessage()]);
             }
 
-            // ========== اجرای composer dump-autoload برای ماژول ==========
+            // ========== 1. پاک کردن کش‌های لاراول ==========
             try {
-                // این کامند composer dump-autoload را برای ماژول اجرا میکند
-                Artisan::call('module:dump');
+                Artisan::call('config:clear');
+                Log::info('✅ پاک کردن کش کانفیگ executed');
             } catch (\Throwable $e) {
-                Log::debug('module:dump not available');
+                Log::warning('⚠️ config:clear failed', ['error' => $e->getMessage()]);
+            }
 
-                // روش جایگزین: اجرای مستقیم composer
+            try {
+                Artisan::call('cache:clear');
+                Log::info('✅ پاک کردن کش اپلیکیشن executed');
+            } catch (\Throwable $e) {
+                Log::warning('⚠️ cache:clear failed', ['error' => $e->getMessage()]);
+            }
+
+            try {
+                Artisan::call('view:clear');
+                Log::info('✅ پاک کردن کش ویوها executed');
+            } catch (\Throwable $e) {
+                Log::warning('⚠️ view:clear failed', ['error' => $e->getMessage()]);
+            }
+
+            try {
+                Artisan::call('route:clear');
+                Log::info('✅ پاک کردن کش روت‌ها executed');
+            } catch (\Throwable $e) {
+                Log::warning('⚠️ route:clear failed', ['error' => $e->getMessage()]);
+            }
+
+            // ========== 2. حذف مستقیم فایل‌های کش ==========
+            $cacheFiles = [
+                base_path('bootstrap/cache/modules.php'),
+                base_path('bootstrap/cache/services.php'),
+                base_path('bootstrap/cache/packages.php'),
+            ];
+
+            foreach ($cacheFiles as $file) {
                 try {
-                    exec('composer dump-autoload -o 2>&1', $output, $returnCode);
-                    Log::info('Composer dump-autoload executed', ['return_code' => $returnCode]);
-                } catch (\Throwable $e2) {
-                    Log::debug('Composer dump-autoload failed');
+                    if (file_exists($file)) {
+                        @unlink($file);
+                        Log::info("✅ " . basename($file) . " removed");
+                    }
+                } catch (\Throwable $e) {
+                    // نادیده گرفتن خطا
                 }
             }
 
-            // ========== پاک کردن کش روت ==========
-            $routesCachePath = base_path('bootstrap/cache/routes-v7.php');
-            if (file_exists($routesCachePath)) {
-                @unlink($routesCachePath);
-                Log::info('Routes cache v7 removed');
+            // ========== 3. اجرای module:dump با اسم ماژول ==========
+            if ($moduleName) {
+                try {
+                    Log::info('🔄 Running module:dump for module', ['module' => $moduleName]);
+                    Artisan::call('module:dump', ['module' => $moduleName]);
+                    Log::info('✅ module:dump completed', ['module' => $moduleName]);
+                } catch (\Throwable $e) {
+                    Log::warning('⚠️ module:dump failed', [
+                        'module' => $moduleName,
+                        'error' => $e->getMessage()
+                    ]);
+                }
             }
 
-            $routesCachePathOld = base_path('bootstrap/cache/routes.php');
-            if (file_exists($routesCachePathOld)) {
-                @unlink($routesCachePathOld);
-                Log::info('Routes cache old removed');
-            }
-
-            // ========== پاک کردن کش سرویس‌ها ==========
-            $servicesCachePath = base_path('bootstrap/cache/services.php');
-            if (file_exists($servicesCachePath)) {
-                @unlink($servicesCachePath);
-                Log::info('Services cache removed');
+            // ========== 4. به‌روزرسانی کش‌های اپلیکیشن ==========
+            try {
+                Artisan::call('optimize:clear');
+                Log::info('✅ optimize:clear executed');
+            } catch (\Throwable $e) {
+                Log::warning('⚠️ optimize:clear failed', ['error' => $e->getMessage()]);
             }
 
             Log::info('✅ All caches refreshed successfully');

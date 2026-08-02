@@ -59,6 +59,15 @@
                                     <li>
                                         <a href="{{ route('front.wallet.index') }}" class="profile-menu-url @if($active=="wallet")active-profile @endif"><span class="mdi mdi-credit-card-outline"></span>کیف پول</a>
                                     </li>
+                                    @if(module_is_active('InstallmentPayment'))
+                                        <li>
+                                            <a href="{{ route('front.installments.index') }}" class="list-group-item">
+                                                <i class="fas fa-money-check-alt"></i> اقساط من
+                                            </a>
+                                        </li>
+                                    @endif
+
+
                                     <li>
                                         <a href="{{ route('front.favorites.index') }}" class="profile-menu-url @if($active=="favorites")active-profile @endif"><span class="mdi mdi-heart-outline"></span>لیست
                                             علاقه مندی ها</a></li>

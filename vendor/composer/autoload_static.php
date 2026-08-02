@@ -173,6 +173,14 @@ class ComposerStaticInita79a6346a5a295f183402461d60fc86b
             'Modules\\SmartAssembly\\Database\\Seeders\\' => 39,
             'Modules\\SmartAssembly\\Database\\Factories\\' => 41,
             'Modules\\SmartAssembly\\' => 22,
+            'Modules\\SeoAudit\\Tests\\' => 23,
+            'Modules\\SeoAudit\\Database\\Seeders\\' => 34,
+            'Modules\\SeoAudit\\Database\\Factories\\' => 36,
+            'Modules\\SeoAudit\\' => 17,
+            'Modules\\InstallmentPayment\\Tests\\' => 33,
+            'Modules\\InstallmentPayment\\Database\\Seeders\\' => 44,
+            'Modules\\InstallmentPayment\\Database\\Factories\\' => 46,
+            'Modules\\InstallmentPayment\\' => 27,
             'Modules\\AIWriter\\Tests\\' => 23,
             'Modules\\AIWriter\\Database\\Seeders\\' => 34,
             'Modules\\AIWriter\\Database\\Factories\\' => 36,
@@ -632,6 +640,38 @@ class ComposerStaticInita79a6346a5a295f183402461d60fc86b
         'Modules\\SmartAssembly\\' =>
         array (
             0 => __DIR__ . '/../..' . '/Modules/SmartAssembly/app',
+        ),
+        'Modules\\SeoAudit\\Tests\\' =>
+        array (
+            0 => __DIR__ . '/../..' . '/Modules/SeoAudit/tests',
+        ),
+        'Modules\\SeoAudit\\Database\\Seeders\\' =>
+        array (
+            0 => __DIR__ . '/../..' . '/Modules/SeoAudit/database/seeders',
+        ),
+        'Modules\\SeoAudit\\Database\\Factories\\' =>
+        array (
+            0 => __DIR__ . '/../..' . '/Modules/SeoAudit/database/factories',
+        ),
+        'Modules\\SeoAudit\\' =>
+        array (
+            0 => __DIR__ . '/../..' . '/Modules/SeoAudit/app',
+        ),
+        'Modules\\InstallmentPayment\\Tests\\' =>
+        array (
+            0 => __DIR__ . '/../..' . '/Modules/InstallmentPayment/tests',
+        ),
+        'Modules\\InstallmentPayment\\Database\\Seeders\\' =>
+        array (
+            0 => __DIR__ . '/../..' . '/Modules/InstallmentPayment/database/seeders',
+        ),
+        'Modules\\InstallmentPayment\\Database\\Factories\\' =>
+        array (
+            0 => __DIR__ . '/../..' . '/Modules/InstallmentPayment/database/factories',
+        ),
+        'Modules\\InstallmentPayment\\' =>
+        array (
+            0 => __DIR__ . '/../..' . '/Modules/InstallmentPayment/app',
         ),
         'Modules\\AIWriter\\Tests\\' =>
         array (
@@ -6742,11 +6782,59 @@ class ComposerStaticInita79a6346a5a295f183402461d60fc86b
         'Mockery\\Undefined' => __DIR__ . '/..' . '/mockery/mockery/library/Mockery/Undefined.php',
         'Mockery\\VerificationDirector' => __DIR__ . '/..' . '/mockery/mockery/library/Mockery/VerificationDirector.php',
         'Mockery\\VerificationExpectation' => __DIR__ . '/..' . '/mockery/mockery/library/Mockery/VerificationExpectation.php',
+        'Modules\\AIWriter\\Console\\Commands\\InstallPermissionsCommand' => __DIR__ . '/../..' . '/Modules/AIWriter/app/Console/Commands/InstallPermissionsCommand.php',
         'Modules\\AIWriter\\Database\\Seeders\\AIWriterDatabaseSeeder' => __DIR__ . '/../..' . '/Modules/AIWriter/database/seeders/AIWriterDatabaseSeeder.php',
+        'Modules\\AIWriter\\Database\\Seeders\\AIWriterSettingSeeder' => __DIR__ . '/../..' . '/Modules/AIWriter/database/seeders/AIWriterSettingSeeder.php',
         'Modules\\AIWriter\\Http\\Controllers\\AIWriterController' => __DIR__ . '/../..' . '/Modules/AIWriter/app/Http/Controllers/AIWriterController.php',
+        'Modules\\AIWriter\\Http\\Controllers\\Back\\SettingsController' => __DIR__ . '/../..' . '/Modules/AIWriter/app/Http/Controllers/Back/SettingsController.php',
+        'Modules\\AIWriter\\Http\\Middleware\\CheckModuleLicense' => __DIR__ . '/../..' . '/Modules/AIWriter/app/Http/Middleware/CheckModuleLicense.php',
+        'Modules\\AIWriter\\Models\\AIWriterSetting' => __DIR__ . '/../..' . '/Modules/AIWriter/app/Models/AIWriterSetting.php',
+        'Modules\\AIWriter\\Permissions\\ModulesPermissions' => __DIR__ . '/../..' . '/Modules/AIWriter/app/Permissions/ModulesPermissions.php',
         'Modules\\AIWriter\\Providers\\AIWriterServiceProvider' => __DIR__ . '/../..' . '/Modules/AIWriter/app/Providers/AIWriterServiceProvider.php',
         'Modules\\AIWriter\\Providers\\EventServiceProvider' => __DIR__ . '/../..' . '/Modules/AIWriter/app/Providers/EventServiceProvider.php',
         'Modules\\AIWriter\\Providers\\RouteServiceProvider' => __DIR__ . '/../..' . '/Modules/AIWriter/app/Providers/RouteServiceProvider.php',
+        'Modules\\AIWriter\\Services\\AIProviderService' => __DIR__ . '/../..' . '/Modules/AIWriter/app/Services/AIProviderService.php',
+        'Modules\\AIWriter\\Services\\LicenseGuard' => __DIR__ . '/../..' . '/Modules/AIWriter/app/Services/LicenseGuard.php',
+        'Modules\\AIWriter\\Services\\Providers\\AIProviderInterface' => __DIR__ . '/../..' . '/Modules/AIWriter/app/Services/Providers/AIProviderInterface.php',
+        'Modules\\AIWriter\\Services\\Providers\\AnthropicProvider' => __DIR__ . '/../..' . '/Modules/AIWriter/app/Services/Providers/AnthropicProvider.php',
+        'Modules\\AIWriter\\Services\\Providers\\BaseAIProvider' => __DIR__ . '/../..' . '/Modules/AIWriter/app/Services/Providers/BaseAIProvider.php',
+        'Modules\\AIWriter\\Services\\Providers\\CohereProvider' => __DIR__ . '/../..' . '/Modules/AIWriter/app/Services/Providers/CohereProvider.php',
+        'Modules\\AIWriter\\Services\\Providers\\GeminiProvider' => __DIR__ . '/../..' . '/Modules/AIWriter/app/Services/Providers/GeminiProvider.php',
+        'Modules\\AIWriter\\Services\\Providers\\MistralProvider' => __DIR__ . '/../..' . '/Modules/AIWriter/app/Services/Providers/MistralProvider.php',
+        'Modules\\AIWriter\\Services\\Providers\\OpenAIProvider' => __DIR__ . '/../..' . '/Modules/AIWriter/app/Services/Providers/OpenAIProvider.php',
+        'Modules\\InstallmentPayment\\Console\\Commands\\InstallPermissionsCommand' => __DIR__ . '/../..' . '/Modules/InstallmentPayment/app/Console/Commands/InstallPermissionsCommand.php',
+        'Modules\\InstallmentPayment\\Console\\Commands\\ProcessOverdueInstallmentsCommand' => __DIR__ . '/../..' . '/Modules/InstallmentPayment/app/Console/Commands/ProcessOverdueInstallmentsCommand.php',
+        'Modules\\InstallmentPayment\\Console\\Commands\\SendRemindersCommand' => __DIR__ . '/../..' . '/Modules/InstallmentPayment/app/Console/Commands/SendRemindersCommand.php',
+        'Modules\\InstallmentPayment\\Database\\Seeders\\InstallmentPaymentDatabaseSeeder' => __DIR__ . '/../..' . '/Modules/InstallmentPayment/database/seeders/InstallmentPaymentDatabaseSeeder.php',
+        'Modules\\InstallmentPayment\\Database\\Seeders\\InstallmentSettingSeeder' => __DIR__ . '/../..' . '/Modules/InstallmentPayment/database/seeders/InstallmentSettingSeeder.php',
+        'Modules\\InstallmentPayment\\Http\\Controllers\\Back\\PlansController' => __DIR__ . '/../..' . '/Modules/InstallmentPayment/app/Http/Controllers/Back/PlansController.php',
+        'Modules\\InstallmentPayment\\Http\\Controllers\\Back\\ReportsController' => __DIR__ . '/../..' . '/Modules/InstallmentPayment/app/Http/Controllers/Back/ReportsController.php',
+        'Modules\\InstallmentPayment\\Http\\Controllers\\Back\\SettingsController' => __DIR__ . '/../..' . '/Modules/InstallmentPayment/app/Http/Controllers/Back/SettingsController.php',
+        'Modules\\InstallmentPayment\\Http\\Controllers\\InstallmentController' => __DIR__ . '/../..' . '/Modules/InstallmentPayment/app/Http/Controllers/InstallmentController.php',
+        'Modules\\InstallmentPayment\\Http\\Controllers\\InstallmentPaymentController' => __DIR__ . '/../..' . '/Modules/InstallmentPayment/app/Http/Controllers/InstallmentPaymentController.php',
+        'Modules\\InstallmentPayment\\Http\\Middleware\\CheckModuleLicense' => __DIR__ . '/../..' . '/Modules/InstallmentPayment/app/Http/Middleware/CheckModuleLicense.php',
+        'Modules\\InstallmentPayment\\Models\\InstallmentPayment' => __DIR__ . '/../..' . '/Modules/InstallmentPayment/app/Models/InstallmentPayment.php',
+        'Modules\\InstallmentPayment\\Models\\InstallmentPlan' => __DIR__ . '/../..' . '/Modules/InstallmentPayment/app/Models/InstallmentPlan.php',
+        'Modules\\InstallmentPayment\\Models\\InstallmentSetting' => __DIR__ . '/../..' . '/Modules/InstallmentPayment/app/Models/InstallmentSetting.php',
+        'Modules\\InstallmentPayment\\Permissions\\ModulesPermissions' => __DIR__ . '/../..' . '/Modules/InstallmentPayment/app/Permissions/ModulesPermissions.php',
+        'Modules\\InstallmentPayment\\Providers\\EventServiceProvider' => __DIR__ . '/../..' . '/Modules/InstallmentPayment/app/Providers/EventServiceProvider.php',
+        'Modules\\InstallmentPayment\\Providers\\InstallmentPaymentServiceProvider' => __DIR__ . '/../..' . '/Modules/InstallmentPayment/app/Providers/InstallmentPaymentServiceProvider.php',
+        'Modules\\InstallmentPayment\\Providers\\RouteServiceProvider' => __DIR__ . '/../..' . '/Modules/InstallmentPayment/app/Providers/RouteServiceProvider.php',
+        'Modules\\InstallmentPayment\\Services\\InstallmentService' => __DIR__ . '/../..' . '/Modules/InstallmentPayment/app/Services/InstallmentService.php',
+        'Modules\\InstallmentPayment\\Services\\LicenseGuard' => __DIR__ . '/../..' . '/Modules/InstallmentPayment/app/Services/LicenseGuard.php',
+        'Modules\\SeoAudit\\Console\\Commands\\InstallPermissionsCommand' => __DIR__ . '/../..' . '/Modules/SeoAudit/app/Console/Commands/InstallPermissionsCommand.php',
+        'Modules\\SeoAudit\\Database\\Seeders\\SeoAuditDatabaseSeeder' => __DIR__ . '/../..' . '/Modules/SeoAudit/database/seeders/SeoAuditDatabaseSeeder.php',
+        'Modules\\SeoAudit\\Http\\Controllers\\Back\\PageSeoController' => __DIR__ . '/../..' . '/Modules/SeoAudit/app/Http/Controllers/Back/PageSeoController.php',
+        'Modules\\SeoAudit\\Http\\Controllers\\Back\\PostSeoController' => __DIR__ . '/../..' . '/Modules/SeoAudit/app/Http/Controllers/Back/PostSeoController.php',
+        'Modules\\SeoAudit\\Http\\Controllers\\Back\\ProductsSeoController' => __DIR__ . '/../..' . '/Modules/SeoAudit/app/Http/Controllers/Back/ProductsSeoController.php',
+        'Modules\\SeoAudit\\Http\\Controllers\\Back\\SeoAuditController' => __DIR__ . '/../..' . '/Modules/SeoAudit/app/Http/Controllers/Back/SeoAuditController.php',
+        'Modules\\SeoAudit\\Http\\Controllers\\SeoAuditController' => __DIR__ . '/../..' . '/Modules/SeoAudit/app/Http/Controllers/SeoAuditController.php',
+        'Modules\\SeoAudit\\Http\\Middleware\\CheckModuleLicense' => __DIR__ . '/../..' . '/Modules/SeoAudit/app/Http/Middleware/CheckModuleLicense.php',
+        'Modules\\SeoAudit\\Permissions\\ModulePermissions' => __DIR__ . '/../..' . '/Modules/SeoAudit/app/Permissions/ModulePermissions.php',
+        'Modules\\SeoAudit\\Providers\\EventServiceProvider' => __DIR__ . '/../..' . '/Modules/SeoAudit/app/Providers/EventServiceProvider.php',
+        'Modules\\SeoAudit\\Providers\\RouteServiceProvider' => __DIR__ . '/../..' . '/Modules/SeoAudit/app/Providers/RouteServiceProvider.php',
+        'Modules\\SeoAudit\\Providers\\SeoAuditServiceProvider' => __DIR__ . '/../..' . '/Modules/SeoAudit/app/Providers/SeoAuditServiceProvider.php',
+        'Modules\\SeoAudit\\Services\\LicenseGuard' => __DIR__ . '/../..' . '/Modules/SeoAudit/app/Services/LicenseGuard.php',
         'Modules\\SmartAssembly\\Console\\Commands\\InstallPermissionsCommand' => __DIR__ . '/../..' . '/Modules/SmartAssembly/app/Console/Commands/InstallPermissionsCommand.php',
         'Modules\\SmartAssembly\\Database\\Seeders\\SmartAssemblyAiGameSeeder' => __DIR__ . '/../..' . '/Modules/SmartAssembly/database/seeders/SmartAssemblyAiGameSeeder.php',
         'Modules\\SmartAssembly\\Database\\Seeders\\SmartAssemblyDatabaseSeeder' => __DIR__ . '/../..' . '/Modules/SmartAssembly/database/seeders/SmartAssemblyDatabaseSeeder.php',

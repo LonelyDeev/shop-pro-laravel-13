@@ -7,8 +7,10 @@
     <link rel="stylesheet" href="https://cdn.map.ir/web-sdk/1.4.2/css/fa/style.css">
     <link rel="stylesheet" href="{{theme_asset('css/map-selected-styles.css')}}" />
     <link rel="stylesheet" href="{{theme_asset('css/checkout.css')}}" />
+    <link rel="stylesheet" href="{{ module_asset('InstallmentPayment', 'css/installment.css') }}">
 
 @endpush
+
 @section('cart-header')
     <li class="is-completed">
         <a href="{{route('front.checkout')}}" class="checkout-steps-item-link active-link-shopping">
@@ -363,6 +365,7 @@
     <script src="{{ theme_asset('js/pages/checkout.js') }}?v=11"></script>
     <script src="{{ theme_asset('js/pages/addresses/index.js') }}"></script>
     <script src="{{ theme_asset('js/pages/addresses/add-edit-address.js?v=2') }}"></script>
+    <script src="{{ module_asset('InstallmentPayment', 'js/checkout.js') }}"></script>
     <script>
         /*$(document).ready(function() {
             let selectedCarriers = {};

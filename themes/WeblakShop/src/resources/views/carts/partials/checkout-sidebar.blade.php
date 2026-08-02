@@ -55,6 +55,12 @@
                 </div>
             </li>
         </ul>
+
+        {{-- Hook برای نمایش اطلاعات اقساط در sidebar --}}
+        @if(function_exists('module_is_active') && module_is_active('InstallmentPayment'))
+            @include('installment-payment::front.sidebar_hook')
+        @endif
+        
     </div>
     <div class="checkout-summary-content">
         <p>کالاهای موجود در سبد شما ثبت و رزرو نشده‌اند، برای ثبت سفارش مراحل بعدی را تکمیل کنید.</p>

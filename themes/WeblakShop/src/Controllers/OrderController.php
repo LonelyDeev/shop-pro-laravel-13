@@ -384,6 +384,33 @@ class OrderController extends Controller
 
         event(new OrderCreated($order));
 
+        // اگه پرداخت اقساطی انتخاب شده
+        if ($request->input('installment_enabled') === '1' && $request->gateway === 'installment') {
+            $installmentService = app(\Modules\InstallmentPayment\Services\InstallmentService::class);
+
+            // بررسی اعتبار کاربر
+            $canApply = $installmentService->canUserApplyForInstallment($user->id);
+            if (!$canApply['can']) {
+                return redirect()->back()->with('error', $canApply['reason']);
+            }
+
+            // ساخت طرح اقساطی
+            $plan = $installmentService->createPlan(
+                $user->id,
+                $order->id,
+                $finalPrice,
+                (int) $request->input('installment_count', 6),
+                (float) $request->input('installment_down_payment_percent', 20)
+            );
+
+            // تغییر مبلغ سفارش به مبلغ پیش‌پرداخت
+            $order->update([
+                'price' => $plan->down_payment,
+            ]);
+
+            // ادامه با پرداخت پیش‌پرداخت (با gateway انتخابی از طرف کاربر)
+        }
+
         return $this->pay($order, $request);
     }
 
