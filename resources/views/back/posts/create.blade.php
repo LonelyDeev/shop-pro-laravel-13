@@ -1,5 +1,4 @@
 @extends('back.layouts.master')
-
 @section('content')
     <div class="app-content content">
         <div class="content-overlay"></div>

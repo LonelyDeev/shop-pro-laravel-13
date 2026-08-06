@@ -36,7 +36,7 @@
 
                         <div class="card-content" id="main-card">
                             <div class="card-body">
-                                <div class="table-responsive overflow-unset">
+                                <div class="table-responsive">
                                     <table class="table table-striped mb-0 ">
                                         <thead>
                                             <tr>

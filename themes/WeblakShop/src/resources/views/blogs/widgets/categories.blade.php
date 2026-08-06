@@ -12,7 +12,7 @@
                     @foreach ($categories as $category)
                         <a href="{{ $category->link }}" class="image-data-src promotion-category">
                             <img data-src="{{ $category->image ? asset($category->image) : asset('/no-image-product.svg') }}" src="{{ theme_asset('images/600-600.png') }}" alt="{{ $category->title }}">
-                            <div class="promotion-category-name">{{ $category->title }}</div>
+                            <div class="promotion-category-name" style="{{!$category->image ? 'color: black !important' : ''}}" >{{ $category->title }}</div>
                             <div class="promotion-category-quantity">{{ $category->allPublishedProducts()->count() }} کالا</div>
                         </a>
                     @endforeach

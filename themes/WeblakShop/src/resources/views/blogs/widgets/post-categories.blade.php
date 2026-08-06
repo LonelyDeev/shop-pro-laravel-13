@@ -31,10 +31,9 @@
                         <div class="owl-stage-outer">
                             <div class="owl-stage d-flex">
                                 @foreach ($categories as $category)
-
                                     <div class="owl-item {{$loop->index<=10 ? 'active' : ''}} ">
                                         <a href="{{route('front.articles.index').'?cat='.$category->slug}}" class="image-data-src promotion-category" style="background-image: url('{{ $category->image ? asset($category->image) : asset('/no-image-product.svg') }}')">
-                                            <div class="promotion-category-name">{{ $category->title }}</div>
+                                            <div class="promotion-category-name" style="{{!$category->image ? 'color: black !important' : ''}}">{{ $category->title }}</div>
                                         </a>
                                     </div>
                                 @endforeach

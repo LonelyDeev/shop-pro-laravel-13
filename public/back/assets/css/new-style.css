@@ -743,3 +743,62 @@ body.semi-dark-layout .main-menu .shadow-bottom{
         min-width: 550px;
     }
 }
+@media (max-width: 768px) {
+    /* والد اصلی را flex column کن تا ترتیب عناصر قابل کنترل باشد */
+    .nav-vertical {
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* div اطراف ul و دکمه‌ها را شفاف کن تا فرزندانش مستقیماً flex item شوند */
+    .nav-vertical > .nav.nav-tabs.flex-column.nav-left {
+        display: contents;
+    }
+
+    /* ─── ul تب‌ها در بالا ─── */
+    .nav-vertical ul.nav.nav-tabs.flex-column.nav-vertical-right {
+        order: 1;
+        flex-direction: row !important;       /* افقی شود */
+        flex-wrap: nowrap;                    /* در یک ردیف */
+        overflow-x: auto;                     /* اسکرول افقی اگر جا نشد */
+        border-bottom: 1px solid #dee2e6;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+        width: 100%;
+    }
+
+    .nav-vertical ul.nav.nav-tabs.flex-column.nav-vertical-right .nav-item {
+        white-space: nowrap;                  /* متن تب‌ها بشکند */
+    }
+
+    .nav-vertical ul.nav.nav-tabs.flex-column.nav-vertical-right .nav-link {
+        padding: 0.5rem 1rem;
+        border: 1px solid transparent;
+        border-radius: 0.25rem;
+    }
+
+    .nav-vertical ul.nav.nav-tabs.flex-column.nav-vertical-right .nav-link.active {
+        border-color: #7367f0;
+        background-color: rgba(115, 103, 240, 0.12);
+    }
+
+    /* ─── محتوای تب‌ها در وسط ─── */
+    .nav-vertical .tab-content {
+        order: 2;
+        width: 100%;
+    }
+
+    /* ─── div دکمه‌ها و چک‌باکس‌ها در پایین ─── */
+    .nav-vertical .nav-vertical-right.mt-2 {
+        order: 3;
+        width: 100%;
+        margin-top: 1.5rem !important;
+        padding-top: 1rem;
+        border-top: 1px solid #dee2e6;
+    }
+
+    /* دکمه ارسال تمام‌عرض شود */
+    .nav-vertical .nav-vertical-right.mt-2 button[type="submit"] {
+        width: 100%;
+    }
+}

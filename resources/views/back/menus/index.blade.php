@@ -3,7 +3,30 @@
 @push('styles')
     <!-- Page JS Plugins CSS -->
     <link rel="stylesheet" href="{{ asset('back/app-assets/plugins/nestable2/jquery.nestable.min.css') }}">
-    <link rel="stylesheet" type="text/css" href="{{ asset('back/app-assets/plugins/jquery-ui/jquery-ui.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ asset('back/app-assets/plugins/jquery-ui/jquery-ui.css') }}">پ
+
+    <style>
+        @media (max-width: 576px) {
+            /* متن داخل لینک حذف/ویرایش مخفی شود */
+            .dd-handle a.delete-menu,
+            .dd-handle a.edit-menu {
+                font-size: 0;
+                padding: 0.25rem;
+            }
+
+            /* فقط آیکون نمایش داده شود */
+            .dd-handle a.delete-menu i,
+            .dd-handle a.edit-menu i {
+                font-size: 1rem;
+                padding: 0 !important;
+            }
+
+            /* کمی فاصله بین آیکون‌ها */
+            .dd-handle a.edit-menu {
+                margin-right: 0.25rem;
+            }
+        }
+    </style>
 @endpush
 
 @section('content')

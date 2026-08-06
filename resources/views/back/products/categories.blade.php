@@ -5,6 +5,28 @@
     <link rel="stylesheet" href="{{ asset('back/app-assets/plugins/nestable2/jquery.nestable.min.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ asset('back/app-assets/plugins/jquery-tagsinput/jquery.tagsinput.min.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ asset('back/app-assets/plugins/jquery-ui/jquery-ui.css') }}">
+    <style>
+        @media (max-width: 576px) {
+            /* متن داخل لینک حذف/ویرایش مخفی شود */
+            .dd-handle a.delete-category,
+            .dd-handle a.edit-category {
+                font-size: 0;
+                padding: 0.25rem;
+            }
+
+            /* فقط آیکون نمایش داده شود */
+            .dd-handle a.delete-category i,
+            .dd-handle a.edit-category i {
+                font-size: 1rem;
+                padding: 0 !important;
+            }
+
+            /* کمی فاصله بین آیکون‌ها */
+            .dd-handle a.edit-category {
+                margin-right: 0.25rem;
+            }
+        }
+    </style>
 @endpush
 
 @section('content')

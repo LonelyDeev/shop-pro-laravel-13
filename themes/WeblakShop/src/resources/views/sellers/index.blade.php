@@ -145,7 +145,7 @@
                         <span
                             class="radius-circle text-body2-strong d-flex ai-center jc-center color-white z-2 p-1 styles_LandingSellerIntroductionSellerRoadmap__IconIndex__51XU_">۴</span>
                     </div>
-                    <p class="text-body1-strong color-700 mt-4 align-center-lg">آغاز فروش در دیجی‌کالا</p></div>
+                    <p class="text-body1-strong color-700 mt-4 align-center-lg">آغاز فروش در {{option('info_site_title', 'او پی شاپ') }}</p></div>
             </div>
         </div>
 

@@ -26,7 +26,7 @@
                     <div class="card-content" id="main-card">
                         <div class="card-body">
                             @if ($carriers->count())
-                                <div class="table-responsive overflow-unset">
+                                <div class="table-responsive">
                                     <table class="table table-striped mb-0">
                                         <thead>
                                             <tr>
