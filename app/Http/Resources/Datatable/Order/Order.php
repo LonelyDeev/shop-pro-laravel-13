@@ -35,6 +35,10 @@ class Order extends JsonResource
             if (in_array($sellerId, $sellersProcessed)) {
                 continue;
             }
+            $installmentPlan = null;
+            if (class_exists(\Modules\InstallmentPayment\Models\InstallmentPlan::class)) {
+                $installmentPlan = \Modules\InstallmentPayment\Models\InstallmentPlan::where('order_id', $this->id)->first();
+            }
             if ($order_item->seller_id && $order_item->seller) {
                 // با فروشنده
                 $seller = $order_item->seller->seller_info;
@@ -68,6 +72,8 @@ class Order extends JsonResource
         }
 
 
+
+
         return [
             'id' => $this->id,
             'order_id' => $this->id,
@@ -78,7 +84,12 @@ class Order extends JsonResource
             'status' => $this->status,
             'shipping_status' => $this->shipping_status,
             'items' => $itemsArray,
-
+// ======== اطلاعات اقساطی ========
+            'is_installment'      => (bool) $installmentPlan,
+            'installment_status'  => $installmentPlan?->status,
+            'installment_down_payment' => $installmentPlan?->down_payment,
+            'installment_total_payable' => $installmentPlan?->total_payable,
+            'installment_progress' => $installmentPlan?->progressPercent(),
             'links' => [
                 'view' => route('admin.orders.show', ['order' => $this]),
                 'admin_seller_view' => $admin_seller_view,

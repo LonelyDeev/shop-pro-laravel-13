@@ -27,6 +27,7 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 use Shetabit\Payment\Facade\Payment;
@@ -385,33 +386,67 @@ class OrderController extends Controller
         event(new OrderCreated($order));
 
         // اگه پرداخت اقساطی انتخاب شده
-        if ($request->input('installment_enabled') === '1' && $request->gateway === 'installment') {
-            $installmentService = app(\Modules\InstallmentPayment\Services\InstallmentService::class);
+        // ========== مدیریت پرداخت اقساطی ==========
+        // اگه کاربر چک‌باکس اقساطی رو فعال کرده باشه، طرح اقساطی می‌سازیم
+        // و مبلغ سفارش رو به مبلغ پیش‌پرداخت تغییر می‌دیم
+        // روش پرداخت (کیف پول/درگاه) همچنان از طریق gateway$ انتخاب می‌شه
+        if ($request->filled('installment_enabled') && $request->input('installment_enabled') == '1') {
 
-            // بررسی اعتبار کاربر
-            $canApply = $installmentService->canUserApplyForInstallment($user->id);
-            if (!$canApply['can']) {
-                return redirect()->back()->with('error', $canApply['reason']);
+            // بررسی فعال بودن ماژول
+            if (!function_exists('module_is_active') || !module_is_active('InstallmentPayment')) {
+                return redirect()->back()->with('error', 'ماژول پرداخت اقساطی فعال نیست.');
             }
 
-            // ساخت طرح اقساطی
-            $plan = $installmentService->createPlan(
-                $user->id,
-                $order->id,
-                $finalPrice,
-                (int) $request->input('installment_count', 6),
-                (float) $request->input('installment_down_payment_percent', 20)
-            );
+            $installmentService = app(\Modules\InstallmentPayment\Services\InstallmentService::class);
 
-            // تغییر مبلغ سفارش به مبلغ پیش‌پرداخت
+            // ۱. بررسی اعتبار کاربر برای گرفتن اقساط
+            $canApply = $installmentService->canUserApplyForInstallment($user->id);
+            if (!$canApply['can']) {
+                return redirect()->back()->with('error', $canApply['reason'])->withInput();
+            }
+
+            // ۲. اعتبارسنجی مقادیر ورودی
+            $installmentCount = (int) $request->input('installment_count', 0);
+            $downPaymentPercent = (float) $request->input('installment_down_payment_percent', 0);
+
+            if ($installmentCount <= 0 || $downPaymentPercent <= 0) {
+                return redirect()->back()->with('error', 'تنظیمات اقساط نامعتبر است. لطفاً طرح اقساطی را مجدداً انتخاب کنید.')->withInput();
+            }
+
+            // ۳. ساخت طرح اقساطی (با مبلغ کل سفارش قبل از پیش‌پرداخت)
+            try {
+                $plan = $installmentService->createPlan(
+                    $user->id,
+                    $order->id,
+                    $finalPrice, // مبلغ کل سفارش (شامل محصولات + ارسال - تخفیف)
+                    $installmentCount,
+                    $downPaymentPercent
+                );
+            } catch (\Exception $e) {
+                return redirect()->back()->with('error', 'خطا در ایجاد طرح اقساطی: ' . $e->getMessage())->withInput();
+            }
+
+            // ۴. تغییر مبلغ سفارش به مبلغ پیش‌پرداخت
+            // (پرداخت پیش‌پرداخت با gateway انتخابی کاربر انجام می‌شه)
             $order->update([
                 'price' => $plan->down_payment,
             ]);
 
-            // ادامه با پرداخت پیش‌پرداخت (با gateway انتخابی از طرف کاربر)
+            // ۵. ثبت در session برای استفاده در متد pay و orderPaid
+            session()->flash('installment_plan_id', $plan->id);
+
+            /*Log::info('Installment plan created', [
+                'plan_id'        => $plan->id,
+                'order_id'       => $order->id,
+                'user_id'        => $user->id,
+                'total_amount'   => $plan->total_amount,
+                'down_payment'   => $plan->down_payment,
+                'installments'   => $plan->total_installments,
+            ]);*/
         }
 
         return $this->pay($order, $request);
+
     }
 
     /**

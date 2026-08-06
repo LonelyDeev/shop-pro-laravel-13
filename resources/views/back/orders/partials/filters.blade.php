@@ -33,6 +33,7 @@
                                 <input type="text" class="form-control datatable-filter" name="id" value="{{ request('id') }}">
                             </fieldset>
                         </div>
+
                         <div class="col-md-2">
                             <label>وضعیت</label>
                             <fieldset class="form-group">
@@ -56,7 +57,16 @@
                                 </select>
                             </fieldset>
                         </div>
-
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label>نوع پرداخت</label>
+                                <select name="payment_type" class="form-control datatable-filter">
+                                    <option value=""  {{ request('payment_type') == '' ? 'selected' : '' }}>همه</option>
+                                    <option value="normal"  {{ request('payment_type') == 'normal' ? 'selected' : '' }}>عادی</option>
+                                    <option value="installment"  {{ request('payment_type') == 'installment' ? 'selected' : '' }}>اقساطی</option>
+                                </select>
+                            </div>
+                        </div>
                         <div class="col-md-3">
                             <label>نام محصول</label>
                             <fieldset class="form-group">

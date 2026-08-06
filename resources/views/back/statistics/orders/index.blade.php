@@ -1,5 +1,11 @@
 @extends('back.layouts.master')
 
+@push('styles')
+    @if(function_exists('module_is_active') && module_is_active('InstallmentPayment'))
+        <link rel="stylesheet" href="{{ module_asset('InstallmentPayment', 'css/installment.css') }}">
+    @endif
+@endpush
+
 @section('content')
 
     <div class="app-content content">
@@ -32,24 +38,31 @@
                             <ul class="nav nav-tabs mb-2" id="orderstab" role="tablist">
                                 <li class="nav-item" role="presentation">
                                     <a class="nav-link" data-toggle="tab" href="#order-values" role="tab" aria-controls="order-values" aria-selected="true">
-                                      ارزش سفارشات
+                                        ارزش سفارشات
                                     </a>
                                 </li>
                                 <li class="nav-item" role="presentation">
                                     <a class="nav-link" data-toggle="tab" href="#order-counts" role="tab" aria-controls="order-counts" aria-selected="false">
-                                      تعداد سفارشات
+                                        تعداد سفارشات
                                     </a>
                                 </li>
                                 <li class="nav-item" role="presentation">
                                     <a class="nav-link" data-toggle="tab" href="#order-users" role="tab" aria-controls="order-users" aria-selected="false">
-                                      تعداد کاربران سفارش دهنده
+                                        تعداد کاربران سفارش دهنده
                                     </a>
                                 </li>
                                 <li class="nav-item" role="presentation">
                                     <a class="nav-link" data-toggle="tab" href="#order-products" role="tab" aria-controls="order-products" aria-selected="false">
-                                      تعداد محصولات سفارشات
+                                        تعداد محصولات سفارشات
                                     </a>
                                 </li>
+                                @if(function_exists('module_is_active') && module_is_active('InstallmentPayment'))
+                                    <li class="nav-item" role="presentation">
+                                        <a class="nav-link" data-toggle="tab" href="#order-installments" role="tab" aria-controls="order-installments" aria-selected="false">
+                                            <i class="fas fa-money-check-alt"></i> خریدهای قسطی
+                                        </a>
+                                    </li>
+                                @endif
                             </ul>
 
                             <div class="tab-content" id="myTabContent">
@@ -141,6 +154,71 @@
                                         </div>
                                     </div>
                                 </div>
+
+                                {{-- ======== تب خریدهای قسطی ======== --}}
+                                @if(function_exists('module_is_active') && module_is_active('InstallmentPayment'))
+                                    <div class="tab-pane fade" id="order-installments" role="tabpanel" aria-labelledby="installment">
+                                        @include('installment-payment::back.statistics.filter-tabs')
+
+                                        {{-- نمودار ارزش طرح‌های اقساطی --}}
+                                        <h6 class="mt-3 mb-2"><i class="fas fa-chart-line text-primary"></i> ارزش طرح‌های اقساطی</h6>
+                                        <div id="installment-plan-values-chart" class="chart-area" style="min-height: 350px;" data-action="{{ route('admin.installment.statistics.planValues') }}"></div>
+                                        <div class="col-12 mt-2 mb-3">
+                                            <div class="row">
+                                                <div class="col-md-4 mb-2">
+                                                    <span class="border-bottom">کل: <span class="installments-total"></span></span>
+                                                </div>
+                                                <div class="col-md-4 mb-2">
+                                                    <span class="border-bottom">موفق: <span class="installments-success"></span></span>
+                                                </div>
+                                                <div class="col-md-4 mb-2">
+                                                    <span class="border-bottom">معوق: <span class="installments-fail"></span></span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {{-- نمودار تعداد طرح‌های اقساطی --}}
+                                        <h6 class="mt-4 mb-2"><i class="fas fa-chart-bar text-info"></i> تعداد طرح‌های اقساطی</h6>
+                                        <div id="installment-plan-counts-chart" class="chart-area" style="min-height: 350px;" data-action="{{ route('admin.installment.statistics.planCounts') }}"></div>
+                                        <div class="col-12 mt-2 mb-3">
+                                            <div class="row">
+                                                <div class="col-md-4 mb-2">
+                                                    <span class="border-bottom">کل: <span class="installments-total"></span></span>
+                                                </div>
+                                                <div class="col-md-4 mb-2">
+                                                    <span class="border-bottom">موفق: <span class="installments-success"></span></span>
+                                                </div>
+                                                <div class="col-md-4 mb-2">
+                                                    <span class="border-bottom">معوق: <span class="installments-fail"></span></span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {{-- نمودار مبلغ اقساط دریافتی --}}
+                                        <h6 class="mt-4 mb-2"><i class="fas fa-money-bill-wave text-success"></i> مبلغ اقساط دریافتی</h6>
+                                        <div id="installment-payment-values-chart" class="chart-area" style="min-height: 350px;" data-action="{{ route('admin.installment.statistics.paymentValues') }}"></div>
+                                        <div class="col-12 mt-2 mb-3">
+                                            <div class="row">
+                                                <div class="col-md-4 mb-2">
+                                                    <span class="border-bottom">کل: <span class="installments-total"></span></span>
+                                                </div>
+                                                <div class="col-md-4 mb-2">
+                                                    <span class="border-bottom">دریافتی: <span class="installments-success"></span></span>
+                                                </div>
+                                                <div class="col-md-4 mb-2">
+                                                    <span class="border-bottom">معوق: <span class="installments-fail"></span></span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {{-- دکمه مشاهده آمار کامل --}}
+                                        <div class="text-center mt-4">
+                                            <a href="{{ route('admin.installment.statistics.index') }}" class="btn btn-primary">
+                                                <i class="fas fa-chart-pie"></i> مشاهده آمار کامل اقساطی
+                                            </a>
+                                        </div>
+                                    </div>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -154,6 +232,12 @@
 
 @include('back.partials.plugins', ['plugins' => ['apexcharts', 'persian-datepicker']])
 
+@if(function_exists('module_is_active') && module_is_active('InstallmentPayment'))
+    @push('scripts')
+        <script src="{{ module_asset('InstallmentPayment', 'js/statistics.js') }}?v=1"></script>
+    @endpush
+@endif
+
 @push('scripts')
-    <script src="{{ asset('back/assets/js/pages/statistics/orders.js') }}?v=2"></script>
+    <script src="{{ asset('back/assets/js/pages/statistics/orders.js') }}?v=3"></script>
 @endpush

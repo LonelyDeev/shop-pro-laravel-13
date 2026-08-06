@@ -4,6 +4,12 @@
 
 <div  class=" shopping-page">
 
+    {{-- Hook برای پرداخت اقساطی --}}
+    @if(function_exists('module_is_active') && module_is_active('InstallmentPayment'))
+        @include('installment-payment::front.checkout_hook', ['cart' => $cart])
+    @endif
+
+
     <div class="w-100 display-inline-block pt-3 pb-3">
         <div class="checkout-pack-row checkout-pack mb-0">
             <div class="checkout-pack-header">
@@ -13,7 +19,10 @@
             <div class="row">
                         <div class="checkout-time-table checkout-time-table-time">
 
-                            @if ($wallet->balance)
+
+
+
+                        @if ($wallet->balance)
                                 <div class="col-12 wallet-select">
                                     <div class="radio-box custom-control custom-radio pl-0 pr-3">
                                         <input type="radio" class="custom-control-input" name="gateway" id="wallet" value="wallet">
@@ -57,17 +66,16 @@
 
                             @endforeach
 
+
                         </div>
                     </div>
+
+
 
         </div>
     </div>
 
 
-    {{-- Hook برای پرداخت اقساطی --}}
-    @if(function_exists('module_is_active') && module_is_active('InstallmentPayment'))
-        @include('installment-payment::front.checkout_hook', ['cart' => $cart])
-    @endif
 
 
 </div>

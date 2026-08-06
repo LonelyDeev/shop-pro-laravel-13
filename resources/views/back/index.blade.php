@@ -110,6 +110,11 @@
                                         <button class="d-tab" data-toggle="tab" data-target="#order-products" role="tab" type="button">
                                             <i class="feather icon-package"></i> محصولات
                                         </button>
+                                        @if(function_exists('module_is_active') && module_is_active('InstallmentPayment'))
+                                            <button class="d-tab" data-toggle="tab" data-target="#order-installments" role="tab" type="button">
+                                                <i class="fas fa-money-check-alt"></i> اقساطی
+                                            </button>
+                                        @endif
                                     </div>
 
                                     <div class="tab-content">
@@ -204,6 +209,33 @@
                                                 </div>
                                             </div>
                                         </div>
+
+                                        {{-- Installments Tab --}}
+                                        @if(function_exists('module_is_active') && module_is_active('InstallmentPayment'))
+                                            <div class="tab-pane fade" id="order-installments" role="tabpanel">
+                                                @include('installment-payment::back.statistics.filter-tabs')
+                                                <div id="installment-plan-values-chart" class="chart-area" style="min-height:445px;" data-min-height="445px" data-action="{{ route('admin.installment.statistics.planValues') }}"></div>
+                                                <div class="d-chart-stats d-chart-stats--4">
+                                                    <div class="d-chart-stat">
+                                                        <div class="d-chart-stat-val d-chart-stat-val--blue"><span class="installments-total"></span></div>
+                                                        <div class="d-chart-stat-lbl">کل</div>
+                                                    </div>
+                                                    <div class="d-chart-stat">
+                                                        <div class="d-chart-stat-val d-chart-stat-val--green"><span class="installments-success"></span></div>
+                                                        <div class="d-chart-stat-lbl">موفق</div>
+                                                    </div>
+                                                    <div class="d-chart-stat">
+                                                        <div class="d-chart-stat-val d-chart-stat-val--red"><span class="installments-fail"></span></div>
+                                                        <div class="d-chart-stat-lbl">معوق</div>
+                                                    </div>
+                                                    <div class="d-chart-stat">
+                                                        <a href="{{ route('admin.installment.statistics.index') }}" class="btn btn-outline-primary btn-sm">
+                                                            <i class="fas fa-chart-bar"></i> آمار کامل
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
 
@@ -689,6 +721,16 @@
 
                     </div>{{-- /d-grid --}}
                 </div>{{-- /d-body --}}
+
+                {{-- ═══ Installment Dashboard Widget ═══ --}}
+                @if(function_exists('module_is_active') && module_is_active('InstallmentPayment'))
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            @include('installment-payment::back.partials.dashboard_widget')
+                        </div>
+                    </div>
+                @endif
+
             </div>{{-- /content-body --}}
         </div>{{-- /content-wrapper --}}
     </div>{{-- /d-wrap --}}
@@ -696,6 +738,12 @@
 @endsection
 
 @include('back.partials.plugins', ['plugins' => ['apexcharts', 'persian-datepicker']])
+
+@if(function_exists('module_is_active') && module_is_active('InstallmentPayment'))
+    @push('scripts')
+        <script src="{{ module_asset('InstallmentPayment', 'js/statistics.js') }}?v=1"></script>
+    @endpush
+@endif
 
 @push('scripts')
 

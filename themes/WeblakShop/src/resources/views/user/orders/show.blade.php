@@ -98,6 +98,16 @@
                 $NoDownload[] = $item->id;
             }
         }
+
+        // ========== بررسی اقساطی ==========
+        $installmentPlan = null;
+        if (function_exists('module_is_active') && module_is_active('InstallmentPayment')) {
+            $installmentPlan = \Modules\InstallmentPayment\Models\InstallmentPlan::where('order_id', $order->id)->first();
+        }
+        $isInstallment = (bool) $installmentPlan;
+        // اگه سفارش اقساطی باشه و پیش‌پرداخت هنوز پرداخت نشده، مبلغ قابل پرداخت = پیش‌پرداخت
+        // در غیر این صورت مبلغ قابل پرداخت = finalPayable
+        $displayPayable = $isInstallment ? $installmentPlan->down_payment : $finalPayable;
     @endphp
 
     <section class="page-contents page-contents-order">
@@ -212,7 +222,9 @@
                             <div class="col-md-3 col-6">
                                 <div class="text-muted small">نوع پرداخت</div>
                                 <div class="fw-bold">
-                                    @if ($order->walletHistory)
+                                    @if($isInstallment)
+                                        <span class="badge bg-info"><i class="fas fa-money-check-alt"></i> اقساطی</span>
+                                    @elseif ($order->walletHistory)
                                         کیف پول
                                     @else
                                         پرداخت اینترنتی
@@ -226,20 +238,69 @@
                                 <div>
                                     @if($order->status == 'paid')
                                         <span class="badge bg-success">پرداخت شده</span>
+
+                                        @if($isInstallment && $installmentPlan->isActive())
+                                            <small class="text-muted d-block mt-1">پیش‌پرداخت انجام شد - طرح اقساطی فعال</small>
+                                        @endif
                                     @elseif($order->status == 'unpaid')
-                                        <span class="badge bg-danger">پرداخت نشده</span>
+                                        @if($isInstallment)
+                                            <span class="badge bg-warning">در انتظار پیش‌پرداخت</span>
+                                            <small class="text-muted d-block mt-1">مهلت پرداخت: تا ۱ ساعت (در غیر این صورت سفارش لغو می‌شود)</small>
+                                        @else
+                                            <span class="badge bg-danger">پرداخت نشده</span>
+                                        @endif
                                     @else
                                         <span class="badge bg-secondary">لغو شده</span>
                                     @endif
                                 </div>
                             </div>
                             <div class="col-md-6 col-6">
-                                <div class="text-muted small">مبلغ قابل پرداخت</div>
-                                <div class="fw-bold fs-5 text-primary">{{ number_format($finalPayable) }} تومان</div>
+                                <div class="text-muted small">
+                                    @if($isInstallment)
+                                        مبلغ پیش‌پرداخت (الان پرداخت می‌شود)
+                                    @else
+                                        مبلغ قابل پرداخت
+                                    @endif
+                                </div>
+                                <div class="fw-bold fs-5 text-primary">{{ number_format($displayPayable) }} تومان</div>
+                                @if($isInstallment)
+                                    <small class="text-muted d-block">از مجموع {{ number_format($installmentPlan->total_payable) }} تومان</small>
+                                @endif
                             </div>
                         </div>
 
-                        @if($order->status == 'unpaid')
+                        {{-- ======== نمایش اطلاعات طرح اقساطی ======== --}}
+                        @if($isInstallment)
+                            @include('installment-payment::front.order_installment_info', ['order' => $order])
+                        @endif
+
+                        {{-- دکمه پرداخت سفارش --}}
+                        @if($order->status == 'unpaid' && $isInstallment)
+                            {{-- دکمه پرداخت پیش‌پرداخت برای سفارش اقساطی --}}
+                            <div class="mt-3">
+                                <form action="{{ route('front.orders.pay', ['order' => $order]) }}" method="GET" class="row g-2 align-items-end">
+                                    <div class="col-md-4 col-7">
+                                        <select class="form-select form-select-sm" name="gateway" required>
+                                            <option value="">انتخاب روش پرداخت پیش‌پرداخت</option>
+                                            @if ($wallet->balance >= $order->price)
+                                                <option value="wallet">پرداخت با کیف پول (موجودی: {{ number_format($wallet->balance) }} ت)</option>
+                                            @elseif ($wallet->balance)
+                                                <option value="wallet">شارژ و پرداخت با کیف پول</option>
+                                            @endif
+                                            @foreach ($gateways as $gateway)
+                                                <option value="{{ $gateway->key }}">پرداخت با {{ $gateway->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3 col-5">
+                                        <button type="submit" class="btn btn-warning btn-sm w-100">
+                                            <i class="fas fa-credit-card"></i> پرداخت پیش‌پرداخت
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        @elseif($order->status == 'unpaid')
+                            {{-- دکمه پرداخت عادی برای سفارش غیراقساطی --}}
                             <div class="mt-3">
                                 <form action="{{ route('front.orders.pay', ['order' => $order]) }}" method="GET" class="row g-2 align-items-end">
                                     <div class="col-md-4 col-7">
@@ -407,75 +468,75 @@
                                         <div class="flex-grow-1">
                                             <h6 class="fw-bold mb-1 text-md-right"><a class=" text-black" href="{{route('front.products.show',$item->product)}}">{{ $item->title }}</a></h6>
                                             <div class="d-flex flex-column mt-3">
-                                            @if($item->attributes)
-                                                @php
-                                                    $attributes = json_decode($item->attributes, true);
+                                                @if($item->attributes)
+                                                    @php
+                                                        $attributes = json_decode($item->attributes, true);
 
-                                                    // استخراج رنگ از آرایه
-                                                    $colorAttributes = [];
-                                                    $otherAttributes = [];
+                                                        // استخراج رنگ از آرایه
+                                                        $colorAttributes = [];
+                                                        $otherAttributes = [];
 
-                                                    foreach ($attributes as $groupName => $groupAttributes) {
-                                                        if ($groupName == 'رنگ') {
-                                                            $colorAttributes = [$groupName => $groupAttributes];
-                                                        } else {
-                                                            $otherAttributes[$groupName] = $groupAttributes;
+                                                        foreach ($attributes as $groupName => $groupAttributes) {
+                                                            if ($groupName == 'رنگ') {
+                                                                $colorAttributes = [$groupName => $groupAttributes];
+                                                            } else {
+                                                                $otherAttributes[$groupName] = $groupAttributes;
+                                                            }
                                                         }
-                                                    }
 
-                                                    // ترکیب نهایی: رنگ اول، سپس بقیه
-                                                    $sortedAttributes = array_merge($colorAttributes, $otherAttributes);
-                                                @endphp
+                                                        // ترکیب نهایی: رنگ اول، سپس بقیه
+                                                        $sortedAttributes = array_merge($colorAttributes, $otherAttributes);
+                                                    @endphp
 
-                                            <div>
-                                                @foreach($sortedAttributes as $groupName => $groupAttributes)
-                                                    @foreach($groupAttributes as $attribute)
-                                                        @if($groupName == 'رنگ')
-                                                            <span class="order-product-attribute d-flex align-items-center gap-1">
+                                                    <div>
+                                                        @foreach($sortedAttributes as $groupName => $groupAttributes)
+                                                            @foreach($groupAttributes as $attribute)
+                                                                @if($groupName == 'رنگ')
+                                                                    <span class="order-product-attribute d-flex align-items-center gap-1">
                     <span class="order-product-color d-print-none"
                           style="display: inline-block; width: 16px; height: 16px; border-radius: 25%; background-color: {{ $attribute['value'] }};"></span>
                     <span>{{ $groupName }}: {{ $attribute['name'] }}</span>
                 </span>
-                                                        @elseif($groupName == 'گارانتی')
-                                                            <span class="order-product-attribute">
+                                                                @elseif($groupName == 'گارانتی')
+                                                                    <span class="order-product-attribute">
                     <i class="fas fa-shield-alt me-1"></i>
                     {{ $groupName }}: {{ $attribute['name'] }}
                 </span>
-                                                        @elseif($groupName == 'سایز')
-                                                            <span class="order-product-attribute">
+                                                                @elseif($groupName == 'سایز')
+                                                                    <span class="order-product-attribute">
                     <i class="fas fa-ruler me-1"></i>
                     {{ $groupName }}: {{ $attribute['name'] }}
                 </span>
-                                                        @else
-                                                            <span class="order-product-attribute">
+                                                                @else
+                                                                    <span class="order-product-attribute">
                     {{ $groupName }}: {{ $attribute['name'] }}
                 </span>
-                                                        @endif
-                                                    @endforeach
-                                                @endforeach
+                                                                @endif
+                                                            @endforeach
+                                                        @endforeach
 
-                                            </div>
-                                            @endif
-                                            <div class="d-flex flex-wrap gap-3 small">
-                                                <div>
-                                                    <span class="text-muted">تعداد:</span>
-                                                    <span class="fw-medium">{{ $item->quantity }}</span>
-                                                </div>
-                                                <div>
-                                                    <span class="text-muted">قیمت واحد:</span>
-                                                    <span class="fw-medium">{{ number_format($item->real_price) }} تومان</span>
-                                                </div>
-                                                @if($item->discount > 0)
-                                                    <div>
-                                                        <span class="text-muted">تخفیف:</span>
-                                                        <span class="fw-medium text-success">{{ $item->discount }}%</span>
                                                     </div>
                                                 @endif
-                                                <div>
-                                                    <span class="text-muted">قیمت نهایی:</span>
-                                                    <span class="fw-bold">{{ number_format($item->price * $item->quantity) }} تومان</span>
+                                                <div class="d-flex flex-wrap gap-3 small">
+                                                    <div>
+                                                        <span class="text-muted">تعداد:</span>
+                                                        <span class="fw-medium">{{ $item->quantity }}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span class="text-muted">قیمت واحد:</span>
+                                                        <span class="fw-medium">{{ number_format($item->real_price) }} تومان</span>
+                                                    </div>
+                                                    @if($item->discount > 0)
+                                                        <div>
+                                                            <span class="text-muted">تخفیف:</span>
+                                                            <span class="fw-medium text-success">{{ $item->discount }}%</span>
+                                                        </div>
+                                                    @endif
+                                                    <div>
+                                                        <span class="text-muted">قیمت نهایی:</span>
+                                                        <span class="fw-bold">{{ number_format($item->price * $item->quantity) }} تومان</span>
+                                                    </div>
                                                 </div>
-                                            </div>
 
 
 

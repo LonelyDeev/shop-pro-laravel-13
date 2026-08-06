@@ -25,13 +25,15 @@ class Order extends Model
     {
         return $this->belongsTo(User::class);
     }
+
     public function seller()
     {
         return $this->belongsTo(Seller::class);
     }
+
     public function sellers()
     {
-        return $this->belongsToMany(Seller::class,'order_items');
+        return $this->belongsToMany(Seller::class, 'order_items');
     }
 
     public function province()
@@ -84,22 +86,26 @@ class Order extends Model
             $text = '';
 
             switch ($this->shipping_status) {
-                case 'pending': {
-                        $text = 'در حال بررسی';
-                        break;
-                    }
-                case 'waiting': {
-                        $text = 'منتظر ارسال';
-                        break;
-                    }
-                case 'sent': {
-                        $text = 'ارسال شد';
-                        break;
-                    }
-                case 'canceled': {
-                        $text = 'ارسال لغو شد';
-                        break;
-                    }
+                case 'pending':
+                {
+                    $text = 'در حال بررسی';
+                    break;
+                }
+                case 'waiting':
+                {
+                    $text = 'منتظر ارسال';
+                    break;
+                }
+                case 'sent':
+                {
+                    $text = 'ارسال شد';
+                    break;
+                }
+                case 'canceled':
+                {
+                    $text = 'ارسال لغو شد';
+                    break;
+                }
             }
             return $text;
         }
@@ -110,17 +116,20 @@ class Order extends Model
     public function statusText()
     {
         switch ($this->status) {
-            case "paid": {
-                    return 'پرداخت شده';
-                }
+            case "paid":
+            {
+                return 'پرداخت شده';
+            }
 
-            case "unpaid": {
-                    return 'پرداخت نشده';
-                }
+            case "unpaid":
+            {
+                return 'پرداخت نشده';
+            }
 
-            case "canceled": {
-                    return 'لغو شده';
-                }
+            case "canceled":
+            {
+                return 'لغو شده';
+            }
         }
     }
 
@@ -150,6 +159,18 @@ class Order extends Model
                 $q->where('products.id', 'like', "%$product_id%");
             });
         }
+        if ($request->input('query.payment_type')) {
+            $paymentType = $request->input('query.payment_type');
+
+            if ($paymentType === 'installment') {
+                $query->whereHas('installmentPlan', function ($q) {
+                    $q->whereIn('status', ['pending_down_payment', 'active']);
+                });
+            } elseif ($paymentType === 'normal') {
+                $query->whereDoesntHave('installmentPlan');
+            }
+        }
+
 
         $status = $request->input('query.status');
 
@@ -160,7 +181,7 @@ class Order extends Model
         $shipping_status = $request->input('query.shipping_status');
 
         if ($shipping_status && $shipping_status != 'all') {
-            $query->whereHas('items', function($q) use ($shipping_status) {
+            $query->whereHas('items', function ($q) use ($shipping_status) {
                 $q->where('shipping_status', $shipping_status);
 
                 $isSellerRoute = request()->routeIs('seller.*');
@@ -190,22 +211,25 @@ class Order extends Model
         if ($request->sort) {
 
             switch ($request->sort['field']) {
-                case 'fullname': {
-                        $query->join('users', 'orders.user_id', '=', 'users.id')
-                            ->orderBy('users.first_name', $request->sort['sort'])
-                            ->orderBy('users.last_name', $request->sort['sort'])
-                            ->select('orders.*');
-                        break;
+                case 'fullname':
+                {
+                    $query->join('users', 'orders.user_id', '=', 'users.id')
+                        ->orderBy('users.first_name', $request->sort['sort'])
+                        ->orderBy('users.last_name', $request->sort['sort'])
+                        ->select('orders.*');
+                    break;
+                }
+                case 'order_id':
+                {
+                    $query->orderBy('id', $request->sort['sort']);
+                    break;
+                }
+                default:
+                {
+                    if ($this->getConnection()->getSchemaBuilder()->hasColumn($this->getTable(), $request->sort['field'])) {
+                        $query->orderBy($request->sort['field'], $request->sort['sort']);
                     }
-                case 'order_id': {
-                        $query->orderBy('id', $request->sort['sort']);
-                        break;
-                    }
-                default: {
-                        if ($this->getConnection()->getSchemaBuilder()->hasColumn($this->getTable(), $request->sort['field'])) {
-                            $query->orderBy($request->sort['field'], $request->sort['sort']);
-                        }
-                    }
+                }
             }
         }
 
@@ -224,106 +248,107 @@ class Order extends Model
 
     public function priceWithoutDiscount()
     {
-        foreach ($this->items()->get() as $order_item){
-            $price[]=$order_item->real_price * $order_item->quantity;
+        foreach ($this->items()->get() as $order_item) {
+            $price[] = $order_item->real_price * $order_item->quantity;
         }
-        $TotalPrice=array_sum($price);
-
-        return $TotalPrice ?: 0;
-    }
-    public function priceSellerWithoutDiscount($seller_id=null)
-    {
-        if ($seller_id){
-            $sellerId=$seller_id;
-        }else{
-            $sellerId=sellerID();
-        }
-        foreach ($this->items()->get() as $order_item){
-            if ($order_item->seller_id==$sellerId){
-                $price[]=$order_item->real_price * $order_item->quantity;
-            }
-        }
-        $TotalPrice=array_sum($price);
+        $TotalPrice = array_sum($price);
 
         return $TotalPrice ?: 0;
     }
 
-    public function priceSeller($seller_id=null)
+    public function priceSellerWithoutDiscount($seller_id = null)
     {
-        if ($seller_id){
-            $sellerId=$seller_id;
-        }else{
-            $sellerId=sellerID();
+        if ($seller_id) {
+            $sellerId = $seller_id;
+        } else {
+            $sellerId = sellerID();
         }
-        $price=[];
-        foreach ($this->items()->get() as $order_item){
-            if ($order_item->seller_id==$sellerId){
-                $price[]=$order_item->real_price * $order_item->quantity;
+        foreach ($this->items()->get() as $order_item) {
+            if ($order_item->seller_id == $sellerId) {
+                $price[] = $order_item->real_price * $order_item->quantity;
             }
         }
+        $TotalPrice = array_sum($price);
 
-        $TotalPrice=array_sum($price);
-        $price=$TotalPrice + $this->shippingCostSeller($seller_id);
-        return $price-$this->totalDiscountSeller($sellerId) ?: 0;
+        return $TotalPrice ?: 0;
     }
 
-    public function totalDiscountSeller($seller_id=null)
+    public function priceSeller($seller_id = null)
+    {
+        if ($seller_id) {
+            $sellerId = $seller_id;
+        } else {
+            $sellerId = sellerID();
+        }
+        $price = [];
+        foreach ($this->items()->get() as $order_item) {
+            if ($order_item->seller_id == $sellerId) {
+                $price[] = $order_item->real_price * $order_item->quantity;
+            }
+        }
+
+        $TotalPrice = array_sum($price);
+        $price = $TotalPrice + $this->shippingCostSeller($seller_id);
+        return $price - $this->totalDiscountSeller($sellerId) ?: 0;
+    }
+
+    public function totalDiscountSeller($seller_id = null)
     {
 
-        if ($seller_id){
-            $sellerId=$seller_id;
-        }else{
-            $sellerId=sellerID();
+        if ($seller_id) {
+            $sellerId = $seller_id;
+        } else {
+            $sellerId = sellerID();
         }
 
-        $real_price=[];
-        $discount=[];
-        $price=[];
-        foreach ($this->items()->get() as $order_item){
+        $real_price = [];
+        $discount = [];
+        $price = [];
+        foreach ($this->items()->get() as $order_item) {
 
-            if ($order_item->seller_id==$sellerId){
-                $price[]=$order_item->price;
-                $real_price[]=$order_item->real_price;
-                $discount[]=$order_item->real_price-$order_item->price;
+            if ($order_item->seller_id == $sellerId) {
+                $price[] = $order_item->price;
+                $real_price[] = $order_item->real_price;
+                $discount[] = $order_item->real_price - $order_item->price;
             }
         }
 
-        $TotalPrice=array_sum($real_price);
-        $TotalDiscount=array_sum($price);
+        $TotalPrice = array_sum($real_price);
+        $TotalDiscount = array_sum($price);
 
-        $discountPrice=$TotalDiscount;
-        if ($this->discount_price or $this->discount_percent){
-            if ($this->discount_price){
-                $discount_price=$this->discount_price/count($this->items()->get());
-                $discount_price=$discount_price*count($real_price);
-                $discountPrice=$TotalPrice-$discount_price;
-            }elseif($this->discount_percent){
-                $discount_percent=$this->discount_percent/count($this->items()->get());
-                $discount_percent=$discount_percent*count($real_price);
-                $discountPrice=intval($TotalPrice * ((100-$discount_percent) / 100));
+        $discountPrice = $TotalDiscount;
+        if ($this->discount_price or $this->discount_percent) {
+            if ($this->discount_price) {
+                $discount_price = $this->discount_price / count($this->items()->get());
+                $discount_price = $discount_price * count($real_price);
+                $discountPrice = $TotalPrice - $discount_price;
+            } elseif ($this->discount_percent) {
+                $discount_percent = $this->discount_percent / count($this->items()->get());
+                $discount_percent = $discount_percent * count($real_price);
+                $discountPrice = intval($TotalPrice * ((100 - $discount_percent) / 100));
             }
-            $sum=$TotalPrice-$TotalDiscount;
+            $sum = $TotalPrice - $TotalDiscount;
 
-            $TotalPrice=$TotalPrice-$discountPrice+$sum;
-            return  $TotalPrice ?: 0;
+            $TotalPrice = $TotalPrice - $discountPrice + $sum;
+            return $TotalPrice ?: 0;
         }
 
-        $TotalPrice=array_sum($discount);
+        $TotalPrice = array_sum($discount);
 
-        return  $TotalPrice ?: 0;
+        return $TotalPrice ?: 0;
     }
 
     public function shippingCostSeller($seller_id = null)
     {
-        if ($seller_id){
-            $sellerId=$seller_id;
-        }else{
-            $sellerId=sellerID();
+        if ($seller_id) {
+            $sellerId = $seller_id;
+        } else {
+            $sellerId = sellerID();
         }
 
         foreach ($this->items()->get() as $order_item) {
 
-            if ($order_item->seller_id!=null and $order_item->seller_id == $sellerId) {
+            if ($order_item->seller_id != null and $order_item->seller_id == $sellerId) {
                 return $order_item->shipping_cost ?: 0;
             }
         }
@@ -332,60 +357,61 @@ class Order extends Model
 
     public function getAmountCommission()
     {
-        $priceForSite=[];
-        $commission=[];
-        foreach ($this->items()->get() as $order_item){
-            $price=intval($this->price * ((100-$order_item->commission) / 100));
-            $priceForSite[]=$this->price-$price;
-            $commission[]=$order_item->commission;
+        $priceForSite = [];
+        $commission = [];
+        foreach ($this->items()->get() as $order_item) {
+            $price = intval($this->price * ((100 - $order_item->commission) / 100));
+            $priceForSite[] = $this->price - $price;
+            $commission[] = $order_item->commission;
         }
-        $priceForSite=array_sum($priceForSite);
-        $commission=array_sum($commission);
-        $result=[
-            'priceForSite'=>$priceForSite,
-            'commission'=>$commission
-        ];
-        return $result;
-    }
-    public function getAmountSellerCommission($seller_id=null)
-    {
-        if ($seller_id){
-            $sellerId=$seller_id;
-        }else{
-            $sellerId=sellerID();
-        }
-        $priceForSite=[];
-        $commission=[];
-        foreach ($this->items()->get() as $order_item){
-            if ($order_item->seller_id==$sellerId){
-                $priceSeller=$this->priceSeller($sellerId);
-                $price=intval($priceSeller * ((100-$order_item->commission) / 100));
-                $priceForSite[]=$priceSeller-$price;
-                $commission[]=$order_item->commission;
-            }
-        }
-        $priceForSite=array_sum($priceForSite);
-        $commission=array_sum($commission);
-        $result=[
-            'priceForSite'=>$priceForSite,
-            'commission'=>$commission
+        $priceForSite = array_sum($priceForSite);
+        $commission = array_sum($commission);
+        $result = [
+            'priceForSite' => $priceForSite,
+            'commission' => $commission
         ];
         return $result;
     }
 
-    public function priceSellerDepositWallet($seller_id=null)
+    public function getAmountSellerCommission($seller_id = null)
     {
-        if ($seller_id){
+        if ($seller_id) {
             $sellerId = $seller_id;
-        }else{
+        } else {
+            $sellerId = sellerID();
+        }
+        $priceForSite = [];
+        $commission = [];
+        foreach ($this->items()->get() as $order_item) {
+            if ($order_item->seller_id == $sellerId) {
+                $priceSeller = $this->priceSeller($sellerId);
+                $price = intval($priceSeller * ((100 - $order_item->commission) / 100));
+                $priceForSite[] = $priceSeller - $price;
+                $commission[] = $order_item->commission;
+            }
+        }
+        $priceForSite = array_sum($priceForSite);
+        $commission = array_sum($commission);
+        $result = [
+            'priceForSite' => $priceForSite,
+            'commission' => $commission
+        ];
+        return $result;
+    }
+
+    public function priceSellerDepositWallet($seller_id = null)
+    {
+        if ($seller_id) {
+            $sellerId = $seller_id;
+        } else {
             $sellerId = sellerID();
         }
 
         $TotalCommission = [];
         $lastCategoryId = null;
 
-        foreach ($this->items()->get() as $order_item){
-            if ($order_item->seller_id == $sellerId){
+        foreach ($this->items()->get() as $order_item) {
+            if ($order_item->seller_id == $sellerId) {
                 $product = $order_item->product()->first();
                 $commissionInfo = $this->getCategoryCommissionWithParent($product->category_id);
 
@@ -488,65 +514,64 @@ class Order extends Model
 
     public function payUsingWallet()
     {
-        $order  = $this;
-        $user   = $order->user;
+        $order = $this;
+        $user = $order->user;
         $wallet = $user->getWallet();
 
-        $sellersID=[];
-        $orderId=[];
-        $price=[];
-        foreach ($order->items()->get() as $order_item){
-            if ($order_item->seller_id){
-                $sellersID[]=$order_item->seller_id;
-                $orderId[]=$order_item->order_id;
-                $price[]=$order_item->real_price * $order_item->quantity;
+        $sellersID = [];
+        $orderId = [];
+        $price = [];
+        foreach ($order->items()->get() as $order_item) {
+            if ($order_item->seller_id) {
+                $sellersID[] = $order_item->seller_id;
+                $orderId[] = $order_item->order_id;
+                $price[] = $order_item->real_price * $order_item->quantity;
             }
         }
-        $sellersID=array_unique($sellersID);
+        $sellersID = array_unique($sellersID);
 
 
         if ($wallet->balance() >= $order->price) {
-            DB::transaction(function () use ($wallet, $order,$price,$sellersID) {
+            DB::transaction(function () use ($wallet, $order, $price, $sellersID) {
                 $order->update([
                     'status' => 'paid'
                 ]);
 
                 $wallet->histories()->create([
-                    'type'        => 'withdraw',
-                    'amount'      => $order->price,
+                    'type' => 'withdraw',
+                    'amount' => $order->price,
                     'description' => 'ثبت سفارش',
-                    'source'      => 'user',
-                    'status'      => 'success',
-                    'order_id'    => $order->id
+                    'source' => 'user',
+                    'status' => 'success',
+                    'order_id' => $order->id
                 ]);
 
                 //add wallet for seller
-                if (count($sellersID)){
-                    foreach (Seller::whereIn('id',$sellersID)->get() as $sellerItem){
-                        $sellerWallet= $sellerItem->getWallet();
-                        $amount=$order->priceSellerDepositWallet($sellerItem->id);
+                if (count($sellersID)) {
+                    foreach (Seller::whereIn('id', $sellersID)->get() as $sellerItem) {
+                        $sellerWallet = $sellerItem->getWallet();
+                        $amount = $order->priceSellerDepositWallet($sellerItem->id);
                         $sellerWallet->histories()->create([
-                            'type'        => 'deposit',
-                            'amount'      => $amount['priceForSeller'],
+                            'type' => 'deposit',
+                            'amount' => $amount['priceForSeller'],
                             'description' => 'ثبت سفارش',
-                            'source'      => 'seller',
-                            'status'      => 'success',
-                            'order_id'    => $order->id
+                            'source' => 'seller',
+                            'status' => 'success',
+                            'order_id' => $order->id
                         ]);
                         SellerDeposit::create([
-                            'seller_id'   => $sellerItem->id,
-                            'order_id'    => $order->id,
-                            'amount'      => $amount['priceForSite'],
+                            'seller_id' => $sellerItem->id,
+                            'order_id' => $order->id,
+                            'amount' => $amount['priceForSite'],
                             'category_id' => $amount['category_id'],
-                            'percent'     => $amount['percent'],
+                            'percent' => $amount['percent'],
                             'description' => 'ثبت سفارش',
-                            'status'      => 'success',
+                            'status' => 'success',
                         ]);
                         $sellerWallet->refereshBalance();
                         event(new WalletAmountIncreased($sellerWallet));
                     }
                 }
-
 
 
                 //Notification::send($wallet, new WalletAmountDecreasedSms($wallet,$order->price));
@@ -578,6 +603,7 @@ class Order extends Model
             'admin.total_sell'
         ];
     }
+
     public function reserved()
     {
         return $this->reserve;
@@ -601,7 +627,7 @@ class Order extends Model
     public function getGroupedItemsBySeller()
     {
         // گروه‌بندی آیتم‌ها بر اساس seller_id
-        $grouped = $this->items->groupBy(function($item) {
+        $grouped = $this->items->groupBy(function ($item) {
             return $item->seller_id ?? 'no_seller';
         });
 
@@ -623,7 +649,7 @@ class Order extends Model
                 'seller_id' => $sellerId,
                 'seller_name' => $sellerName,
                 'items' => $items,
-                'total_price' => $items->sum(function($item) {
+                'total_price' => $items->sum(function ($item) {
                     return ($item->price - ($item->discount ?? 0)) * $item->quantity;
                 }),
                 'total_shipping' => $items->sum('shipping_cost'),
@@ -635,4 +661,10 @@ class Order extends Model
         return $result;
     }
 
+
+
+    public function installmentPlan()
+    {
+        return $this->hasOne(\Modules\InstallmentPayment\Models\InstallmentPlan::class);
+    }
 }

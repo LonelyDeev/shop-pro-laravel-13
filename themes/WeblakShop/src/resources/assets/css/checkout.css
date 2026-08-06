@@ -724,3 +724,12 @@
 .checkout-summary li{
     list-style: none;
 }
+.last-price-tag{
+    font-size: 16px;
+    font-weight: 700;
+    margin-top: 20px;
+    background: #f7f7fe;
+    padding: 9px;
+    border-radius: 7px;
+}
+

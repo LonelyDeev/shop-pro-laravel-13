@@ -37,7 +37,7 @@
             <div class="content-body">
 
                 <section id="main-card" class="card">
-                    <div class="card-header">
+                    <div class="card-header mb-1">
                         <h4 class="card-title" title="{{ convert_number($wallet->balance) . ' تومان' }}">تاریخچه کیف پول (موجودی: {{ number_format($wallet->balance) }})</h4>
                         <div>
                             <a href="{{ route('admin.wallets.create', ['wallet' => $wallet]) }}" class="btn personal-info-btn waves-effect waves-light"><i class="feather icon-plus"></i> ایجاد تراکنش</a>

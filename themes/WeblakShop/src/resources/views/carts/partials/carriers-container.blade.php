@@ -47,7 +47,7 @@
                     </div>
 
                     <div class="row align-items-center">
-                        <div class="col-auto pe-0">
+                        <div class="col-auto pe-0 w-100">
                             <ul class="consignment-items ps-0">
                                 @foreach($group['products'] as $product)
                                     <li class="item item-full">

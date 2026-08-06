@@ -2,7 +2,7 @@
     <table class="table">
         <tbody>
             <tr>
-                <th scope="row" style="min-width: 200px;">آیدی</th>
+                <th scope="row">آیدی</th>
                 <td>{{ $history->id }}</td>
             </tr>
 

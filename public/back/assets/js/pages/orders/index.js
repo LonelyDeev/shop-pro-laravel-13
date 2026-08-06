@@ -151,16 +151,36 @@ var order_datatable = (function () {
             },
             {
                 field: 'price',
-                width: 77,
+                width: 110,
                 class: 'width-fit',
                 textAlign: 'center',
-                title: 'قیمت کل'
+                title: 'مبلغ پرداخت',
+                template: function (row) {
+                    if (row.is_installment) {
+                        // نمایش پیش‌پرداخت + badge اقساطی
+                        var downPayment = row.installment_down_payment
+                            ? Number(row.installment_down_payment).toLocaleString('fa-IR')
+                            : '۰';
+                        return `
+                <div class="d-flex flex-column align-items-center gap-1">
+                    <span class="fw-bold text-warning">${downPayment} ت</span>
+                    <span class="badge badge-info" style="font-size:10px;">
+                        💰 اقساطی
+                    </span>
+                    <small class="text-muted" style="font-size:10px;">
+                        پیش‌پرداخت
+                    </small>
+                </div>
+            `;
+                    }
+                    return row.price;
+                }
             },
             {
                 field: 'status',
                 title: 'وضعیت',
                 textAlign: 'center',
-                width: 85,
+                width: 110,
                 // callback function support for column rendering
                 template: function (row) {
                     var status = {
@@ -177,39 +197,23 @@ var order_datatable = (function () {
                             class: ' badge-success'
                         }
                     };
-                    var shipping_status = {
-                        'w-pending': {
-                            title: 'در انتظار بررسی',
-                            class: ' badge-warning'
-                        },
-                        pending: {
-                            title: 'در حال پردازش',
-                            class: ' badge-warning'
-                        },
-                        waiting: {
-                            title: 'منتظر ارسال',
-                            class: ' badge-warning'
-                        },
-                        sent: {
-                            title: 'ارسال شد',
-                            class: ' badge-success'
-                        },
-                        'post-sent': {
-                            title: 'تحویل به پست',
-                            class: ' badge-success'
-                        },
-                        canceled: {
-                            title: 'ارسال لغو شده',
-                            class: ' badge-danger'
-                        }
-                    };
-                    return (
-                        '<div class="badge ' +
-                        status[row.status].class +
-                        '">' +
-                        status[row.status].title +
-                        '</div>'
-                    );
+
+                    var html = '<div class="badge ' + status[row.status].class + '">' + status[row.status].title + '</div>';
+
+                    // اگه اقساطی باشه، badge اضافه کن
+                    if (row.is_installment) {
+                        var installmentBadges = {
+                            'pending_down_payment': { title: 'در انتظار پیش‌پرداخت', class: 'badge-warning' },
+                            'active':               { title: 'اقساطی فعال',          class: 'badge-info' },
+                            'completed':            { title: 'اقساط تکمیل',          class: 'badge-success' },
+                            'defaulted':            { title: 'اقساط معوق',           class: 'badge-danger' },
+                            'cancelled':            { title: 'اقساط لغو',            class: 'badge-secondary' },
+                        };
+                        var badge = installmentBadges[row.installment_status] || { title: 'اقساطی', class: 'badge-info' };
+                        html += '<div class="badge ' + badge.class + ' mt-1" style="font-size:10px;">💰 ' + badge.title + '</div>';
+                    }
+
+                    return html;
                 }
             },
 

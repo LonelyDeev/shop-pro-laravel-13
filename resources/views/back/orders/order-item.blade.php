@@ -3,6 +3,9 @@
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('back/assets/css/pages/order.css') }}">
+    @if(function_exists('module_is_active') && module_is_active('InstallmentPayment'))
+        <link rel="stylesheet" href="{{ module_asset('InstallmentPayment', 'css/installment.css') }}">
+    @endif
     <style>
 
     </style>
@@ -16,6 +19,13 @@
         $totalDiscountAmount = 0;
         $finalPayable = [($orderItem->shipping_cost ?? 0)];
         $products = $orderItem->products();
+
+        // ========== بررسی اقساطی ==========
+        $installmentPlan = null;
+        if (function_exists('module_is_active') && module_is_active('InstallmentPayment')) {
+            $installmentPlan = \Modules\InstallmentPayment\Models\InstallmentPlan::where('order_id', $orderItem->order_id)->first();
+        }
+        $isInstallment = (bool) $installmentPlan;
     @endphp
 
     @foreach($products as $index => $item)
@@ -61,6 +71,11 @@
                     <h4 style="font-size:22px; font-weight:800; color:var(--gray-800); margin: 6px 0 0;">
                         جزئیات مرسوله
                         <span style="color:var(--primary);">#{{ $orderItem->id }}</span>
+                        @if($isInstallment)
+                            <span class="status-badge sb-info" style="background:#dbeafe;color:#1e40af;font-size:13px;margin-right:8px;">
+                                💰 سفارش اقساطی
+                            </span>
+                        @endif
                     </h4>
                 </div>
                 <div class="actions-row">
@@ -73,6 +88,112 @@
                     </a>
                 </div>
             </div>
+
+            {{-- ======== بنر هشدار اقساطی ======== --}}
+            @if($isInstallment)
+                <div class="installment-order-banner installment-order-banner-{{ $installmentPlan->status }}" style="margin-bottom:16px;">
+                    <div class="installment-order-banner-header">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="installment-order-icon mr-1">
+                                <i class="fas fa-money-check-alt"></i>
+                            </div>
+                            <div>
+                                <h5 style="margin:0;font-weight:700;">طرح اقساطی</h5>
+                                <div style="font-size:12px;">
+                                    @php
+                                        $iStatusLabels = [
+                                            'pending_down_payment' => 'در انتظار پیش‌پرداخت',
+                                            'active'    => 'فعال',
+                                            'completed' => 'تکمیل شده',
+                                            'defaulted' => 'معوق',
+                                            'cancelled' => 'لغو شده',
+                                        ];
+                                    @endphp
+                                    <span class="status-badge sb-light">{{ $iStatusLabels[$installmentPlan->status] ?? $installmentPlan->status }}</span>
+                                    <span style="opacity:0.9;margin-right:8px;">شناسه: #{{ $installmentPlan->id }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            @can('installment.plans')
+                                <a href="{{ route('admin.installment.plans.show', $installmentPlan) }}" target="_blank" class="btn btn-light btn-sm">
+                                    <i class="fas fa-external-link-alt"></i> مدیریت طرح
+                                </a>
+                            @endcan
+                        </div>
+                    </div>
+                    <div class="installment-order-banner-body">
+                        <div class="row" style="row-gap:10px;">
+                            <div class="col-md-2 col-6">
+                                <div class="installment-order-stat">
+                                    <div class="installment-order-stat-label">مبلغ کل سفارش</div>
+                                    <div class="installment-order-stat-value">{{ number_format($installmentPlan->total_amount) }} ت</div>
+                                </div>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <div class="installment-order-stat @if($installmentPlan->isDownPaymentPaid()) installment-order-stat-success @else installment-order-stat-warning @endif">
+                                    <div class="installment-order-stat-label">
+                                        پیش‌پرداخت
+                                        @if($installmentPlan->isDownPaymentPaid())
+                                            <i class="fas fa-check-circle text-success"></i>
+                                        @else
+                                            <i class="fas fa-clock text-warning"></i>
+                                        @endif
+                                    </div>
+                                    <div class="installment-order-stat-value">{{ number_format($installmentPlan->down_payment) }} ت</div>
+                                </div>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <div class="installment-order-stat">
+                                    <div class="installment-order-stat-label">مبلغ هر قسط</div>
+                                    <div class="installment-order-stat-value">{{ number_format($installmentPlan->installment_amount) }} ت</div>
+                                </div>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <div class="installment-order-stat">
+                                    <div class="installment-order-stat-label">پرداخت‌شده</div>
+                                    <div class="installment-order-stat-value">{{ $installmentPlan->paid_installments }} / {{ $installmentPlan->total_installments }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <div class="installment-order-stat">
+                                    <div class="installment-order-stat-label">باقی‌مانده</div>
+                                    <div class="installment-order-stat-value" style="color:var(--warning);">{{ number_format($installmentPlan->remainingAmount()) }} ت</div>
+                                </div>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <div class="installment-order-stat installment-order-stat-primary">
+                                    <div class="installment-order-stat-label">مبلغ نهایی</div>
+                                    <div class="installment-order-stat-value" style="color:var(--primary);">{{ number_format($installmentPlan->total_payable) }} ت</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- نوار پیشرفت --}}
+                        <div class="mt-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <small style="color:var(--gray-500);">پیشرفت طرح</small>
+                                <small style="color:var(--gray-500);">{{ $installmentPlan->progressPercent() }}٪</small>
+                            </div>
+                            <div class="progress" style="height:6px;">
+                                <div class="progress-bar bg-success" style="width:{{ $installmentPlan->progressPercent() }}%;"></div>
+                            </div>
+                        </div>
+
+                        {{-- هشدارها --}}
+                        @if(!$installmentPlan->isDownPaymentPaid())
+                            <div class="oi-alert warning" style="margin-top:12px;">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <strong>پیش‌پرداخت انجام نشده!</strong>
+                                کاربر باید پیش‌پرداخت ({{ number_format($installmentPlan->down_payment) }} ت) را پرداخت کند تا طرح فعال شود.
+                                @if($orderItem->order->status === 'cancelled')
+                                    <br><span style="color:var(--danger);">سفارش لغو شده است - طرح نیز لغو خواهد شد.</span>
+                                @endif
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            @endif
 
             {{-- Status Bar --}}
             <div class="status-bar section-gap">
@@ -176,7 +297,11 @@
                                 <div class="info-row">
                                     <span class="lbl">نحوه پرداخت</span>
                                     <span class="val">
-                                        @if($orderItem->order->status == 'paid')
+                                        @if($isInstallment)
+                                            <span class="status-badge sb-info" style="background:#dbeafe;color:#1e40af;">
+                                                💰 اقساطی
+                                            </span>
+                                        @elseif($orderItem->order->status == 'paid')
                                             {{ $orderItem->order->gateway == 'wallet' ? 'کیف پول' : $orderItem->order->gateway }}
                                         @else
                                             —
@@ -187,8 +312,25 @@
                         </div>
                         <div class="sc-divider"></div>
                         <div class="info-row">
-                            <span class="lbl">مبلغ پرداخت شده</span>
-                            <span class="stat-price">{{ number_format(array_sum($totalAmount)) }} تومان</span>
+                            @if($isInstallment)
+                                <span class="lbl">مبلغ پیش‌پرداخت</span>
+                                <span class="stat-price">
+                                    {{ number_format($installmentPlan->down_payment) }} تومان
+                                    <br>
+                                    @if($installmentPlan->isDownPaymentPaid())
+                                        <small style="color:var(--success);font-size:11px;">✅ پیش‌پرداخت پرداخت شده</small>
+                                    @else
+                                        <small style="color:var(--warning);font-size:11px;">⏳ در انتظار پرداخت پیش‌پرداخت</small>
+                                    @endif
+                                    <br>
+                                    <small style="color:var(--gray-400);font-size:11px;">
+                                        از مجموع {{ number_format($installmentPlan->total_payable) }} ت (شامل {{ number_format($installmentPlan->total_interest) }} ت بهره)
+                                    </small>
+                                </span>
+                            @else
+                                <span class="lbl">مبلغ پرداخت شده</span>
+                                <span class="stat-price">{{ number_format(array_sum($totalAmount)) }} تومان</span>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -505,10 +647,28 @@
                                     <td colspan="2" class="text-center">{{ number_format($orderItem->shipping_cost) }} تومان</td>
                                 </tr>
                             @endif
-                            @php $finalPayable = $totalAmount + ($orderItem->shipping_cost ?? 0); @endphp
+                            @php
+                                $finalPayable = $totalAmount + ($orderItem->shipping_cost ?? 0);
+                                // در حالت اقساطی، مبلغ قابل پرداخت = پیش‌پرداخت
+                                $displayPayable = $isInstallment ? $installmentPlan->down_payment : $finalPayable;
+                            @endphp
                             <tr class="tfoot-row-total">
-                                <td colspan="6" class="text-left" style="font-size:15px;">مبلغ قابل پرداخت نهایی:</td>
-                                <td colspan="2" class="text-center tfoot-price">{{ number_format($finalPayable) }} تومان</td>
+                                <td colspan="6" class="text-left" style="font-size:15px;">
+                                    @if($isInstallment)
+                                        مبلغ پیش‌پرداخت (اقساطی):
+                                    @else
+                                        مبلغ قابل پرداخت نهایی:
+                                    @endif
+                                </td>
+                                <td colspan="2" class="text-center tfoot-price">
+                                    {{ number_format($displayPayable) }} تومان
+                                    @if($isInstallment)
+                                        <br>
+                                        <small style="font-size:11px;color:var(--gray-400);">
+                                            از مجموع {{ number_format($installmentPlan->total_payable) }} ت
+                                        </small>
+                                    @endif
+                                </td>
                             </tr>
                             </tfoot>
                         </table>
@@ -544,29 +704,56 @@
                 </div>
                 <div class="modal-body">
                     <div class="oi-alert warning" id="refund-info" style="flex-direction:column;gap:8px;">
-                        <div style="display:flex;align-items:flex-start;gap:8px;">
-                            <i class="fa fa-info-circle" style="margin-top:2px;"></i>
-                            <span>در صورت تایید، مجموعا <strong id="order-amount">{{ number_format($finalPayable) }}</strong> تومان به کیف پول کاربر برگشت داده می‌شود.</span>
-                        </div>
+                        @if($isInstallment)
+                            {{-- حالت اقساطی: فقط پیش‌پرداخت برگشت داده می‌شه --}}
+                            <div style="display:flex;align-items:flex-start;gap:8px;">
+                                <i class="fa fa-info-circle" style="margin-top:2px;"></i>
+                                <span>
+                                    این سفارش به‌صورت <strong>اقساطی</strong> ثبت شده است.
+                                    @if($installmentPlan->isDownPaymentPaid())
+                                        در صورت لغو، مبلغ <strong id="order-amount">{{ number_format($installmentPlan->down_payment) }}</strong> تومان (پیش‌پرداخت) به کیف پول کاربر برگشت داده می‌شود.
+                                    @else
+                                        سفارش هنوز پیش‌پرداخت نشده است. با لغو سفارش، طرح اقساطی نیز لغو خواهد شد.
+                                    @endif
+                                </span>
+                            </div>
+                            @if($installmentPlan->isDownPaymentPaid())
+                                <div class="oi-alert info" style="margin-top:4px;">
+                                    <i class="fas fa-money-check-alt"></i>
+                                    <div style="font-size:12px;">
+                                        <strong>نکته مهم:</strong> با لغو سفارش، طرح اقساطی لغو می‌شود و اقساط پرداخت‌نشده نیز باطل می‌شوند.
+                                        @if($installmentPlan->paid_installments > 0)
+                                            <br>تعداد {{ $installmentPlan->paid_installments }} قسط قبلاً پرداخت شده است که باید جداگانه بررسی شود.
+                                        @endif
+                                    </div>
+                                </div>
+                            @endif
+                        @else
+                            {{-- حالت عادی --}}
+                            <div style="display:flex;align-items:flex-start;gap:8px;">
+                                <i class="fa fa-info-circle" style="margin-top:2px;"></i>
+                                <span>در صورت تایید، مجموعا <strong id="order-amount">{{ number_format($finalPayable) }}</strong> تومان به کیف پول کاربر برگشت داده می‌شود.</span>
+                            </div>
 
-                        @if(isset($orderItem) && $orderItem->seller_id)
-                            <div class="oi-alert warning" style="margin-top:4px;">
-                                <i class="fa fa-exchange-alt"></i>
-                                <div>
-                                    <strong>گردش مالی:</strong>
-                                    <ul style="margin:6px 0 0;padding-right:16px;font-size:12px;">
-                                        <li>کسر از کیف پول فروشنده: <strong>{{ number_format($orderItem->order->priceSeller()-$orderItem->order->getAmountSellerCommission()['priceForSite']) }} تومان</strong></li>
-                                        <li>افزودن به کیف پول کاربر: <strong>{{ number_format($finalPayable) }} تومان</strong></li>
-                                    </ul>
+                            @if(isset($orderItem) && $orderItem->seller_id)
+                                <div class="oi-alert warning" style="margin-top:4px;">
+                                    <i class="fa fa-exchange-alt"></i>
+                                    <div>
+                                        <strong>گردش مالی:</strong>
+                                        <ul style="margin:6px 0 0;padding-right:16px;font-size:12px;">
+                                            <li>کسر از کیف پول فروشنده: <strong>{{ number_format($orderItem->order->priceSeller()-$orderItem->order->getAmountSellerCommission()['priceForSite']) }} تومان</strong></li>
+                                            <li>افزودن به کیف پول کاربر: <strong>{{ number_format($finalPayable) }} تومان</strong></li>
+                                        </ul>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="oi-alert danger" style="margin-top:4px;">
-                                <i class="fa fa-exclamation-triangle"></i>
-                                <div style="font-size:12px;">
-                                    لغو سفارش فقط در صورتی انجام می‌شود که موجودی کیف پول فروشنده حداقل
-                                    <strong>{{ number_format($orderItem->order->priceSeller()-$orderItem->order->getAmountSellerCommission()['priceForSite']) }} تومان</strong> باشد.
+                                <div class="oi-alert danger" style="margin-top:4px;">
+                                    <i class="fa fa-exclamation-triangle"></i>
+                                    <div style="font-size:12px;">
+                                        لغو سفارش فقط در صورتی انجام می‌شود که موجودی کیف پول فروشنده حداقل
+                                        <strong>{{ number_format($orderItem->order->priceSeller()-$orderItem->order->getAmountSellerCommission()['priceForSite']) }} تومان</strong> باشد.
+                                    </div>
                                 </div>
-                            </div>
+                            @endif
                         @endif
                     </div>
 
@@ -597,6 +784,99 @@
             </div>
         </div>
     </div>
+
+    {{-- ======== استایل‌های بنر اقساطی ======== --}}
+    <style>
+        .installment-order-banner {
+            background: #fff;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
+        }
+        .installment-order-banner-pending_down_payment { border-color: #f59e0b; }
+        .installment-order-banner-active { border-color: #0ea5e9; }
+        .installment-order-banner-completed { border-color: #10b981; }
+        .installment-order-banner-defaulted { border-color: #ef4444; }
+        .installment-order-banner-cancelled { border-color: #9ca3af; opacity: 0.85; }
+
+        .installment-order-banner-header {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: #fff;
+            padding: 14px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .installment-order-banner-pending_down_payment .installment-order-banner-header {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+        .installment-order-banner-completed .installment-order-banner-header {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        .installment-order-banner-defaulted .installment-order-banner-header {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+        .installment-order-banner-cancelled .installment-order-banner-header {
+            background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+        }
+
+        .installment-order-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+
+        .installment-order-banner-body {
+            padding: 16px 20px;
+            background: #f8fafc;
+        }
+
+        .installment-order-stat {
+            background: #fff;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            height: 100%;
+        }
+        .installment-order-stat-success {
+            background: #ecfdf5;
+            border-color: #6ee7b7;
+        }
+        .installment-order-stat-warning {
+            background: #fffbeb;
+            border-color: #fcd34d;
+        }
+        .installment-order-stat-primary {
+            background: #eff6ff;
+            border-color: #93c5fd;
+        }
+        .installment-order-stat-label {
+            color: #64748b;
+            font-size: 11px;
+            margin-bottom: 4px;
+        }
+        .installment-order-stat-value {
+            color: #0f172a;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .status-badge.sb-light {
+            background: rgba(255,255,255,0.25);
+            color: #fff;
+        }
+        .status-badge.sb-info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+    </style>
 
 @endsection
 
