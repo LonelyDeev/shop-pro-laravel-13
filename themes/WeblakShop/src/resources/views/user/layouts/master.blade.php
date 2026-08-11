@@ -51,13 +51,13 @@
                                 <a>لیست منوها</a>
                                 <ul class="profile-menu-items " style="display: none">
                                     <li>
-                                        <a href="{{ route('front.user.profile') }}" class="profile-menu-url @if($active=="profile")active-profile @endif"><span
+                                        <a href="{{ route('front.user.profile') }}" class="profile-menu-url @if(@$active=="profile")active-profile @endif"><span
                                                 class="mdi mdi-account-outline"></span>پروفایل</a></li>
                                     <li>
-                                        <a href="{{ route('front.orders.index') }}" class="profile-menu-url @if($active=="orders")active-profile @endif"><span
+                                        <a href="{{ route('front.orders.index') }}" class="profile-menu-url @if(@$active=="orders")active-profile @endif"><span
                                                 class="mdi mdi-basket"></span>همه سفارش ها</a></li>
                                     <li>
-                                        <a href="{{ route('front.wallet.index') }}" class="profile-menu-url @if($active=="wallet")active-profile @endif"><span class="mdi mdi-credit-card-outline"></span>کیف پول</a>
+                                        <a href="{{ route('front.wallet.index') }}" class="profile-menu-url @if(@$active=="wallet")active-profile @endif"><span class="mdi mdi-credit-card-outline"></span>کیف پول</a>
                                     </li>
 
                                     @if(class_exists(\App\Services\FrontModuleMenuRegistry::class))
@@ -70,36 +70,36 @@
 
 
                                     <li>
-                                        <a href="{{ route('front.favorites.index') }}" class="profile-menu-url @if($active=="favorites")active-profile @endif"><span class="mdi mdi-heart-outline"></span>لیست
+                                        <a href="{{ route('front.favorites.index') }}" class="profile-menu-url @if(@$active=="favorites")active-profile @endif"><span class="mdi mdi-heart-outline"></span>لیست
                                             علاقه مندی ها</a></li>
                                     <li>
-                                        <a href="{{ route('front.comments.index') }}" class="profile-menu-url @if($active=="comments")active-profile @endif"><span
+                                        <a href="{{ route('front.comments.index') }}" class="profile-menu-url @if(@$active=="comments")active-profile @endif"><span
                                                 class="mdi mdi-comment-multiple-outline"></span>نقد و نظرات</a>
                                     </li>
                                     @if (option('user_referrals_enable', "false") == "true")
                                     <li>
-                                        <a href="{{ route('front.user.referrals.index') }}" class="profile-menu-url @if($active=="referrals")active-profile @endif"><span
+                                        <a href="{{ route('front.user.referrals.index') }}" class="profile-menu-url @if(@$active=="referrals")active-profile @endif"><span
                                                 class="mdi mdi-comment-multiple-outline"></span>
                                             کد های تخفیف معرفی
                                         </a>
                                     </li>
                                     @endif
                                     <li>
-                                        <a href="{{ route('front.messages.index') }}" class="profile-menu-url @if($active=="messages")active-profile @endif"><span
+                                        <a href="{{ route('front.messages.index') }}" class="profile-menu-url @if(@$active=="messages")active-profile @endif"><span
                                                 class="mdi mdi-comment-multiple-outline"></span>پیام ها و اطلاعیه ها</a>
                                     </li>
                                     <li>
-                                        <a href="{{ route('front.addresses.index') }}" class="profile-menu-url @if($active=="addresses")active-profile @endif"><span class="mdi mdi-map-marker-outline"></span>آدرس
+                                        <a href="{{ route('front.addresses.index') }}" class="profile-menu-url @if(@$active=="addresses")active-profile @endif"><span class="mdi mdi-map-marker-outline"></span>آدرس
                                             ها</a>
                                     </li>
                                     <li>
-                                        <a href="{{route('front.user.user-history')}}" class="profile-menu-url @if($active=="user-history")active-profile @endif"><span class="mdi mdi-history"></span>بازدید های اخیر</a>
+                                        <a href="{{route('front.user.user-history')}}" class="profile-menu-url @if(@$active=="user-history")active-profile @endif"><span class="mdi mdi-history"></span>بازدید های اخیر</a>
                                     </li>
                                     <li>
-                                        <a href="{{route('front.tickets.index')}}" class="profile-menu-url @if($active=="tickets")active-profile @endif"><span class="mdi mdi-ticket-outline"></span>تیکت های شما</a>
+                                        <a href="{{route('front.tickets.index')}}" class="profile-menu-url @if(@$active=="tickets")active-profile @endif"><span class="mdi mdi-ticket-outline"></span>تیکت های شما</a>
                                     </li>
                                     <li>
-                                        <a href="{{ route('front.user.profile.edit') }}" class="profile-menu-url  @if($active=="profileEdit")active-profile @endif"><span
+                                        <a href="{{ route('front.user.profile.edit') }}" class="profile-menu-url  @if(@$active=="profileEdit")active-profile @endif"><span
                                                 class="mdi mdi-account-circle"></span>اطلاعات شخصی</a>
                                     </li>
                                     <li>
@@ -114,9 +114,9 @@
                 </div>
 
                 <ul class="profile-menu-items profile-menu-items-desktop">
-                    <li><a href="{{ route('front.user.profile') }}" class="profile-menu-url @if($active=="profile")active-profile @endif"><span
+                    <li><a href="{{ route('front.user.profile') }}" class="profile-menu-url @if(@$active=="profile")active-profile @endif"><span
                                 class="mdi mdi-account-outline"></span>پروفایل</a></li>
-                    <li><a href="{{ route('front.orders.index') }}" class="profile-menu-url @if($active=="orders")active-profile @endif"><span
+                    <li><a href="{{ route('front.orders.index') }}" class="profile-menu-url @if(@$active=="orders")active-profile @endif"><span
                                 class="mdi mdi-basket"></span>همه سفارش ها</a></li>
 
                     @if(class_exists(\App\Services\FrontModuleMenuRegistry::class))
@@ -127,29 +127,29 @@
                         @endforeach
                     @endif
 
-                    <li><a href="{{ route('front.wallet.index') }}" class="profile-menu-url @if($active=="wallet")active-profile @endif"><span class="mdi mdi-credit-card-outline"></span>کیف پول</a></li>
+                    <li><a href="{{ route('front.wallet.index') }}" class="profile-menu-url @if(@$active=="wallet")active-profile @endif"><span class="mdi mdi-credit-card-outline"></span>کیف پول</a></li>
 
-                    <li><a href="{{ route('front.favorites.index') }}" class="profile-menu-url @if($active=="favorites")active-profile @endif"><span class="mdi mdi-heart-outline"></span>لیست
+                    <li><a href="{{ route('front.favorites.index') }}" class="profile-menu-url @if(@$active=="favorites")active-profile @endif"><span class="mdi mdi-heart-outline"></span>لیست
                             علاقه مندی ها</a></li>
                     <li>
-                        <a href="{{ route('front.comments.index') }}" class="profile-menu-url @if($active=="comments")active-profile @endif"><span
+                        <a href="{{ route('front.comments.index') }}" class="profile-menu-url @if(@$active=="comments")active-profile @endif"><span
                                 class="mdi mdi-comment-multiple-outline"></span>نقد و نظرات</a>
                     </li>
                     @if (option('user_referrals_enable', "false") == "true")
                     <li>
-                        <a href="{{ route('front.user.referrals.index') }}" class="profile-menu-url @if($active=="referrals")active-profile @endif"><span
+                        <a href="{{ route('front.user.referrals.index') }}" class="profile-menu-url @if(@$active=="referrals")active-profile @endif"><span
                                 class="mdi mdi-lan"></span>   کد های تخفیف معرفی</a>
                     </li>
                     @endif
                     <li>
-                        <a href="{{ route('front.messages.index') }}" class="profile-menu-url @if($active=="messages")active-profile @endif"><span
+                        <a href="{{ route('front.messages.index') }}" class="profile-menu-url @if(@$active=="messages")active-profile @endif"><span
                                 class="mdi mdi-bell"></span>پیام ها و اطلاعیه ها</a>
                     </li>
-                    <li><a href="{{ route('front.addresses.index') }}" class="profile-menu-url @if($active=="addresses")active-profile @endif"><span class="mdi mdi-map-marker-outline"></span>آدرس
+                    <li><a href="{{ route('front.addresses.index') }}" class="profile-menu-url @if(@$active=="addresses")active-profile @endif"><span class="mdi mdi-map-marker-outline"></span>آدرس
                             ها</a></li>
-                    <li><a href="{{route('front.user.user-history')}}" class="profile-menu-url @if($active=="user-history")active-profile @endif"><span class="mdi mdi-history"></span>بازدید های اخیر</a></li>
-                    <li><a href="{{route('front.tickets.index')}}" class="profile-menu-url @if($active=="tickets")active-profile @endif"><span class="mdi mdi-ticket-outline"></span>تیکت های شما</a></li>
-                    <li><a href="{{ route('front.user.profile.edit') }}" class="profile-menu-url  @if($active=="profileEdit")active-profile @endif"><span
+                    <li><a href="{{route('front.user.user-history')}}" class="profile-menu-url @if(@$active=="user-history")active-profile @endif"><span class="mdi mdi-history"></span>بازدید های اخیر</a></li>
+                    <li><a href="{{route('front.tickets.index')}}" class="profile-menu-url @if(@$active=="tickets")active-profile @endif"><span class="mdi mdi-ticket-outline"></span>تیکت های شما</a></li>
+                    <li><a href="{{ route('front.user.profile.edit') }}" class="profile-menu-url  @if(@$active=="profileEdit")active-profile @endif"><span
                                 class="mdi mdi-account-circle"></span>اطلاعات شخصی</a></li>
                     <li><a href="{{ route('logout') }}" class="profile-menu-url"><span
                                 class="mdi mdi-power"></span>خروج</a></li>
