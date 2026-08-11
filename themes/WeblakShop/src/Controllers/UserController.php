@@ -268,7 +268,6 @@ class UserController extends Controller
             'last_name'  => $request->last_name,
             'username'   => $request->mobile,
             'email'      => $request->email,
-            'mobile'      => $request->mobile,
             'national_code'      => $request->national_code,
             'birth_date'      => $birth_date,
             'card_number'      => $request->card_number,

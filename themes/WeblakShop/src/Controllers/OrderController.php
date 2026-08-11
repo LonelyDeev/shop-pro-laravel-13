@@ -378,6 +378,39 @@ class OrderController extends Controller
             $order->update(['seller_id' => json_encode(array_unique($sellerIds))]);
         }
 
+        // ==========  برسی پرداخت اقساطی قبل از حذف سبد ==========
+        $isInstallment = $request->filled('installment_enabled') && $request->input('installment_enabled') == '1';
+        $isCredit = $request->filled('credit_enabled') && $request->input('credit_enabled') == '1';
+
+        if ($isInstallment) {
+            $installmentService = app(\Modules\InstallmentPayment\Services\InstallmentService::class);
+            // ۱. بررسی اعتبار کاربر برای گرفتن اقساط
+            $canApply = $installmentService->canUserApplyForInstallment($user->id,$price->discount_price ?? $price->price);
+            if (!$canApply['can']) {
+                return redirect()->back()->with('error', $canApply['reason'])->withInput();
+            }
+        }
+
+        elseif ($isCredit) {
+            // ==========  برسی پرداخت اعتباری قبل از حذف سبد ==========
+            // ۲. جمع‌آوری اطلاعات سبد برای ارسال به canUserUseCredit
+            $productIds = $cart->products->pluck('id')->toArray();
+            $cartTotal  = (int) $cart->finalPrice();
+            $creditService = app(\Modules\CreditPay\Services\CreditService::class);
+            $canUseCredit = $creditService->canUserUseCredit(
+                $user->id,
+                $cartTotal,
+                $productIds
+            );
+
+            if (!$canUseCredit['can']) {
+                return redirect()->back()->with('error', $canUseCredit['reason'])->withInput();
+            }
+        }
+        // ==========  برسی پرداخت اعتباری قبل از حذف سبد ==========
+
+
+
         $cart->delete();
 
         $hour = option('order_cancel', 1);
@@ -390,7 +423,18 @@ class OrderController extends Controller
         // اگه کاربر چک‌باکس اقساطی رو فعال کرده باشه، طرح اقساطی می‌سازیم
         // و مبلغ سفارش رو به مبلغ پیش‌پرداخت تغییر می‌دیم
         // روش پرداخت (کیف پول/درگاه) همچنان از طریق gateway$ انتخاب می‌شه
-        if ($request->filled('installment_enabled') && $request->input('installment_enabled') == '1') {
+
+        // ========== جلوگیری از تداخل: فقط یکی از اقساطی یا اعتباری ==========
+        $isInstallment = $request->filled('installment_enabled') && $request->input('installment_enabled') == '1';
+        $isCredit = $request->filled('credit_enabled') && $request->input('credit_enabled') == '1';
+
+        // اگه هر دو فعال بودن، ارور بده
+        if ($isInstallment && $isCredit) {
+            return redirect()->back()->with('error', 'امکان انتخاب همزمان پرداخت اقساطی و اعتباری وجود ندارد.')->withInput();
+        }
+
+        // ========== مدیریت پرداخت اقساطی ==========
+        if ($isInstallment) {
 
             // بررسی فعال بودن ماژول
             if (!function_exists('module_is_active') || !module_is_active('InstallmentPayment')) {
@@ -400,7 +444,7 @@ class OrderController extends Controller
             $installmentService = app(\Modules\InstallmentPayment\Services\InstallmentService::class);
 
             // ۱. بررسی اعتبار کاربر برای گرفتن اقساط
-            $canApply = $installmentService->canUserApplyForInstallment($user->id);
+            $canApply = $installmentService->canUserApplyForInstallment($user->id,$price->discount_price ?? $price->price);
             if (!$canApply['can']) {
                 return redirect()->back()->with('error', $canApply['reason'])->withInput();
             }
@@ -413,12 +457,12 @@ class OrderController extends Controller
                 return redirect()->back()->with('error', 'تنظیمات اقساط نامعتبر است. لطفاً طرح اقساطی را مجدداً انتخاب کنید.')->withInput();
             }
 
-            // ۳. ساخت طرح اقساطی (با مبلغ کل سفارش قبل از پیش‌پرداخت)
+            // ۳. ساخت طرح اقساطی
             try {
                 $plan = $installmentService->createPlan(
                     $user->id,
                     $order->id,
-                    $finalPrice, // مبلغ کل سفارش (شامل محصولات + ارسال - تخفیف)
+                    $finalPrice,
                     $installmentCount,
                     $downPaymentPercent
                 );
@@ -427,23 +471,162 @@ class OrderController extends Controller
             }
 
             // ۴. تغییر مبلغ سفارش به مبلغ پیش‌پرداخت
-            // (پرداخت پیش‌پرداخت با gateway انتخابی کاربر انجام می‌شه)
             $order->update([
                 'price' => $plan->down_payment,
             ]);
 
-            // ۵. ثبت در session برای استفاده در متد pay و orderPaid
             session()->flash('installment_plan_id', $plan->id);
-
-            /*Log::info('Installment plan created', [
-                'plan_id'        => $plan->id,
-                'order_id'       => $order->id,
-                'user_id'        => $user->id,
-                'total_amount'   => $plan->total_amount,
-                'down_payment'   => $plan->down_payment,
-                'installments'   => $plan->total_installments,
-            ]);*/
         }
+
+        // ========== مدیریت خرید اعتباری (CreditPay) ==========
+        // ========== مدیریت خرید اعتباری (CreditPay) ==========
+        elseif ($isCredit) {
+
+            // ۱. بررسی فعال بودن ماژول
+            if (!function_exists('module_is_active') || !module_is_active('CreditPay')) {
+                return redirect()->back()->with('error', 'ماژول خرید اعتباری فعال نیست.')->withInput();
+            }
+
+            $creditService = app(\Modules\CreditPay\Services\CreditService::class);
+
+            // ۲. جمع‌آوری اطلاعات سبد برای ارسال به canUserUseCredit
+            $productIds = $cart->products->pluck('id')->toArray();
+            $cartTotal  = (int) $cart->finalPrice();
+
+            // ۳. بررسی همه‌ی شرط‌ها در یک متد واحد
+            $canUseCredit = $creditService->canUserUseCredit(
+                $user->id,
+                $cartTotal,
+                $productIds
+            );
+
+            if (!$canUseCredit['can']) {
+                return redirect()->back()->with('error', $canUseCredit['reason'])->withInput();
+            }
+
+            $account = $canUseCredit['account'];
+
+            // ۴. تحلیل سبد: تفکیک آیتم‌های اعتباری از آیتم‌های نقدی
+            //    (محصولات فروشنده و مستثنی به‌صورت نقدی پرداخت می‌شن)
+            $cartAnalysis = $creditService->analyzeCart($cart->products->toArray());
+
+            // اگه هیچ آیتم اعتباری وجود نداره → ارور
+            if (!$cartAnalysis['has_credit_items']) {
+                return redirect()->back()
+                    ->with('error', 'هیچ محصولی در سبد شما قابل خرید اعتباری نیست.')
+                    ->withInput();
+            }
+
+            // ۵. محاسبه markup فقط روی آیتم‌های اعتباری
+            $markupData  = $creditService->calculateMarkup($cartAnalysis['credit_items']);
+            $markupAmount = $markupData['markup_amount'];
+
+            // ۶. محاسبه مبالغ نهایی
+            $creditEligibleTotal = $cartAnalysis['credit_total'];  // مبلغ آیتم‌های اعتباری
+            $cashItemsTotal      = $cartAnalysis['cash_total'];     // مبلغ آیتم‌های نقدی (فروشنده/مستثنی)
+
+            $creditTotalWithMarkup = $creditEligibleTotal + $markupAmount;  // مبلغ اعتباری + markup
+            $totalWithMarkup       = $creditTotalWithMarkup + $cashItemsTotal;  // مبلغ کل سفارش
+
+            // ۷. محاسبه اعتبار استفاده‌شده و مبلغ نقدی
+            $availableCredit = (int) $account->available_credit;
+            $creditUsed = min($availableCredit, $creditTotalWithMarkup);
+            $creditShortfall = max(0, $creditTotalWithMarkup - $availableCredit);
+
+            // مبلغ نقدی که کاربر باید بده:
+            // - آیتم‌های نقدی (فروشنده/مستثنی)
+            // - مابقی مبلغ اعتباری (اگه اعتبار کم باشه)
+            $cashPaid = $cashItemsTotal + $creditShortfall;
+
+            // ۸. تنظیمات اقساط (فقط روی مبلغ اعتباری محاسبه می‌شه)
+            $installmentsCount       = (int) \Modules\CreditPay\Models\CreditSetting::get('default_installments', 4);
+            $firstInstallmentPercent = (float) \Modules\CreditPay\Models\CreditSetting::get('first_installment_percent', 25);
+            $firstInstallmentAmount  = (int) round($creditTotalWithMarkup * $firstInstallmentPercent / 100);
+
+            // ۹. ساخت سفارش اعتباری (بدون کسر اعتبار - کسر در orderPaid انجام می‌شه)
+            try {
+                $creditOrder = \Modules\CreditPay\Models\CreditOrder::create([
+                    'order_id'                  => $order->id,
+                    'account_id'                => $account->id,
+                    'original_amount'           => $creditEligibleTotal,  // فقط آیتم‌های اعتباری
+                    'markup_amount'             => $markupAmount,
+                    'total_amount'              => $creditTotalWithMarkup,  // مبلغ اعتباری + markup
+                    'credit_used'               => $creditUsed,
+                    'cash_paid'                 => $cashPaid,  // شامل آیتم‌های نقدی + مابقی اعتبار
+                    'installments_count'        => $installmentsCount,
+                    'first_installment_percent' => $firstInstallmentPercent,
+                    'first_installment_amount'  => $firstInstallmentAmount,
+                    'first_installment_paid'    => false,
+                    'status'                    => \Modules\CreditPay\Models\CreditOrder::STATUS_ACTIVE,
+                ]);
+
+                // ۱۰. ساخت اقساط (همگی در حالت pending) - فقط روی مبلغ اعتباری
+                $remainingAmount = $creditTotalWithMarkup - $firstInstallmentAmount;
+                $monthlyAmount   = $installmentsCount > 1 ? (int) round($remainingAmount / ($installmentsCount - 1)) : 0;
+
+                // قسط اول (سررسید = امروز، برای پرداخت آنی)
+                \Modules\CreditPay\Models\CreditInstallment::create([
+                    'credit_order_id'    => $creditOrder->id,
+                    'installment_number' => 1,
+                    'amount'             => $firstInstallmentAmount,
+                    'total_amount'       => $firstInstallmentAmount,
+                    'due_date'           => now()->toDateString(),
+                    'status'             => \Modules\CreditPay\Models\CreditInstallment::STATUS_PENDING,
+                ]);
+
+                // اقساط ماهانه بعدی
+                for ($i = 2; $i <= $installmentsCount; $i++) {
+                    \Modules\CreditPay\Models\CreditInstallment::create([
+                        'credit_order_id'    => $creditOrder->id,
+                        'installment_number' => $i,
+                        'amount'             => $monthlyAmount,
+                        'total_amount'       => $monthlyAmount,
+                        'due_date'           => now()->addMonths($i - 1)->toDateString(),
+                        'status'             => \Modules\CreditPay\Models\CreditInstallment::STATUS_PENDING,
+                    ]);
+                }
+
+            } catch (\Exception $e) {
+                \Log::error('Credit order creation failed', [
+                    'user_id'  => $user->id,
+                    'order_id' => $order->id,
+                    'error'    => $e->getMessage(),
+                    'trace'    => $e->getTraceAsString(),
+                ]);
+                return redirect()->back()->with('error', 'خطا در ثبت خرید اعتباری: ' . $e->getMessage())->withInput();
+            }
+
+            // ۱۱. تغییر مبلغ سفارش به مبلغ نقدی + قسط اول
+            //     مبلغ نقدی شامل: آیتم‌های نقدی (فروشنده/مستثنی) + مابقی اعتبار (اگه کم باشه)
+            $payNowAmount = $cashPaid + $firstInstallmentAmount;
+            $order->update(['price' => $payNowAmount]);
+
+            // ۱۲. ثبت در session برای استفاده در orderPaid
+            session()->flash('credit_order_id', $creditOrder->id);
+
+            // ۱۳. اگه آیتم نقدی وجود داره، پیام به کاربر نمایش بده
+            if ($cartAnalysis['has_cash_items']) {
+                $cashItemsMessage = implode(' ', $cartAnalysis['messages']);
+                session()->flash('credit_cash_items_info', $cashItemsMessage);
+            }
+
+            \Log::info('Credit order created (pending payment)', [
+                'credit_order_id'      => $creditOrder->id,
+                'order_id'             => $order->id,
+                'user_id'              => $user->id,
+                'credit_total'         => $creditEligibleTotal,
+                'cash_items_total'     => $cashItemsTotal,
+                'markup_amount'        => $markupAmount,
+                'total_with_markup'    => $totalWithMarkup,
+                'credit_used'          => $creditUsed,
+                'cash_paid'            => $cashPaid,
+                'pay_now'              => $payNowAmount,
+                'markup_method'        => $markupData['method'] ?? 'unknown',
+                'cash_items_count'     => count($cartAnalysis['cash_items']),
+                'credit_items_count'   => count($cartAnalysis['credit_items']),
+            ]);
+        }
+
 
         return $this->pay($order, $request);
 

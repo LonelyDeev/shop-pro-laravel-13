@@ -723,10 +723,20 @@
                 </div>{{-- /d-body --}}
 
                 {{-- ═══ Installment Dashboard Widget ═══ --}}
-                @if(function_exists('module_is_active') && module_is_active('InstallmentPayment'))
+                {{-- ═══ Module Dashboard Widgets (Dynamic) ═══ --}}
+                @php
+                    $dashboardWidgets = class_exists(\App\Services\ModuleWidgetRegistry::class)
+                        ? \App\Services\ModuleWidgetRegistry::all()
+                        : [];
+                @endphp
+                @if(!empty($dashboardWidgets))
                     <div class="row mt-3">
                         <div class="col-12">
-                            @include('installment-payment::back.partials.dashboard_widget')
+                            @foreach($dashboardWidgets as $widgetView)
+                                @if(view()->exists($widgetView))
+                                    @include($widgetView)
+                                @endif
+                            @endforeach
                         </div>
                     </div>
                 @endif

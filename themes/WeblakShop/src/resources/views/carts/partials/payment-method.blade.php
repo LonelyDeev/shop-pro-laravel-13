@@ -3,11 +3,15 @@
 @endphp
 
 <div  class=" shopping-page">
-
     {{-- Hook برای پرداخت اقساطی --}}
     @if(function_exists('module_is_active') && module_is_active('InstallmentPayment'))
         @include('installment-payment::front.checkout_hook', ['cart' => $cart])
     @endif
+
+    @if(function_exists('module_is_active') && module_is_active('CreditPay'))
+        @include('credit-pay::front.checkout_hook', ['cart' => $cart])
+    @endif
+
 
 
     <div class="w-100 display-inline-block pt-3 pb-3">

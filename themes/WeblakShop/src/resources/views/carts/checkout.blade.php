@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="https://cdn.map.ir/web-sdk/1.4.2/css/fa/style.css">
     <link rel="stylesheet" href="{{theme_asset('css/map-selected-styles.css')}}" />
     <link rel="stylesheet" href="{{theme_asset('css/checkout.css')}}" />
-    <link rel="stylesheet" href="{{ module_asset('InstallmentPayment', 'css/installment.css') }}">
 
 @endpush
 
@@ -28,11 +27,21 @@
 
 @section('content')
     <div class="content-shopping ">
+
+
         <div class="col-lg-9 col-md-9 col-xs-12 pull-right block-div">
             <form id="checkout-form" data-price-action="{{ route('front.checkout.prices') }}"
                   action="{{ route('front.orders.store') }}" class="setting_form" method="POST">
                 @csrf
                 <div class="shipment-page-container">
+
+
+                    @if(session('error'))
+                        <div class="alert alert-danger">
+                            <p>  {{ session('error') }}</p>
+                        </div>
+                    @endif
+
                     @if ($errors->any())
                         <div class="alert alert-danger">
                             @foreach ($errors->all() as $error)
@@ -365,7 +374,6 @@
     <script src="{{ theme_asset('js/pages/checkout.js') }}?v=11"></script>
     <script src="{{ theme_asset('js/pages/addresses/index.js') }}"></script>
     <script src="{{ theme_asset('js/pages/addresses/add-edit-address.js?v=2') }}"></script>
-    <script src="{{ module_asset('InstallmentPayment', 'js/checkout.js') }}"></script>
     <script>
         /*$(document).ready(function() {
             let selectedCarriers = {};

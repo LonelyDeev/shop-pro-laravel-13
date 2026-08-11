@@ -86,7 +86,7 @@
 
                             <div class="form-legal-item">
                                 <label for="phone">شماره موبایل</label>
-                                <input type="text" id="phone" class="input-code-national"  name="mobile" value="{{ $user->username }}"
+                                <input type="text" id="phone" class="input-code-national" disabled value="{{ $user->username }}"
                                        placeholder="شماره موبایل خود را وارد کنید">
                             </div>
 

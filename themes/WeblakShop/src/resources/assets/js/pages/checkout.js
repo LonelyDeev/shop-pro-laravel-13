@@ -43,7 +43,8 @@ function getFinalPrice(shouldUpdateClass = true,idGroupSelect=null) {
     if (isUpdatingPrice) {
         return;
     }
-
+    block('.block-div');
+    block('.checkout-summary');
     // ========== بررسی وجود محصولات فیزیکی ==========
     // اگر هیچ مرسوله‌ای (محصول فیزیکی) وجود نداشته باشد
     if ($('.consignment-container .consignments').length === 0) {
@@ -71,6 +72,8 @@ function getFinalPrice(shouldUpdateClass = true,idGroupSelect=null) {
     });
     // اگر هیچ حاملی در هیچ گروهی وجود نداشت
     if (!hasAnyCarrier) {
+        unblock('.block-div');
+        unblock('.checkout-summary');
         return;
     }
 
@@ -79,6 +82,8 @@ function getFinalPrice(shouldUpdateClass = true,idGroupSelect=null) {
 
     // اگر شهر انتخاب نشده بود
     if (!city_id) {
+        unblock('.block-div');
+        unblock('.checkout-summary');
         return;
     }
 
@@ -165,6 +170,7 @@ function getFinalPrice(shouldUpdateClass = true,idGroupSelect=null) {
             isFirstLoad = false;
         }
     });
+
 }
 
 // ==================== تابع به‌روزرسانی فقط سایدبار (برای محصولات دانلودی) ====================

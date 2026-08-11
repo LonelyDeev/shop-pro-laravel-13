@@ -16,7 +16,6 @@
             @if(isset($sellerShippingCosts) && count($sellerShippingCosts) > 0)
                 <ul>
                     <li class="checkout-summary-shipping-item border-0">
-                        <hr>
                         <span class="shipping-seller-name">هزینه ارسال</span>
                         <span class="shipping-cost"></span>
                     </li>
@@ -49,11 +48,15 @@
             @if(function_exists('module_is_active') && module_is_active('InstallmentPayment'))
                 @include('installment-payment::front.sidebar_hook')
             @endif
+
+            @if(function_exists('module_is_active') && module_is_active('CreditPay'))
+                @include('credit-pay::front.sidebar_hook')
+            @endif
             <li class="last-price-tag">
                 <span class="font-weight-bold">مبلغ قابل پرداخت</span>
                 <span id="final-price" class="checkout-summary-price-value-amount checkout_link font-weight-bold" data-value="{{ $finalPrice ?? $cart->finalPrice() }}">
             {{ number_format($finalPrice ?? $cart->finalPrice()) }} تومان
-        </span>
+                </span>
             </li>
 
 
