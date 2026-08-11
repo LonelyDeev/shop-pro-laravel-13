@@ -2,6 +2,7 @@
 
 namespace Themes\WeblakShop\src\Controllers;
 
+use App\Events\OrderCancelled;
 use App\Events\OrderCreated;
 use App\Events\OrderPaid as OrderPaidEvent;
 use App\Http\Controllers\Controller;
