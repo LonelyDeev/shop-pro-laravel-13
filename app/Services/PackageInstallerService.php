@@ -349,7 +349,7 @@ class PackageInstallerService
                 'integrity_hash'      => $integrityHash,
                 'last_verified_at'    => now(),
                 'installed_at'        => now(),
-                'is_active'           => true,
+                'is_active'           => false,
                 'status'              => InstalledModule::STATUS_UPDATING,
                 'last_error'          => null,
             ]
