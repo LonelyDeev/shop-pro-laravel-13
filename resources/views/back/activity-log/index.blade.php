@@ -660,7 +660,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">حذف فعالیت‌های قدیمی</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <button type="button" class="close" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">×</span>
                     </button>
                 </div>
@@ -672,16 +672,20 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">انصراف</button>
-                    <button type="button" class="btn btn-danger" onclick="confirmDeleteOldActivities()">حذف</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal" data-bs-dismiss="modal">انصراف</button>
+                    <button type="button" class="btn btn-danger" id="btnConfirmDelete" data-action="{{ route("admin.activity-log.delete-old") }}" onclick="confirmDeleteOldActivities(this)">
+                        <i class="fas fa-trash"></i> حذف
+                    </button>
                 </div>
             </div>
         </div>
     </div>
-
 @endsection
 @include('back.partials.plugins', ['plugins' => [ 'persian-datepicker']])
 @push('scripts')
+    <script>
+        var DeleteOldActivitiesUrl=""
+    </script>
     <script src="{{ asset('back/assets/js/pages/activity-log/index.js') }}"></script>
 @endpush
 

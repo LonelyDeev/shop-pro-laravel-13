@@ -79,47 +79,74 @@ $(document).ready(function() {
     });
 
 
-
-    // حذف فعالیت‌های قدیمی
-    function deleteOldActivities() {
-        $('#deleteOldActivitiesModal').modal('show');
+    function getCsrfToken() {
+        return document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
     }
 
-    function confirmDeleteOldActivities() {
-        var days = $('#delete_days').val();
+});
+// نمایش مودال
+function deleteOldActivities() {
+    $('#deleteOldActivitiesModal').modal('show');
+}
 
-        if (!days || days < 1) {
-            toastr.error('لطفاً تعداد روز معتبر وارد کنید');
-            return;
-        }
 
-        if (!confirm(`آیا مطمئن هستید که می‌خواهید فعالیت‌های قدیمی‌تر از ${days} روز را حذف کنید؟`)) {
-            return;
-        }
+// تایید و ارسال درخواست
+function confirmDeleteOldActivities(item) {
+    var days = parseInt($('#delete_days').val(), 10);
+    var $btn = $('#btnConfirmDelete');
+    var url=$(item).data('action')
 
-        $.ajax({
-            url: '{{ route("admin.activity-log.delete-old") }}',
-            type: 'DELETE',
-            data: {
-                days: days,
-                _token: '{{ csrf_token() }}'
-            },
-            success: function(response) {
-                if (response.success) {
-                    toastr.success(response.message);
-                    $('#deleteOldActivitiesModal').modal('hide');
-                    setTimeout(function() {
-                        location.reload();
-                    }, 1500);
-                } else {
-                    toastr.error(response.message || 'خطا در حذف فعالیت‌ها');
-                }
-            },
-            error: function(xhr) {
-                var message = xhr.responseJSON?.message || 'خطا در حذف فعالیت‌ها';
-                toastr.error(message);
+    // اعتبارسنجی
+    if (!days || days < 1) {
+        toastr.error('لطفاً تعداد روز معتبر وارد کنید');
+        $('#delete_days').focus();
+        return;
+    }
+
+    // غیرفعال کردن دکمه و نمایش لودینگ
+    $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> در حال حذف...');
+
+    $.ajax({
+        url: url,
+        type: 'POST',  // ← Laravel معمولاً DELETE رو از طریق POST + _method می‌پذیره
+        data: {
+            _method: 'DELETE',
+            days: days,
+        },
+        success: function(response) {
+            if (response.success) {
+                toastr.success(response.message);
+                $('#deleteOldActivitiesModal').modal('hide');
+                setTimeout(function() {
+                    location.reload();
+                }, 1500);
+            } else {
+                toastr.error(response.message || 'خطا در حذف فعالیت‌ها');
+                $btn.prop('disabled', false).html('<i class="fas fa-trash"></i> حذف');
             }
-        });
-    }
+        },
+        beforeSend: function (xhr) {
+            xhr.setRequestHeader("X-CSRF-TOKEN", $('meta[name="csrf-token"]').attr('content'));
+        },
+        error: function(xhr) {
+            var message = 'خطا در حذف فعالیت‌ها';
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                message = xhr.responseJSON.message;
+            } else if (xhr.status === 419) {
+                message = 'خطای CSRF — لطفاً صفحه را رفرش کنید';
+            } else if (xhr.status === 405) {
+                message = 'متد HTTP مجاز نیست — Route رو چک کنید';
+            } else if (xhr.status === 404) {
+                message = 'Route پیدا نشد';
+            }
+            toastr.error(message);
+            $btn.prop('disabled', false).html('<i class="fas fa-trash"></i> حذف');
+        }
+    });
+}
 
+// ریست دکمه هنگام بسته شدن مودال
+$('#deleteOldActivitiesModal').on('hidden.bs.modal', function() {
+    $('#btnConfirmDelete').prop('disabled', false).html('<i class="fas fa-trash"></i> حذف');
+    $('#delete_days').val(30);
 });
