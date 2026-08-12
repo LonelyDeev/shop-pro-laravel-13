@@ -15,7 +15,7 @@ class FormController extends Controller
 {
     public function __construct()
     {
-        $this->authorizeResource(Form::class, 'forms');
+        $this->authorizeResource(Form::class, 'form');
     }
     public function index()
     {
