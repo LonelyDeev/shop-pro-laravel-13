@@ -6,7 +6,14 @@ $(document).ready(function() {
     let fields = [];
     let sortable = null;
 
+    // متغیرهای مودال
+    let selectedType = 'text';
+    let selectedTypeName = 'متن ساده';
+    let selectedTypeIcon = 'fa-font';
+
+    // ===============================================
     // اعتبارسنجی فرم اصلی
+    // ===============================================
     $('#main-form').validate({
         rules: {
             'title': {
@@ -40,28 +47,155 @@ $(document).ready(function() {
         }
     });
 
-    // اعتبارسنجی فیلد فرم
+    // ===============================================
+    // مودال ۱: انتخاب نوع فیلد
+    // ===============================================
+
+    // انتخاب کارت نوع فیلد
+    $(document).on('click', '.fb-type-card', function() {
+        $('.fb-type-card').removeClass('selected');
+        $(this).addClass('selected');
+        selectedType = $(this).data('type');
+        selectedTypeName = $(this).data('name');
+        selectedTypeIcon = $(this).data('icon');
+        // فعال کردن دکمه ادامه
+        $('#fb-continue-btn').prop('disabled', false).css({
+            'opacity': 1,
+            'cursor': 'pointer'
+        });
+    });
+
+    // دکمه ادامه (رفتن به مودال ۲)
+    $(document).on('click', '#fb-continue-btn', function() {
+        if ($(this).prop('disabled')) return;
+        openConfigModal();
+    });
+
+    // دابل‌کلیک روی کارت = انتخاب + ادامه
+    $(document).on('dblclick', '.fb-type-card', function() {
+        if ($('#fb-continue-btn').prop('disabled')) return;
+        openConfigModal();
+    });
+
+    // دکمه بازگشت در مودال ۲
+    $(document).on('click', '#fb-back-btn', function() {
+        $('#fieldConfigModal').modal('hide');
+        setTimeout(() => {
+            $('#fieldTypeModal').modal('show');
+        }, 350);
+    });
+
+    // دکمه تغییر نوع در مودال ۲
+    $(document).on('click', '#fb-change-type', function() {
+        $('#fieldConfigModal').modal('hide');
+        setTimeout(() => {
+            // پاک کردن انتخاب قبلی
+            $('.fb-type-card').removeClass('selected');
+            $('#fb-continue-btn').prop('disabled', true).css({
+                'opacity': 0.5,
+                'cursor': 'not-allowed'
+            });
+            $('#fieldTypeModal').modal('show');
+        }, 350);
+    });
+
+    // باز کردن مودال ۲ (پیکربندی)
+    function openConfigModal() {
+        // به‌روزرسانی بنر نوع فیلد
+        $('#fb-banner-icon i').attr('class', 'fa ' + selectedTypeIcon);
+        $('#fb-banner-title').text(selectedTypeName);
+        $('#field-type-select').val(selectedType);
+
+        // نمایش/مخفی کردن بخش گزینه‌ها
+        if (selectedType === 'select' || selectedType === 'radio' || selectedType === 'checkbox') {
+            $('#options-container').show();
+        } else {
+            $('#options-container').hide();
+        }
+
+        // پاک کردن خطاهای قبلی
+        $('.error-field-label, .error-field-name').html('');
+        $('#field-label, #field-name').removeClass('is-invalid');
+
+        // بستن مودال ۱ و باز کردن مودال ۲
+        $('#fieldTypeModal').modal('hide');
+        setTimeout(() => {
+            $('#fieldConfigModal').modal('show');
+            // فوکوس روی اولین فیلد
+            setTimeout(() => $('#field-label').focus(), 300);
+        }, 350);
+    }
+
+    // زمان باز شدن مودال ۱ از دکمه اصلی، ریست شود
+    $('[data-target="#fieldTypeModal"]').on('click', function() {
+        // فقط اگر مودال ۲ باز نباشد (یعنی از دکمه اصلی آمده)
+        if (!$('#fieldConfigModal').hasClass('show')) {
+            $('.fb-type-card').removeClass('selected');
+            $('#fb-continue-btn').prop('disabled', true).css({
+                'opacity': 0.5,
+                'cursor': 'not-allowed'
+            });
+            clearFieldForm();
+        }
+    });
+
+    // زمان بسته شدن کامل مودال ۲، فرم را پاک کن
+    $('#fieldConfigModal').on('hidden.bs.modal', function() {
+        // اگر مودال ۱ هم بسته شده، فرم را پاک کن
+        if (!$('#fieldTypeModal').hasClass('show')) {
+            clearFieldForm();
+        }
+    });
+
+    // ===============================================
+    // مدیریت گزینه‌ها
+    // ===============================================
+    $(document).on('click', '#add-option', function() {
+        let count = $('.option-item').length + 1;
+        let newOption = `
+            <div class="input-group mb-2 option-item">
+                <input type="text" class="form-control" placeholder="گزینه ${count}">
+                <div class="input-group-append">
+                    <button class="btn btn-danger remove-option" type="button">×</button>
+                </div>
+            </div>
+        `;
+        $('#options-list').append(newOption);
+    });
+
+    $(document).on('click', '.remove-option', function() {
+        $(this).closest('.option-item').remove();
+    });
+
+    // ===============================================
+    // اعتبارسنجی فیلد
+    // ===============================================
     function validateField() {
         let isValid = true;
         let label = $('#field-label').val();
         let name = $('#field-name').val();
         let type = $('#field-type-select').val();
 
-        $('.error-field-fields').html('');
+        $('.error-field-label, .error-field-name').html('');
+        $('#field-label, #field-name').removeClass('is-invalid');
 
         if (!label) {
             $('.error-field-label').text('عنوان فیلد الزامی است');
+            $('#field-label').addClass('is-invalid');
             isValid = false;
         }
 
         if (!name) {
             $('.error-field-name').html('نام فیلد الزامی است');
+            $('#field-name').addClass('is-invalid');
             isValid = false;
         } else if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
             $('.error-field-name').html('نام فیلد باید با حرف انگلیسی یا زیرخط شروع شود و فقط شامل حروف، اعداد و زیرخط باشد');
+            $('#field-name').addClass('is-invalid');
             isValid = false;
         } else if (fields.some(f => f.name === name)) {
             $('.error-field-name').html('این نام فیلد قبلاً استفاده شده است');
+            $('#field-name').addClass('is-invalid');
             isValid = false;
         }
 
@@ -82,35 +216,9 @@ $(document).ready(function() {
         return isValid;
     }
 
-    // نمایش/مخفی کردن گزینه‌ها بر اساس نوع فیلد
-    $('#field-type-select').on('change', function() {
-        let type = $(this).val();
-        if (type === 'select' || type === 'radio' || type === 'checkbox') {
-            $('#options-container').slideDown();
-        } else {
-            $('#options-container').slideUp();
-        }
-    });
-
-    // افزودن گزینه جدید
-    $('#add-option').on('click', function() {
-        let newOption = `
-            <div class="input-group mb-2 option-item">
-                <input type="text" class="form-control" placeholder="گزینه جدید">
-                <div class="input-group-append">
-                    <button class="btn btn-danger remove-option" type="button">×</button>
-                </div>
-            </div>
-        `;
-        $('#options-list').append(newOption);
-    });
-
-    // حذف گزینه
-    $(document).on('click', '.remove-option', function() {
-        $(this).closest('.option-item').remove();
-    });
-
+    // ===============================================
     // رندر فیلدها
+    // ===============================================
     function renderFields(url) {
         $.ajax({
             url: url,
@@ -121,39 +229,12 @@ $(document).ready(function() {
             success: function(response) {
                 $('#fields-preview').html(response.html);
 
-                // راه‌اندازی Sortable بعد از رندر
-             /*   if (fields.length > 0) {
-                    if (sortable) {
-                        sortable.destroy();
-                    }
-                    sortable = new Sortable(document.getElementById('fields-preview'), {
-                        handle: '.drag-handle',
-                        animation: 150,
-                        onEnd: function() {
-                            // به‌روزرسانی ترتیب فیلدها
-                            let newOrder = [];
-                            $('#fields-preview .preview-field').each(function() {
-                                let id = parseInt($(this).data('id'));
-                                newOrder.push(id);
-                            });
-
-                            let sortedFields = [];
-                            $.each(newOrder, function(index, id) {
-                                let field = fields.find(f => f.id === id);
-                                if (field) sortedFields.push(field);
-                            });
-                            fields = sortedFields;
-                        }
-                    });
-                }*/
-
                 // حذف فیلد
-                $('.remove-field').on('click', function() {
-                    let id = $(this).data('id');
+                $('.remove-field').off('click').on('click', function() {
+                    let id = parseInt($(this).data('id'));
                     fields = fields.filter(f => f.id !== id);
                     renderFields(url);
                 });
-
             },
             beforeSend: function(xhr) {
                 xhr.setRequestHeader("X-CSRF-TOKEN", $('meta[name="csrf-token"]').attr('content'));
@@ -161,11 +242,13 @@ $(document).ready(function() {
         });
     }
 
+    // ===============================================
     // افزودن فیلد
+    // ===============================================
     $('#add-field-btn').on('click', function() {
         if (!validateField()) return;
 
-        let url=$(this).data('action')
+        let url = $(this).data('action');
         let type = $('#field-type-select').val();
         let label = $('#field-label').val();
         let name = $('#field-name').val();
@@ -202,21 +285,22 @@ $(document).ready(function() {
 
         fields.push(field);
         renderFields(url);
-        clearFieldForm();
+
+        // بستن مودال ۲
+        $('#fieldConfigModal').modal('hide');
 
         toastr.success('فیلد با موفقیت اضافه شد', 'پیغام', {
             positionClass: 'toast-bottom-left',
             containerId: 'toast-bottom-left'
         });
-
-
     });
 
+    // ===============================================
     // پاک کردن فرم فیلد
+    // ===============================================
     function clearFieldForm() {
-        $('.form-group .form-control').removeClass('is-valid');
-        $('#field-label').val('');
-        $('#field-name').val('');
+        $('#field-label').val('').removeClass('is-valid is-invalid');
+        $('#field-name').val('').removeClass('is-valid is-invalid');
         $('#field-placeholder').val('');
         $('#field-required').prop('checked', false);
         $('#field-help').val('');
@@ -231,18 +315,29 @@ $(document).ready(function() {
                 </div>
             </div>
         `);
-        $('#field-type-select').trigger('change');
-        $('.error-field-fields').html('');
+
+        // ریست به متن ساده
+        selectedType = 'text';
+        selectedTypeName = 'متن ساده';
+        selectedTypeIcon = 'fa-font';
+        $('#field-type-select').val('text');
+        $('#fb-banner-icon i').attr('class', 'fa fa-font');
+        $('#fb-banner-title').text('متن ساده');
+        $('#options-container').hide();
+
+        $('.error-field-label, .error-field-name').html('');
     }
 
+    // ===============================================
     // ذخیره فرم
+    // ===============================================
     $('#main-form').submit(function(e) {
         e.preventDefault();
         if (!$(this).closest('form').valid()) return;
 
         var exist_fields = $('#exist-fields .preview-field');
 
-        if (fields.length === 0 && exist_fields.length===0) {
+        if (fields.length === 0 && exist_fields.length === 0) {
             toastr.error('حداقل یک فیلد به فرم اضافه کنید', 'پیغام', {
                 positionClass: 'toast-bottom-left',
                 containerId: 'toast-bottom-left'
@@ -251,7 +346,6 @@ $(document).ready(function() {
         }
 
         $('#fields-data').val(JSON.stringify(fields));
-
 
         if ($(this).valid() && !$(this).data('disabled')) {
             var formData = new FormData(this);
@@ -276,33 +370,30 @@ $(document).ready(function() {
                 processData: false
             });
         }
-
     });
 
-
-
-    new Sortable(document.getElementById('fields-preview'), {
-        group: {
-            name: 'fields',
-            pull: true,
-            revertClone: false
-        },
-        animation: 150,
-        onEnd: function() {
-            // مرتب‌سازی آرایه fields بر اساس ترتیب DOM
-            let newOrder = [];
-
-            $('#fields-preview .preview-field').each(function() {
-                let id = parseInt($(this).data('id'));
-                let field = fields.find(f => f.id === id);
-                if (field) {
-                    newOrder.push(field);
-                }
-            });
-
-            fields = newOrder;
-        }
-    });
-
-
+    // ===============================================
+    // Sortable
+    // ===============================================
+    if (document.getElementById('fields-preview')) {
+        new Sortable(document.getElementById('fields-preview'), {
+            group: {
+                name: 'fields',
+                pull: true,
+                revertClone: false
+            },
+            animation: 150,
+            onEnd: function() {
+                let newOrder = [];
+                $('#fields-preview .preview-field').each(function() {
+                    let id = parseInt($(this).data('id'));
+                    let field = fields.find(f => f.id === id);
+                    if (field) {
+                        newOrder.push(field);
+                    }
+                });
+                fields = newOrder;
+            }
+        });
+    }
 });

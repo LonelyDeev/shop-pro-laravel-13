@@ -439,18 +439,34 @@ class OrderController extends Controller
 
             // بررسی فعال بودن ماژول
             if (!function_exists('module_is_active') || !module_is_active('InstallmentPayment')) {
-                return redirect()->back()->with('error', 'ماژول پرداخت اقساطی فعال نیست.');
+                return redirect()->back()->with('error', 'ماژول پرداخت اقساطی فعال نیست.')->withInput();
             }
 
             $installmentService = app(\Modules\InstallmentPayment\Services\InstallmentService::class);
 
-            // ۱. بررسی اعتبار کاربر برای گرفتن اقساط
-            $canApply = $installmentService->canUserApplyForInstallment($user->id,$price->discount_price ?? $price->price);
+            // ===== تحلیل سبد: تفکیک آیتم‌های قابل خرید اقساطی از نقدی =====
+            $cartItems = $installmentService->prepareCartItems($cart);
+            $cartAnalysis = $installmentService->analyzeCart($cartItems);
+
+            // اگه هیچ آیتم قابل خرید اقساطی وجود نداره → ارور
+            if (!$cartAnalysis['has_credit_items']) {
+                return redirect()->back()
+                    ->with('error', 'هیچ محصولی در سبد شما قابل خرید اقساطی نیست.')
+                    ->withInput();
+            }
+
+            // مبلغ قابل خرید اقساطی (آیتم‌های غیر فروشنده و غیر مستثنی)
+            $installmentEligibleTotal = $cartAnalysis['credit_total'];
+            // مبلغی که باید نقدی پرداخت شه (آیتم‌های فروشنده + مستثنی)
+            $cashItemsTotal = $cartAnalysis['cash_total'];
+
+            // بررسی اعتبار کاربر برای گرفتن اقساط (برای مبلغ قابل خرید اقساطی)
+            $canApply = $installmentService->canUserApplyForInstallment($user->id, $installmentEligibleTotal);
             if (!$canApply['can']) {
                 return redirect()->back()->with('error', $canApply['reason'])->withInput();
             }
 
-            // ۲. اعتبارسنجی مقادیر ورودی
+            // اعتبارسنجی مقادیر ورودی
             $installmentCount = (int) $request->input('installment_count', 0);
             $downPaymentPercent = (float) $request->input('installment_down_payment_percent', 0);
 
@@ -458,12 +474,19 @@ class OrderController extends Controller
                 return redirect()->back()->with('error', 'تنظیمات اقساط نامعتبر است. لطفاً طرح اقساطی را مجدداً انتخاب کنید.')->withInput();
             }
 
-            // ۳. ساخت طرح اقساطی
+            // ===== محاسبه Markup (کارمزد) فقط روی آیتم‌های قابل خرید اقساطی =====
+            $markupData = $installmentService->calculateMarkup($cartAnalysis['credit_items']);
+            $markupAmount = (int) $markupData['markup_amount'];
+
+            // مبلغ نهایی قابل خرید اقساطی (آیتم‌های اعتباری + markup)
+            $totalForInstallment = $installmentEligibleTotal + $markupAmount;
+
+            // ساخت طرح اقساطی فقط روی مبلغ قابل خرید اقساطی
             try {
                 $plan = $installmentService->createPlan(
                     $user->id,
                     $order->id,
-                    $finalPrice,
+                    $totalForInstallment,
                     $installmentCount,
                     $downPaymentPercent
                 );
@@ -471,12 +494,43 @@ class OrderController extends Controller
                 return redirect()->back()->with('error', 'خطا در ایجاد طرح اقساطی: ' . $e->getMessage())->withInput();
             }
 
-            // ۴. تغییر مبلغ سفارش به مبلغ پیش‌پرداخت
+            // مبلغ پیش‌پرداخت (فقط روی مبلغ قابل خرید اقساطی)
+            $downPayment = $plan->down_payment;
+
+            // ===== تغییر مبلغ سفارش به: مبلغ نقدی (آیتم‌های فروشنده/مستثنی) + هزینه ارسال + پیش‌پرداخت =====
+            //     هزینه ارسال ($totalShippingCost) از OrderController محاسبه شده و جزو اقساط نیست
+            $payNowAmount = $cashItemsTotal + $downPayment + $totalShippingCost;
             $order->update([
-                'price' => $plan->down_payment,
+                'price' => $payNowAmount,
             ]);
 
             session()->flash('installment_plan_id', $plan->id);
+
+            // اگه آیتم نقدی یا هزینه ارسال وجود داره، پیام به کاربر نمایش بده
+            if ($cartAnalysis['has_cash_items'] || $totalShippingCost > 0) {
+                $messages = $cartAnalysis['messages'];
+                if ($totalShippingCost > 0) {
+                    $messages[] = sprintf(
+                        'هزینه ارسال (%s تومان) جزو اقساط نیست و باید نقدی پرداخت شود.',
+                        number_format($totalShippingCost)
+                    );
+                }
+                session()->flash('installment_cash_items_info', implode(' ', $messages));
+            }
+
+            \Log::info('Installment plan created', [
+                'plan_id'              => $plan->id,
+                'order_id'             => $order->id,
+                'user_id'              => $user->id,
+                'installment_total'    => $totalForInstallment,
+                'cash_items_total'     => $cashItemsTotal,
+                'shipping_cost'        => $totalShippingCost,
+                'down_payment'         => $downPayment,
+                'pay_now'              => $payNowAmount,
+                'markup_amount'        => $markupAmount,
+                'cash_items_count'     => count($cartAnalysis['cash_items']),
+                'credit_items_count'   => count($cartAnalysis['credit_items']),
+            ]);
         }
 
         // ========== مدیریت خرید اعتباری (CreditPay) ==========

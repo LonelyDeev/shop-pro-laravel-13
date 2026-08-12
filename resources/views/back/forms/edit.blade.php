@@ -2,6 +2,7 @@
 
 @push('styles')
     <link rel="stylesheet" type="text/css" href="{{ asset('back/assets/css/pages/form-builder.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ asset('back/assets/css/pages/form-builder-modal.css') }}">
 @endpush
 
 @section('content')
@@ -267,137 +268,19 @@
                     <!-- Description -->
                     <section class="">
                         <div class="row">
-                            <!-- بخش افزودن فیلدها -->
-                            <div class="col-md-4">
+                            <!-- بخش فیلدهای فرم (تمام عرض) -->
+                            <div class="col-md-12">
                                 <div class="card">
                                     <div class="card-header">
-                                        <h4 class="card-title">افزودن فیلد جدید</h4>
-                                    </div>
-                                    <div class="card-content">
-                                        <div class="card-body">
-                                            <div class="form-group">
-                                                <label>نوع فیلد <span
-                                                        class="text-danger">*</span></label>
-                                                <select id="field-type-select" class="form-control">
-                                                    <option value="text">✅ متن ساده (Text)</option>
-                                                    <option value="email">📧 ایمیل (Email)</option>
-                                                    <option value="number">🔢 شماره (Number)</option>
-                                                    <option value="textarea">📝 متن چند خطی (Textarea)
-                                                    </option>
-                                                    <option value="select">📋 انتخابگر (Select)</option>
-                                                    <option value="checkbox">☑️ چک‌باکس (Checkbox)
-                                                    </option>
-                                                    <option value="radio">🔘 دکمه رادیویی (Radio)
-                                                    </option>
-                                                    <option value="date">📅 تاریخ (Date)</option>
-                                                    <option value="file">📎 فایل (File)</option>
-                                                    <option value="password">🔒 رمز عبور (Password)
-                                                    </option>
-                                                    <option value="url">🌐 لینک (URL)</option>
-                                                </select>
+                                        <div class="fb-list-header">
+                                            <div class="fb-list-info">
+                                                <h4><i class="fa fa-list-check"></i> فیلدهای فرم</h4>
+                                                <small>فیلدها را با کشیدن می‌توانید مرتب کنید</small>
                                             </div>
-
-                                            <div class="form-group">
-                                                <label>عنوان فیلد <span
-                                                        class="text-danger">*</span></label>
-                                                <input type="text" id="field-label" class="form-control"
-                                                       placeholder="مثال: نام و نام خانوادگی">
-                                                <div class="error-field-label error "></div>
-                                            </div>
-
-                                            <div class="form-group">
-                                                <label>نام فیلد (name) <span
-                                                        class="text-danger">*</span></label>
-                                                <input type="text" id="field-name" class="form-control"
-                                                       placeholder="مثال: full_name">
-                                                <small class="text-muted">فقط حروف انگلیسی، اعداد و
-                                                    زیرخط</small>
-                                                <div class="error-field-name error"></div>
-                                            </div>
-
-                                            <div class="form-group" id="options-container"
-                                                 style="display: none;">
-                                                <label>گزینه‌ها</label>
-                                                <div id="options-list">
-                                                    <div class="input-group mb-2 option-item">
-                                                        <input type="text" class="form-control"
-                                                               placeholder="گزینه 1">
-                                                        <div class="input-group-append">
-                                                            <button class="btn btn-danger remove-option"
-                                                                    type="button">×
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <button type="button" id="add-option"
-                                                        class="btn btn-sm btn-secondary">
-                                                    <i class="fa fa-plus"></i> افزودن گزینه
-                                                </button>
-                                            </div>
-
-                                            <div class="form-group">
-                                                <label>متن راهنما</label>
-                                                <input type="text" id="field-help" class="form-control"
-                                                       placeholder="متن راهنمای فیلد">
-                                            </div>
-
-                                            <div class="form-group">
-                                                <label> متن نمایشی</label>
-                                                <input type="text" id="field-placeholder" class="form-control"
-                                                       placeholder="مثال: نام را وارد کنید">
-                                            </div>
-
-                                            <div class="form-group">
-                                                <label>کلاس CSS</label>
-                                                <input type="text" id="field-class" class="form-control"
-                                                       placeholder="مثال: form-control-lg">
-                                            </div>
-
-                                            <div class="form-group">
-                                                <label>مقدار پیش‌فرض</label>
-                                                <input type="text" id="field-default"
-                                                       class="form-control" placeholder="مقدار پیش‌فرض">
-                                            </div>
-
-                                            <div class="form-group">
-                                                <label>قوانین اعتبارسنجی (اختیاری)</label>
-                                                <input type="text" id="field-validation"
-                                                       class="form-control"
-                                                       placeholder="مثال: min:3|max:255">
-                                                <small class="text-muted">مثال:
-                                                    min:3|max:255|regex:/[a-z]/</small>
-                                            </div>
-
-
-                                                <fieldset class="checkbox mb-2">
-                                                    <div class="vs-checkbox-con vs-checkbox-primary ">
-                                                        <input type="checkbox" id="field-required" >
-                                                        <span class="vs-checkbox">
-                                                        <span class="vs-checkbox--check">
-                                                            <i class="vs-icon feather icon-check"></i>
-                                                        </span>
-                                                    </span>
-                                                        <span>  فیلد اجباری</span>
-                                                    </div>
-                                                </fieldset>
-
-
-                                            <button type="button" id="add-field-btn"
-                                                    data-action="{{ route("admin.forms.render-fields") }}"
-                                                    class="btn btn-success btn-block">
-                                                <i class="fa fa-plus"></i> افزودن فیلد به فرم
+                                            <button type="button" class="fb-trigger-btn" data-toggle="modal" data-target="#fieldTypeModal">
+                                                <i class="fa fa-plus"></i> افزودن فیلد جدید
                                             </button>
                                         </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-8">
-                                <div class="card">
-                                    <div class="card-header">
-                                        <h4 class="card-title">فیلدهای فرم</h4>
-                                        <small class="text-muted">فیلدها را با کشیدن می‌توانید مرتب
-                                            کنید</small>
                                     </div>
                                     <div class="card-content">
                                         <div class="card-body">
@@ -484,6 +367,258 @@
 
                 </form>
 
+            </div>
+        </div>
+    </div>
+
+    <!-- ====================== مودال ۱: انتخاب نوع فیلد ====================== -->
+    <div class="modal fade fb-modal" id="fieldTypeModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">
+                        <span class="fb-title-icon"><i class="fa fa-shapes"></i></span>
+                        <span class="fb-title-text">
+                            <span>انتخاب نوع فیلد</span>
+                            <span class="fb-title-sub">نوع فیلد مورد نظر را انتخاب کنید</span>
+                        </span>
+                    </h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+
+                <div class="fb-step-indicator">
+                    <div class="fb-step active">
+                        <span class="fb-step-num">1</span>
+                        <span>انتخاب نوع</span>
+                    </div>
+                    <div class="fb-step-divider"></div>
+                    <div class="fb-step">
+                        <span class="fb-step-num">2</span>
+                        <span>پیکربندی</span>
+                    </div>
+                </div>
+
+                <div class="modal-body">
+                    <div class="fb-type-grid">
+                        <div class="fb-type-card" data-type="text" data-icon="fa-font" data-name="متن ساده">
+                            <div class="fb-type-icon-wrap"><i class="fa fa-font"></i></div>
+                            <div class="fb-type-name">متن ساده</div>
+                            <div class="fb-type-desc">یک خط متن کوتاه</div>
+                        </div>
+                        <div class="fb-type-card" data-type="email" data-icon="fa-envelope" data-name="ایمیل">
+                            <div class="fb-type-icon-wrap"><i class="fa fa-envelope"></i></div>
+                            <div class="fb-type-name">ایمیل</div>
+                            <div class="fb-type-desc">آدرس ایمیل معتبر</div>
+                        </div>
+                        <div class="fb-type-card" data-type="number" data-icon="fa-hashtag" data-name="شماره">
+                            <div class="fb-type-icon-wrap"><i class="fa fa-hashtag"></i></div>
+                            <div class="fb-type-name">شماره</div>
+                            <div class="fb-type-desc">فقط عدد وارد شود</div>
+                        </div>
+                        <div class="fb-type-card" data-type="textarea" data-icon="fa-align-right" data-name="متن چند خطی">
+                            <div class="fb-type-icon-wrap"><i class="fa fa-align-right"></i></div>
+                            <div class="fb-type-name">متن چند خطی</div>
+                            <div class="fb-type-desc">متن طولانی و پاراگراف</div>
+                        </div>
+                        <div class="fb-type-card" data-type="select" data-icon="fa-list-ul" data-name="انتخابگر">
+                            <div class="fb-type-icon-wrap"><i class="fa fa-list-ul"></i></div>
+                            <div class="fb-type-name">انتخابگر</div>
+                            <div class="fb-type-desc">انتخاب از لیست کشویی</div>
+                        </div>
+                        <div class="fb-type-card" data-type="checkbox" data-icon="fa-check-square" data-name="چک‌باکس">
+                            <div class="fb-type-icon-wrap"><i class="fa fa-check-square"></i></div>
+                            <div class="fb-type-name">چک‌باکس</div>
+                            <div class="fb-type-desc">چند انتخاب از گزینه‌ها</div>
+                        </div>
+                        <div class="fb-type-card" data-type="radio" data-icon="fa-dot-circle" data-name="رادیویی">
+                            <div class="fb-type-icon-wrap"><i class="fa fa-dot-circle"></i></div>
+                            <div class="fb-type-name">رادیویی</div>
+                            <div class="fb-type-desc">یک انتخاب از گزینه‌ها</div>
+                        </div>
+                        <div class="fb-type-card" data-type="date" data-icon="fa-calendar" data-name="تاریخ">
+                            <div class="fb-type-icon-wrap"><i class="fa fa-calendar"></i></div>
+                            <div class="fb-type-name">تاریخ</div>
+                            <div class="fb-type-desc">انتخاب تاریخ شمسی</div>
+                        </div>
+                        <div class="fb-type-card" data-type="file" data-icon="fa-paperclip" data-name="فایل">
+                            <div class="fb-type-icon-wrap"><i class="fa fa-paperclip"></i></div>
+                            <div class="fb-type-name">فایل</div>
+                            <div class="fb-type-desc">آپلود فایل و تصویر</div>
+                        </div>
+                        <div class="fb-type-card" data-type="password" data-icon="fa-lock" data-name="رمز عبور">
+                            <div class="fb-type-icon-wrap"><i class="fa fa-lock"></i></div>
+                            <div class="fb-type-name">رمز عبور</div>
+                            <div class="fb-type-desc">ورود پسورد مخفی</div>
+                        </div>
+                        <div class="fb-type-card" data-type="url" data-icon="fa-link" data-name="لینک">
+                            <div class="fb-type-icon-wrap"><i class="fa fa-link"></i></div>
+                            <div class="fb-type-name">لینک</div>
+                            <div class="fb-type-desc">آدرس وب‌سایت معتبر</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn fb-btn-ghost" data-dismiss="modal">
+                        <i class="fa fa-times"></i> انصراف
+                    </button>
+                    <button type="button" id="fb-continue-btn" class="btn fb-btn-primary" disabled style="opacity: 0.5; cursor: not-allowed;">
+                        ادامه <i class="fa fa-arrow-left"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====================== مودال ۲: پیکربندی فیلد ====================== -->
+    <div class="modal fade fb-modal" id="fieldConfigModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">
+                        <span class="fb-title-icon"><i class="fa fa-sliders"></i></span>
+                        <span class="fb-title-text">
+                            <span>پیکربندی فیلد</span>
+                            <span class="fb-title-sub">اطلاعات فیلد را تکمیل کنید</span>
+                        </span>
+                    </h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+
+                <div class="fb-step-indicator">
+                    <div class="fb-step completed">
+                        <span class="fb-step-num"><i class="fa fa-check" style="font-size: 10px;"></i></span>
+                        <span>انتخاب نوع</span>
+                    </div>
+                    <div class="fb-step-divider"></div>
+                    <div class="fb-step active">
+                        <span class="fb-step-num">2</span>
+                        <span>پیکربندی</span>
+                    </div>
+                </div>
+
+                <div class="modal-body">
+                    <input type="hidden" id="field-type-select" value="text">
+
+                    <!-- بنر نوع فیلد انتخاب‌شده -->
+                    <div class="fb-selected-banner">
+                        <div class="fb-banner-icon" id="fb-banner-icon">
+                            <i class="fa fa-font"></i>
+                        </div>
+                        <div class="fb-banner-text">
+                            <div class="fb-banner-label">نوع فیلد انتخاب شده</div>
+                            <div class="fb-banner-title" id="fb-banner-title">متن ساده</div>
+                        </div>
+                        <button type="button" class="fb-banner-change" id="fb-change-type">
+                            <i class="fa fa-exchange-alt"></i> تغییر
+                        </button>
+                    </div>
+
+                    <!-- اطلاعات پایه -->
+                    <div class="fb-form-section">
+                        <div class="fb-form-section-title">
+                            <i class="fa fa-info-circle"></i>
+                            اطلاعات پایه
+                        </div>
+                        <div class="fb-row-2">
+                            <div class="form-group">
+                                <label>عنوان فیلد <span class="text-danger">*</span></label>
+                                <input type="text" id="field-label" class="form-control" placeholder="مثال: نام و نام خانوادگی">
+                                <div class="error-field-label error"></div>
+                            </div>
+                            <div class="form-group">
+                                <label>نام فیلد (name) <span class="text-danger">*</span></label>
+                                <input type="text" id="field-name" class="form-control" placeholder="مثال: full_name">
+                                <div class="error-field-name error"></div>
+                            </div>
+                        </div>
+                        <small class="text-muted" style="margin-top: -4px;">نام فیلد فقط شامل حروف انگلیسی، اعداد و زیرخط باشد</small>
+
+                        <div class="form-group" id="options-container" style="display: none; margin-top: 12px;">
+                            <label>گزینه‌ها <span class="text-danger">*</span></label>
+                            <div id="options-list">
+                                <div class="input-group mb-2 option-item">
+                                    <input type="text" class="form-control" placeholder="گزینه 1">
+                                    <div class="input-group-append">
+                                        <button class="btn btn-danger remove-option" type="button">×</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" id="add-option" class="btn btn-sm">
+                                <i class="fa fa-plus"></i> افزودن گزینه
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- تنظیمات نمایش -->
+                    <div class="fb-form-section">
+                        <div class="fb-form-section-title">
+                            <i class="fa fa-palette"></i>
+                            تنظیمات نمایش
+                        </div>
+                        <div class="fb-row-2">
+                            <div class="form-group">
+                                <label>متن نمایشی (Placeholder)</label>
+                                <input type="text" id="field-placeholder" class="form-control" placeholder="مثال: نام را وارد کنید">
+                            </div>
+                            <div class="form-group">
+                                <label>متن راهنما</label>
+                                <input type="text" id="field-help" class="form-control" placeholder="متن راهنمای فیلد">
+                            </div>
+                            <div class="form-group">
+                                <label>مقدار پیش‌فرض</label>
+                                <input type="text" id="field-default" class="form-control" placeholder="مقدار پیش‌فرض">
+                            </div>
+                            <div class="form-group">
+                                <label>کلاس CSS</label>
+                                <input type="text" id="field-class" class="form-control" placeholder="مثال: form-control-lg">
+                            </div>
+                        </div>
+                        <div class="form-group mb-0">
+                            <label>قوانین اعتبارسنجی (اختیاری)</label>
+                            <input type="text" id="field-validation" class="form-control" placeholder="مثال: min:3|max:255">
+                            <small class="text-muted">مثال: min:3|max:255|regex:/[a-z]/</small>
+                        </div>
+                    </div>
+
+                    <!-- تنظیمات اضافی -->
+                    <div class="fb-form-section" style="margin-bottom: 0;">
+                        <div class="fb-form-section-title">
+                            <i class="fa fa-cog"></i>
+                            تنظیمات اضافی
+                        </div>
+                        <label class="fb-required-toggle" for="field-required" style="margin-bottom: 0;">
+                            <div class="fb-required-icon"><i class="fa fa-exclamation"></i></div>
+                            <fieldset class="checkbox mb-0">
+                                <div class="vs-checkbox-con vs-checkbox-primary">
+                                    <input type="checkbox" id="field-required">
+                                    <span class="vs-checkbox">
+                                        <span class="vs-checkbox--check">
+                                            <i class="vs-icon feather icon-check"></i>
+                                        </span>
+                                    </span>
+                                </div>
+                            </fieldset>
+                            <div class="fb-required-text">
+                                <span class="fb-required-label">فیلد اجباری</span>
+                                <span class="fb-required-hint">کاربر باید این فیلد را پر کند</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn fb-btn-ghost" id="fb-back-btn">
+                        <i class="fa fa-arrow-right"></i> بازگشت
+                    </button>
+                    <button type="button" id="add-field-btn"
+                            data-action="{{ route("admin.forms.render-fields") }}"
+                            class="btn fb-btn-success">
+                        <i class="fa fa-check"></i> افزودن فیلد
+                    </button>
+                </div>
             </div>
         </div>
     </div>

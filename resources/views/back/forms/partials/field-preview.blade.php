@@ -3,7 +3,6 @@
         <div class="d-flex justify-content-between align-items-start">
             <div class="flex-grow-1">
                 <div class="d-flex align-items-center">
-
                     <strong class="mr-2 ml-2" data-title="title">{{ $field['label'] }}</strong>
 
                     <span class="badge badge-secondary" data-title="{{$field['type']}}">{{ $typeNames[$field['type']] ?? $field['type'] }}</span>
@@ -46,8 +45,9 @@
 @endforeach
 
 @if(empty($fields))
-    <div class="text-center text-muted p-5" id="empty-fields-msg">
-        <i class="fa fa-arrow-right fa-2x"></i>
-        <p class="mt-2">از بخش سمت راست فیلدها را اضافه کنید</p>
+    <div class="fb-empty-state" id="empty-fields-msg">
+        <div class="fb-empty-icon"><i class="fa fa-inbox"></i></div>
+        <h5>هنوز فیلدی اضافه نشده است</h5>
+        <p>برای شروع، روی «افزودن فیلد جدید» بزنید</p>
     </div>
 @endif
