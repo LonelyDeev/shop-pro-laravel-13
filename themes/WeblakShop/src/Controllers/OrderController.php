@@ -1165,7 +1165,7 @@ class OrderController extends Controller
             event(new OrderCancelledNotification($order, $errorMessage, $refundAmount));
 
             // 5. ارسال نوتیفیکیشن به کاربر
-            $this->sendOrderCancellationNotifications($order, $errorMessage, $refundAmount);
+            //$this->sendOrderCancellationNotifications($order, $errorMessage, $refundAmount);
 
             // 6. ارسال نوتیفیکیشن به ادمین (در ایونت هندل می‌شود)
 
