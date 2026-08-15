@@ -711,6 +711,71 @@
                 </li>
             @endcan
 
+            @can('returns')
+                <li class="nav-item has-sub {{ open_class(['admin.returns.*','admin.return.*']) }}">
+                    <a>
+                        <i class="fa-solid fa-rotate-left"></i>
+                        <span class="menu-title">مرجوعی</span>
+                    </a>
+                    <ul class="menu-content">
+                        @can('returns.index')
+                            <li class="{{ active_class('admin.returns.index') }}">
+                                <a href="{{ route('admin.returns.index') }}">
+                                    <i class="fa-solid fa-circle"></i>
+                                    <span class="menu-item">لیست مرجوعی‌ها</span>
+                                </a>
+                            </li>
+                        @endcan
+
+                        @can('returns.reasons')
+                            <li class="{{ active_class('admin.returns.reasons') }}">
+                                <a href="{{ route('admin.returns.reasons') }}">
+                                    <i class="fa-solid fa-circle"></i>
+                                    <span class="menu-item">دلایل مرجوعی</span>
+                                </a>
+                            </li>
+                        @endcan
+
+                        {{-- فیلترهای سریع برای وضعیت‌های مختلف --}}
+                        @can('returns.index')
+                            <li class="">
+                                <a href="{{ route('admin.returns.index') }}?status=pending">
+                                    <i class="fa-solid fa-circle"></i>
+                                    <span class="menu-item">در انتظار بررسی</span>
+                                </a>
+                            </li>
+                        @endcan
+
+                        @can('returns.index')
+                            <li class="">
+                                <a href="{{ route('admin.returns.index') }}?status=approved">
+                                    <i class="fa-solid fa-circle"></i>
+                                    <span class="menu-item">تأیید شده</span>
+                                </a>
+                            </li>
+                        @endcan
+
+                        @can('returns.index')
+                            <li class="">
+                                <a href="{{ route('admin.returns.index') }}?status=completed">
+                                    <i class="fa-solid fa-circle"></i>
+                                    <span class="menu-item">تکمیل شده</span>
+                                </a>
+                            </li>
+                        @endcan
+
+                        @can('returns.index')
+                            <li class="">
+                                <a href="{{ route('admin.returns.index') }}?status=rejected">
+                                    <i class="fa-solid fa-circle"></i>
+                                    <span class="menu-item">رد شده</span>
+                                </a>
+                            </li>
+                        @endcan
+                    </ul>
+                </li>
+            @endcan
+
             @can('statistics')
                 <li class="nav-item has-sub"><a><i class="fa-solid fa-chart-pie"></i><span
                             class="menu-title">گزارشات</span></a>

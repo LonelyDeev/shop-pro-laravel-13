@@ -26,5 +26,6 @@ class DatabaseSeeder extends Seeder
         $this->call(StaticFilterSeeder::class);
         $this->call(LinkSeeder::class);
         $this->call(WarehouseSeeder::class);
+        $this->call(ReturnReasonSeeder::class);
     }
 }

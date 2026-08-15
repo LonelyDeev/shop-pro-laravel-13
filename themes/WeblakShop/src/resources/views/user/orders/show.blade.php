@@ -53,7 +53,6 @@
             $totalShippingCost += $item->shipping_cost ?? 0;
         }
 
-
          // اگر محصولات دانلودی وجود دارند، آنها را به عنوان یک گروه جداگانه اضافه کن
     if (!empty($downloadGroup)) {
         $sellerGroups['download'] = [
@@ -65,7 +64,7 @@
             'shipping_cost' => 0,
             'discount' => 0,
             'total' => 0,
-            'shipping_status' => 'delivered', // وضعیت تحویل داده شده
+            'shipping_status' => 'delivered',
             'tracking_code' => null,
             'carrier_name' => 'دانلودی',
             'delivery_date' => null,
@@ -87,7 +86,6 @@
         }
     }
 
-
         $finalPayable = $totalPrice - $totalDiscount + $totalShippingCost;
         $hasPhysicalProduct = $order->hasPhysicalProduct();
         $NoDownload = [];
@@ -105,9 +103,17 @@
             $installmentPlan = \Modules\InstallmentPayment\Models\InstallmentPlan::where('order_id', $order->id)->first();
         }
         $isInstallment = (bool) $installmentPlan;
-        // اگه سفارش اقساطی باشه و پیش‌پرداخت هنوز پرداخت نشده، مبلغ قابل پرداخت = پیش‌پرداخت
-        // در غیر این صورت مبلغ قابل پرداخت = finalPayable
         $displayPayable = $isInstallment ? $installmentPlan->down_payment : $finalPayable;
+
+        // ========== برچسب‌های وضعیت مرجوعی ==========
+        $returnStatusLabels = [
+            'pending'   => ['label' => 'در حال بررسی مرجوعی', 'color' => '#f59e0b', 'bg' => '#fffbeb', 'icon' => 'fa-clock'],
+            'approved'  => ['label' => 'تایید اولیه مرجوعی', 'color' => '#3b82f6', 'bg' => '#dbeafe', 'icon' => 'fa-check-circle'],
+            'received'  => ['label' => 'محصول دریافت شد', 'color' => '#8b5cf6', 'bg' => '#ede9fe', 'icon' => 'fa-box'],
+            'completed' => ['label' => 'مرجوع شد', 'color' => '#10b981', 'bg' => '#d1fae5', 'icon' => 'fa-check-double'],
+            'rejected'  => ['label' => 'مرجوعی رد شد', 'color' => '#ef4444', 'bg' => '#fee2e2', 'icon' => 'fa-times-circle'],
+            'cancelled' => ['label' => 'مرجوعی لغو شد', 'color' => '#6b7280', 'bg' => '#f3f4f6', 'icon' => 'fa-ban'],
+        ];
     @endphp
 
     <section class="page-contents page-contents-order">
@@ -144,6 +150,13 @@
                 <div class="alert alert-danger rounded-3 mb-4">
                     <i class="mdi mdi-close-circle me-2"></i>
                     <strong>{{ session('error') }}</strong>
+                </div>
+            @endif
+
+            @if(session('success'))
+                <div class="alert alert-success rounded-3 mb-4">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <strong>{{ session('success') }}</strong>
                 </div>
             @endif
 
@@ -324,6 +337,10 @@
                         @endif
                     </div>
 
+                    @if(function_exists('module_is_active') && module_is_active('CreditPay'))
+                        @include('credit-pay::front.order_credit_info', ['order' => $order])
+                    @endif
+
                     {{-- ========== مرسوله‌ها ========== --}}
                     @foreach($sellerGroups as $groupId => $group)
 
@@ -396,10 +413,8 @@
                                             $deliveryDate = null;
                                             if($group['delivery_date']) {
                                                 try {
-                                                    // اگر تاریخ میلادی است
                                                     $deliveryDate = jdate($group['delivery_date'])->format('%d %B %Y');
                                                 } catch(Exception $e) {
-                                                    // اگر تاریخ شمسی است یا فرمت نامعتبر
                                                     $deliveryDate = $group['delivery_date'];
                                                 }
                                             }
@@ -451,7 +466,17 @@
 
                                 {{-- لیست محصولات --}}
                                 @foreach($group['items'] as $item)
-                                    <div class="d-flex gap-3 py-2 border-bottom align-items-start">
+                                    @php
+                                        $itemReturnStatus = $item->return_status ?? 'none';
+                                        $itemReturnInfo = $returnStatusLabels[$itemReturnStatus] ?? null;
+                                        $canRequestReturn = ($order->status == 'paid'
+                                            && $item->shipping_status == 'delivered'
+                                            && $itemReturnStatus === 'none'
+                                            && class_exists(\App\Models\ReturnRequest::class)
+                                            && \App\Models\ReturnRequest::isWithinReturnPeriod($item->id));
+                                    @endphp
+                                    <div class="d-flex gap-3 py-2 border-bottom align-items-start {{ $itemReturnStatus !== 'none' ? 'rounded-3 p-2 mb-2' : '' }}"
+                                         style="@if($itemReturnInfo) background:{{ $itemReturnInfo['bg'] }}; border:1px solid {{ $itemReturnInfo['color'] }}33; @endif">
                                         <div class="flex-shrink-0">
                                             @if($item->product)
                                                 <a href="{{route('front.products.show',$item->product)}}">
@@ -467,6 +492,14 @@
                                         </div>
                                         <div class="flex-grow-1">
                                             <h6 class="fw-bold mb-1 text-md-right"><a class=" text-black" href="{{route('front.products.show',$item->product)}}">{{ $item->title }}</a></h6>
+
+                                            {{-- نشان وضعیت مرجوعی --}}
+                                            @if($itemReturnInfo)
+                                                <div style="margin-bottom:8px;padding:4px 10px;background:{{ $itemReturnInfo['color'] }};color:#fff;border-radius:8px;font-size:0.72rem;font-weight:600;display:inline-block;">
+                                                    <i class="fas {{ $itemReturnInfo['icon'] }}"></i> {{ $itemReturnInfo['label'] }}
+                                                </div>
+                                            @endif
+
                                             <div class="d-flex flex-column mt-3">
                                                 @if($item->attributes)
                                                     @php
@@ -538,178 +571,261 @@
                                                     </div>
                                                 </div>
 
-
-
                                             </div>
                                         </div>
-                                        @if ($item->product && $item->product->isDownload() && $item->get_price && $item->get_price->isDownloadable())
-                                            <div class="mt-3 mr-auto">
-                                                <a href="{{ $item->get_price->downloadLink() }}" class="btn btn-sm btn-outline-primary">
-                                                    <i class="fas fa-download me-1"></i> دانلود محصول
-                                                </a>
-                                            </div>
-                                        @endif
-                                    </div>
-                                @endforeach
-                            </div>
 
-                            {{-- فقط برای محصولات فیزیکی وضعیت ارسال نمایش داده شود --}}
-                            @if(!($isDownloadGroup ?? false) and $order->status == 'paid')
-                                <div class="container-fluid">
-                                    <div class="order-status-container mb-3">
+                                        {{-- ===== کارت مرجوعی (مشابه دیجی‌کالا) ===== --}}
+                                        @if(class_exists(\App\Models\ReturnRequest::class))
+                                            <div class="w-100 mt-2">
+                                                @if($itemReturnStatus === 'none' && $canRequestReturn)
+                                                    {{-- محصول قابل مرجوعی است --}}
+                                                    <div style="border:1px solid #d1fae5;border-radius:12px;overflow:hidden;">
+                                                        <div style="padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+                                                            <div style="display:flex;align-items:center;gap:8px;">
+                                                                <div style="width:28px;height:28px;border-radius:50%;background:#10b981;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                                                    <i class="fas fa-check text-white" style="font-size:0.7rem;"></i>
+                                                                </div>
+                                                                <div>
+                                                                    <span style="color:#10b981;font-size:0.82rem;font-weight:700;">قابل بازگشت توسط مشتری</span>
+                                                                    <div style="font-size:0.72rem;color:#64748b;">مهلت مرجوعی: {{ \App\Models\Setting::where('key', 'return_days_limit')->first()?->value ?? 7 }} روز پس از تحویل</div>
+                                                                </div>
+                                                            </div>
+                                                            <a href="{{ route('front.returns.create', ['order' => $order, 'orderItem' => $item]) }}"
+                                                               style="background:#10b981;color:#fff;padding:6px 16px;border-radius:8px;font-size:0.78rem;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:5px;">
+                                                                <i class="fas fa-undo-alt"></i> درخواست مرجوعی
+                                                            </a>
+                                                        </div>
+                                                        <div style="padding:8px 14px;background:#f0fdf4;border-top:1px solid #d1fae5;">
+                                                            <small style="color:#64748b;font-size:0.72rem;display:flex;align-items:center;gap:4px;">
+                                                                <i class="fas fa-info-circle"></i>
+                                                                برای آگاهی از شرایط مرجوعی، قوانین بازگشت کالا را مطالعه کنید.
+                                                            </small>
+                                                        </div>
+                                                    </div>
 
-                                        @if($isCanceled)
-                                            {{-- وضعیت لغو شده --}}
-                                            <div class="card bg-danger bg-opacity-10 border-0 p-2">
-                                                <div class="d-flex align-items-center gap-2">
-                                                    <i class="fas fa-ban text-danger fs-5"></i>
-                                                    <span class="text-white fw-bold">سفارش لغو شده است</span>
-                                                </div>
-                                                @if($group['cancel_reason'])
-                                                    <div class="mt-1 small text-muted">
-                                                        <i class="fas fa-info-circle me-1"></i> دلیل: {{ $group['cancel_reason'] }}
+                                                @elseif($itemReturnStatus === 'none' && !$canRequestReturn)
+                                                    {{-- مهلت مرجوعی تمام شده --}}
+                                                    <div style="border:1px solid #f1f5f9;border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:8px;">
+                                                        <div style="width:28px;height:28px;border-radius:50%;background:#f1f5f9;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                                            <i class="fas fa-clock text-muted" style="font-size:0.72rem;"></i>
+                                                        </div>
+                                                        <div>
+                                                            <span style="color:#94a3b8;font-size:0.8rem;font-weight:600;">مهلت مرجوعی به پایان رسیده است</span>
+                                                            <div style="font-size:0.72rem;color:#94a3b8;">در صورت وجود مشکل با پشتیبانی تماس بگیرید.</div>
+                                                        </div>
+                                                    </div>
+
+                                                @elseif($itemReturnStatus !== 'none')
+                                                    {{-- درخواست مرجوعی ثبت شده --}}
+                                                    <div style="border:1px solid {{ $itemReturnInfo['color'] }}33;border-radius:12px;overflow:hidden;background:{{ $itemReturnInfo['bg'] }};">
+                                                        <div style="padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+                                                            <div style="display:flex;align-items:center;gap:8px;">
+                                                                <div style="width:28px;height:28px;border-radius:50%;background:{{ $itemReturnInfo['color'] }};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                                                    <i class="fas {{ $itemReturnInfo['icon'] }} text-white" style="font-size:0.72rem;"></i>
+                                                                </div>
+                                                                <div>
+                                                                    <span style="color:{{ $itemReturnInfo['color'] }};font-size:0.82rem;font-weight:700;">{{ $itemReturnInfo['label'] }}</span>
+                                                                    @if($item->returnRequest?->reason)
+                                                                        <div style="font-size:0.72rem;color:#64748b;">دلیل: {{ $item->returnRequest->reason->title }}</div>
+                                                                    @endif
+                                                                </div>
+                                                            </div>
+                                                            @if($item->returnRequest)
+                                                                <a href="{{ route('front.returns.show', $item->returnRequest) }}"
+                                                                   style="background:{{ $itemReturnInfo['color'] }};color:#fff;padding:6px 16px;border-radius:8px;font-size:0.78rem;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:5px;">
+                                                                    <i class="fas fa-eye"></i> مشاهده جزئیات
+                                                                </a>
+                                                            @endif
+                                                        </div>
+                                                        @if($itemReturnStatus === 'completed' && $item->returnRequest?->refund_to_wallet)
+                                                            <div style="padding:6px 14px;border-top:1px solid {{ $itemReturnInfo['color'] }}22;">
+                                                                <small style="color:#10b981;font-size:0.72rem;display:flex;align-items:center;gap:4px;">
+                                                                    <i class="fas fa-wallet"></i>
+                                                                    مبلغ {{ number_format($item->returnRequest->refund_amount) }} تومان به کیف پول شما برگشت داده شد.
+                                                                </small>
+                                                            </div>
+                                                        @endif
+                                                        @if($itemReturnStatus === 'rejected' && $item->returnRequest?->rejection_reason)
+                                                            <div style="padding:6px 14px;border-top:1px solid {{ $itemReturnInfo['color'] }}22;">
+                                                                <small style="color:#ef4444;font-size:0.72rem;display:flex;align-items:center;gap:4px;">
+                                                                    <i class="fas fa-info-circle"></i>
+                                                                    دلیل رد: {{ $item->returnRequest->rejection_reason }}
+                                                                </small>
+                                                            </div>
+                                                        @endif
                                                     </div>
                                                 @endif
                                             </div>
-                                        @else
-
-                                            {{-- نمایش وضعیت عادی --}}
-                                            <div class="d-flex justify-content-between align-items-center mb-2 mt-3">
-                                                <span class="small text-muted">وضعیت سفارش</span>
-                                            </div>
-
-                                            {{-- نوار پیشرفت --}}
-                                            <div class="progress mb-3" style="height: 8px; background-color: #e2e8f0; border-radius: 10px;">
-                                                <div class="progress-bar" role="progressbar"
-                                                     style="width: {{ $progressPercent }}%; background-color: {{ $progressColor }}; border-radius: 10px; transition: width 0.5s ease;">
-                                                </div>
-                                            </div>
-
-                                            {{-- مراحل با نام کامل --}}
-                                            <div class="row g-0 text-center">
-                                                @foreach(['w-pending', 'pending', 'processing', 'waiting', 'sent', 'post-sent', 'delivered'] as $index => $stepKey)
-                                                    @php
-                                                        $stepNumber = $statusSteps[$stepKey]['step'];
-                                                        $isCompleted = $stepNumber < $currentStep;
-                                                        $isActive = $stepNumber == $currentStep;
-                                                        $stepLabel = $statusSteps[$stepKey]['label'];
-                                                        $stepIcon = $statusSteps[$stepKey]['icon'];
-                                                    @endphp
-                                                    <div class="col" style="flex: 1;">
-                                                        <div class="position-relative">
-                                                            {{-- دایره وضعیت --}}
-                                                            <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1"
-                                                                 style="width: 24px; height: 24px;
-                                background-color: {{ $isCompleted ? $progressColor : ($isActive ? $progressColor : '#f1f5f9') }};
-                                border: 2px solid {{ $isCompleted || $isActive ? $progressColor : '#cbd5e1' }};">
-                                                                @if($isCompleted)
-                                                                    <i class="fas fa-check text-white" style="font-size: 10px;"></i>
-                                                                @elseif($isActive)
-                                                                    <i class="fas {{ $stepIcon }} text-white" style="font-size: 10px;"></i>
-                                                                @else
-                                                                    <i class="fas {{ $stepIcon }} text-muted" style="font-size: 10px;"></i>
-                                                                @endif
-                                                            </div>
-
-                                                            {{-- متن مرحله --}}
-                                                            <div class="small {{ $isActive ? 'fw-bold' : 'text-muted' }} d-none d-sm-block"
-                                                                 style="color: {{ $isActive ? $progressColor : 'inherit' }};">
-                                                                {{ $stepLabel }}
-                                                            </div>
-
-                                                            {{-- متن کوتاه برای موبایل --}}
-                                                            <div class="small {{ $isActive ? 'fw-bold' : 'text-muted' }} d-sm-none"
-                                                                 style="color: {{ $isActive ? $progressColor : 'inherit' }};">
-                                                                @switch($stepKey)
-                                                                    @case('w-pending') انتظار @break
-                                                                    @case('pending') بررسی @break
-                                                                    @case('processing') پردازش @break
-                                                                    @case('waiting') آماده @break
-                                                                    @case('sent') ارسال @break
-                                                                    @case('post-sent') پست @break
-                                                                    @case('delivered') تحویل @break
-                                                                @endswitch
-                                                            </div>
-
-                                                            {{-- نشانگر مرحله فعال --}}
-                                                            @if($isActive)
-                                                                <div class="small text-success mt-1">
-                                                                    <i class="fas fa-spinner fa-pulse"></i>
-                                                                </div>
-                                                            @endif
-                                                        </div>
-                                                    </div>
-                                                @endforeach
-                                            </div>
-
-                                            {{-- درصد پیشرفت --}}
-                                            <div class="text-center mt-2">
-                                                <small class="text-muted">پیشرفت سفارش: {{ round($progressPercent) }}%</small>
-                                            </div>
                                         @endif
                                     </div>
-                                </div>
-                            @endif
+                                    @if ($item->product && $item->product->isDownload() && $item->get_price && $item->get_price->isDownloadable())
+                                        <div class="mt-3 mr-auto">
+                                            <a href="{{ $item->get_price->downloadLink() }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-download me-1"></i> دانلود محصول
+                                            </a>
+                                        </div>
+                                    @endif
+                            </div>
+                            @endforeach
                         </div>
-                    @endforeach
 
-                    {{-- تاریخچه تراکنش‌ها --}}
-                    @if ($order->transactions->count())
-                        <div class="card border rounded-3 overflow-hidden">
-                            <div class="card-header bg-light py-2" data-bs-toggle="collapse" data-bs-target="#transactions" style="cursor: pointer;">
-                                <div class="d-flex align-items-center gap-2">
-                                    <i class="fas fa-chevron-down small"></i>
-                                    <span class="fw-bold">تاریخچه تراکنش‌ها</span>
-                                    <span class="badge bg-secondary">{{ $order->transactions->count() }}</span>
+                        {{-- فقط برای محصولات فیزیکی وضعیت ارسال نمایش داده شود --}}
+                        @if(!($isDownloadGroup ?? false) and $order->status == 'paid')
+                            <div class="container-fluid">
+                                <div class="order-status-container mb-3">
+
+                                    @if($isCanceled)
+                                        {{-- وضعیت لغو شده --}}
+                                        <div class="card bg-danger bg-opacity-10 border-0 p-2">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="fas fa-ban text-danger fs-5"></i>
+                                                <span class="text-white fw-bold">سفارش لغو شده است</span>
+                                            </div>
+                                            @if($group['cancel_reason'])
+                                                <div class="mt-1 small text-muted">
+                                                    <i class="fas fa-info-circle me-1"></i> دلیل: {{ $group['cancel_reason'] }}
+                                                </div>
+                                            @endif
+                                        </div>
+                                    @else
+
+                                        {{-- نمایش وضعیت عادی --}}
+                                        <div class="d-flex justify-content-between align-items-center mb-2 mt-3">
+                                            <span class="small text-muted">وضعیت سفارش</span>
+                                        </div>
+
+                                        {{-- نوار پیشرفت --}}
+                                        <div class="progress mb-3" style="height: 8px; background-color: #e2e8f0; border-radius: 10px;">
+                                            <div class="progress-bar" role="progressbar"
+                                                 style="width: {{ $progressPercent }}%; background-color: {{ $progressColor }}; border-radius: 10px; transition: width 0.5s ease;">
+                                            </div>
+                                        </div>
+
+                                        {{-- مراحل با نام کامل --}}
+                                        <div class="row g-0 text-center">
+                                            @foreach(['w-pending', 'pending', 'processing', 'waiting', 'sent', 'post-sent', 'delivered'] as $index => $stepKey)
+                                                @php
+                                                    $stepNumber = $statusSteps[$stepKey]['step'];
+                                                    $isCompleted = $stepNumber < $currentStep;
+                                                    $isActive = $stepNumber == $currentStep;
+                                                    $stepLabel = $statusSteps[$stepKey]['label'];
+                                                    $stepIcon = $statusSteps[$stepKey]['icon'];
+                                                @endphp
+                                                <div class="col" style="flex: 1;">
+                                                    <div class="position-relative">
+                                                        {{-- دایره وضعیت --}}
+                                                        <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1"
+                                                             style="width: 24px; height: 24px;
+                                background-color: {{ $isCompleted ? $progressColor : ($isActive ? $progressColor : '#f1f5f9') }};
+                                border: 2px solid {{ $isCompleted || $isActive ? $progressColor : '#cbd5e1' }};">
+                                                            @if($isCompleted)
+                                                                <i class="fas fa-check text-white" style="font-size: 10px;"></i>
+                                                            @elseif($isActive)
+                                                                <i class="fas {{ $stepIcon }} text-white" style="font-size: 10px;"></i>
+                                                            @else
+                                                                <i class="fas {{ $stepIcon }} text-muted" style="font-size: 10px;"></i>
+                                                            @endif
+                                                        </div>
+
+                                                        {{-- متن مرحله --}}
+                                                        <div class="small {{ $isActive ? 'fw-bold' : 'text-muted' }} d-none d-sm-block"
+                                                             style="color: {{ $isActive ? $progressColor : 'inherit' }};">
+                                                            {{ $stepLabel }}
+                                                        </div>
+
+                                                        {{-- متن کوتاه برای موبایل --}}
+                                                        <div class="small {{ $isActive ? 'fw-bold' : 'text-muted' }} d-sm-none"
+                                                             style="color: {{ $isActive ? $progressColor : 'inherit' }};">
+                                                            @switch($stepKey)
+                                                                @case('w-pending') انتظار @break
+                                                                @case('pending') بررسی @break
+                                                                @case('processing') پردازش @break
+                                                                @case('waiting') آماده @break
+                                                                @case('sent') ارسال @break
+                                                                @case('post-sent') پست @break
+                                                                @case('delivered') تحویل @break
+                                                            @endswitch
+                                                        </div>
+
+                                                        {{-- نشانگر مرحله فعال --}}
+                                                        @if($isActive)
+                                                            <div class="small text-success mt-1">
+                                                                <i class="fas fa-spinner fa-pulse"></i>
+                                                            </div>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+
+                                        {{-- درصد پیشرفت --}}
+                                        <div class="text-center mt-2">
+                                            <small class="text-muted">پیشرفت سفارش: {{ round($progressPercent) }}%</small>
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
-                            <div id="transactions" class="collapse">
-                                <div class="card-body p-0">
-                                    <div class="list-group list-group-flush">
-                                        @foreach($order->transactions()->latest()->get() as $transaction)
-                                            <div class="list-group-item">
-                                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                                                    <div class="d-flex align-items-center gap-2">
-                                                        @if($transaction->status)
-                                                            <i class="fas fa-check-circle text-success fs-5"></i>
-                                                        @else
-                                                            <i class="fas fa-times-circle text-danger fs-5"></i>
-                                                        @endif
-                                                        <div>
-                                                            <div class="fw-bold">
-                                                                @if($transaction->status)
-                                                                    پرداخت موفق
-                                                                @else
-                                                                    پرداخت ناموفق
-                                                                @endif
-                                                            </div>
-                                                            <div class="small text-muted">{{ jdate($transaction->created_at)->format('%d %B %Y H:i:s') }}</div>
+                        @endif
+                </div>
+                @endforeach
+
+                {{-- تاریخچه تراکنش‌ها --}}
+                @if ($order->transactions->count())
+                    <div class="card border rounded-3 overflow-hidden">
+                        <div class="card-header bg-light py-2" data-bs-toggle="collapse" data-bs-target="#transactions" style="cursor: pointer;">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="fas fa-chevron-down small"></i>
+                                <span class="fw-bold">تاریخچه تراکنش‌ها</span>
+                                <span class="badge bg-secondary">{{ $order->transactions->count() }}</span>
+                            </div>
+                        </div>
+                        <div id="transactions" class="collapse">
+                            <div class="card-body p-0">
+                                <div class="list-group list-group-flush">
+                                    @foreach($order->transactions()->latest()->get() as $transaction)
+                                        <div class="list-group-item">
+                                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    @if($transaction->status)
+                                                        <i class="fas fa-check-circle text-success fs-5"></i>
+                                                    @else
+                                                        <i class="fas fa-times-circle text-danger fs-5"></i>
+                                                    @endif
+                                                    <div>
+                                                        <div class="fw-bold">
+                                                            @if($transaction->status)
+                                                                پرداخت موفق
+                                                            @else
+                                                                پرداخت ناموفق
+                                                            @endif
                                                         </div>
+                                                        <div class="small text-muted">{{ jdate($transaction->created_at)->format('%d %B %Y H:i:s') }}</div>
                                                     </div>
-                                                    <div class="d-flex flex-wrap gap-3 small">
-                                                        <div>
-                                                            <span class="text-muted">درگاه:</span>
-                                                            <span>{{ \App\Models\Gateway::find($transaction->gateway_id)->name ?? '-' }}</span>
-                                                        </div>
-                                                        <div>
-                                                            <span class="text-muted">شماره پیگیری:</span>
-                                                            <span>{{ $transaction->id }}</span>
-                                                        </div>
-                                                        <div>
-                                                            <span class="text-muted">مبلغ:</span>
-                                                            <span class="fw-bold">{{ number_format($transaction->amount) }} تومان</span>
-                                                        </div>
+                                                </div>
+                                                <div class="d-flex flex-wrap gap-3 small">
+                                                    <div>
+                                                        <span class="text-muted">درگاه:</span>
+                                                        <span>{{ \App\Models\Gateway::find($transaction->gateway_id)->name ?? '-' }}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span class="text-muted">شماره پیگیری:</span>
+                                                        <span>{{ $transaction->id }}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span class="text-muted">مبلغ:</span>
+                                                        <span class="fw-bold">{{ number_format($transaction->amount) }} تومان</span>
                                                     </div>
                                                 </div>
                                             </div>
-                                        @endforeach
-                                    </div>
+                                        </div>
+                                    @endforeach
                                 </div>
                             </div>
                         </div>
-                    @endif
-                </div>
+                    </div>
+                @endif
             </div>
+        </div>
         </div>
     </section>
 

@@ -70,6 +70,10 @@ class OrderItem extends Model
         return $this->refunded === true;
     }
 
+    public function returnRequest()
+    {
+        return $this->hasOne(ReturnRequest::class)->latest();
+    }
     public function canBeCanceled(): bool
     {
         // اگر قبلاً لغو شده باشد
@@ -94,4 +98,5 @@ class OrderItem extends Model
 
         return true;
     }
+
 }

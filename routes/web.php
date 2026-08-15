@@ -69,7 +69,7 @@ use App\Http\Controllers\Back\WidgetController;
 use App\Http\Controllers\PushSubscriptionController;
 use Illuminate\Support\Facades\Route;
 use Rap2hpoutre\LaravelLogViewer\LogViewerController;
-
+use App\Http\Controllers\Back\ReturnController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -175,7 +175,7 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
     // ------------------ sellers
 
     Route::post('sellers/api/index', [SellerControllers::class, 'apiIndex'])->name('sellers.apiIndex');
-    Route::get('sellers/products', [SellerControllers::class,'products'])->name('sellers.products');
+    Route::get('sellers/products', [SellerControllers::class, 'products'])->name('sellers.products');
     Route::post('sellers/products/api/index', [SellerControllers::class, 'productsApiIndex'])->name('sellers.products.apiIndex');
     Route::delete('sellers/api/multipleDestroy', [SellerControllers::class, 'multipleDestroy'])->name('sellers.multipleDestroy');
     Route::get('sellers/orders', [SellerControllers::class, 'orders'])->name('sellers.orders');
@@ -253,9 +253,9 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
 
     // ------------------ pages
     Route::prefix('pulse')->name('pulse.')->group(function () {
-        Route::get('/',        [PulseController::class, 'index'])   ->name('index');
-        Route::get('/stream',  [PulseController::class, 'stream'])  ->name('stream');
-        Route::post('/refresh',[PulseController::class, 'refresh']) ->name('refresh');
+        Route::get('/', [PulseController::class, 'index'])->name('index');
+        Route::get('/stream', [PulseController::class, 'stream'])->name('stream');
+        Route::post('/refresh', [PulseController::class, 'refresh'])->name('refresh');
     });
 
     Route::prefix('activity-log')->name('activity-log.')->group(function () {
@@ -274,7 +274,7 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
     Route::resource('tickets', TicketController::class)->except(['edit']);
     Route::post('tickets/file/store', [TicketController::class, 'storeFile'])->name('tickets.file.store');
     Route::delete('tickets/file/destroy', [TicketController::class, 'destoryFile'])->name('tickets.file.destroy');
-    Route::post('tickets/{ticket}/type', [TicketController::class,'type'])->name('tickets.type');
+    Route::post('tickets/{ticket}/type', [TicketController::class, 'type'])->name('tickets.type');
     // ------------------ menus
     Route::resource('menus', MenuController::class)->except(['edit']);
     Route::post('menus/sort', [MenuController::class, 'sort']);
@@ -295,11 +295,29 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
     Route::get('order/not-completed/products', [OrderController::class, 'notCompleted'])->name('orders.notCompleted');
     Route::get('orders/api/userInfo', [OrderController::class, 'userInfo'])->name('orders.userInfo');
     Route::get('orders/api/productsList', [OrderController::class, 'productsList'])->name('orders.productsList');
-    Route::get('orders/api/printAllShippingForms',[OrderController::class, 'printAllShippingForms'])->name('orders.printAllShippingForms');
-    Route::get('orders/api/printAllShippingFormsMin',[OrderController::class, 'printAllShippingFormsMin'])->name('orders.printAllShippingFormsMin');
-    Route::get('orders/api/printAll',[OrderController::class, 'printAll'])->name('orders.printAll');
+    Route::get('orders/api/printAllShippingForms', [OrderController::class, 'printAllShippingForms'])->name('orders.printAllShippingForms');
+    Route::get('orders/api/printAllShippingFormsMin', [OrderController::class, 'printAllShippingFormsMin'])->name('orders.printAllShippingFormsMin');
+    Route::get('orders/api/printAll', [OrderController::class, 'printAll'])->name('orders.printAll');
 
     Route::get('orders/export/create', [OrderController::class, 'export'])->name('orders.export');
+
+    Route::prefix('returns')->name('returns.')->group(function () {
+        Route::get('/', [ReturnController::class, 'index'])->name('index');
+        Route::get('/{returnRequest}', [ReturnController::class, 'show'])->name('show');
+        Route::post('/{returnRequest}/approve', [ReturnController::class, 'approve'])->name('approve');
+        Route::post('/{returnRequest}/received', [ReturnController::class, 'markReceived'])->name('received');
+        Route::post('/{returnRequest}/complete', [ReturnController::class, 'complete'])->name('complete');
+        Route::post('/{returnRequest}/reject', [ReturnController::class, 'reject'])->name('reject');
+    });
+
+    Route::prefix('return')->name('returns.')->group(function () {
+        // مدیریت دلایل مرجوعی
+        Route::get('/reasons', [ReturnController::class, 'reasonsIndex'])->name('reasons');
+        Route::post('/reasons', [ReturnController::class, 'reasonsStore'])->name('reasons.store');
+        Route::delete('/reasons/{reason}', [ReturnController::class, 'reasonsDestroy'])->name('reasons.destroy');
+        Route::post('/reasons/{reason}/toggle', [ReturnController::class, 'reasonsToggle'])->name('reasons.toggle');
+
+    });
 
     // ------------------ carriers
     Route::resource('carriers', CarrierController::class);
@@ -309,7 +327,7 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
     Route::resource('tariffs', TariffController::class);
 
     // ------------------ transactions
-    Route::get('transactions/seller-deposit',[TransactionController::class,'seller_deposits'])->name('transactions.seller_deposits');;
+    Route::get('transactions/seller-deposit', [TransactionController::class, 'seller_deposits'])->name('transactions.seller_deposits');;
     Route::resource('transactions', TransactionController::class)->only(['index', 'show', 'destroy']);
     Route::post('transactions/api/index', [TransactionController::class, 'apiIndex'])->name('transactions.apiIndex');
     Route::delete('transactions/api/multipleDestroy', [TransactionController::class, 'multipleDestroy'])->name('transactions.multipleDestroy');
@@ -319,8 +337,6 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
 
     // ------------------ currencies
     Route::resource('currencies', CurrencyController::class)->except(['show']);
-
-
 
 
     //---------------------- searches
@@ -383,8 +399,6 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
     Route::resource('sms', SmsController::class)->only(['show']);
 
 
-
-
     //-------------------------Forms
     Route::resource('forms', FormController::class)->except(['show']);
     // مدیریت فیلدها
@@ -429,7 +443,7 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
     });
 
     // ------------------ messages
-    Route::resource('messages', MessageController::class)->only(['index','show','store', 'destroy', 'update']);
+    Route::resource('messages', MessageController::class)->only(['index', 'show', 'store', 'destroy', 'update']);
     Route::get('messages/birthday', [MessageController::class, 'birthday'])->name('messages.birthday');
     Route::post('messages/birthday/store', [MessageController::class, 'birthdayStore'])->name('messages.birthday.store');
 
@@ -483,7 +497,7 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
         Route::post('/{warehouse}/stock-take', [WarehouseController::class, 'stockTake'])->name('stock-take');
         Route::get('/{warehouse}/stock-take-data', [WarehouseController::class, 'stockTakeData'])->name('stock-take-data');
 
-        Route::get('/{warehouse}/bulk-stock-data',[WarehouseController::class, 'bulkStockData'])->name('bulk-stock-data');
+        Route::get('/{warehouse}/bulk-stock-data', [WarehouseController::class, 'bulkStockData'])->name('bulk-stock-data');
         Route::post('/{warehouse}/bulk-stock-update', [WarehouseController::class, 'bulkStockUpdate'])->name('bulk-stock-update');
 
         // دریافت اطلاعات تنوع‌ها برای AJAX
@@ -516,8 +530,8 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
     Route::post('settings/sms', [SettingController::class, 'updateSms']);
 
     Route::prefix('settings/floating-widget')->name('settings.floating-widget.')->group(function () {
-        Route::get('/',      [FloatingWidgetController::class, 'index'])->name('index');
-        Route::put('/save',  [FloatingWidgetController::class, 'update'])->name('update');
+        Route::get('/', [FloatingWidgetController::class, 'index'])->name('index');
+        Route::put('/save', [FloatingWidgetController::class, 'update'])->name('update');
     });
 
 
@@ -546,10 +560,10 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
     Route::post('settings/seller-econtract', [SettingController::class, 'seller_econtract_store'])->name('settings.seller-econtract-store');
 
     Route::delete('filds/multipleDestroy', [FildController::class, 'multipleDestroy'])->name('filds.multipleDestroy');
-    Route::resource('filds',FildController::class);
+    Route::resource('filds', FildController::class);
 
     Route::delete('redirects/multipleDestroy', [RedirectInternalController::class, 'multipleDestroy'])->name('redirects.multipleDestroy');
-    Route::resource('redirects',RedirectInternalController::class);
+    Route::resource('redirects', RedirectInternalController::class);
     // ------------------ sellers
 
 
@@ -599,8 +613,6 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
     });
 
 
-
-
     Route::prefix('robots')->name('robots.')->group(function () {
         Route::get('/', [RobotsController::class, 'index'])->name('index');
         Route::post('/update', [RobotsController::class, 'update'])->name('update');
@@ -609,26 +621,24 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
     });
 
 
-
-
     Route::prefix('packages')->name('packages.')->group(function () {
-            // --- لیست و جزئیات ---
-            Route::get('/', [PackageController::class, 'index'])->name('index');
-            Route::get('installed', [PackageController::class, 'installed'])->name('installed');
-            Route::get('{slug}', [PackageController::class, 'show'])->name('show');
+        // --- لیست و جزئیات ---
+        Route::get('/', [PackageController::class, 'index'])->name('index');
+        Route::get('installed', [PackageController::class, 'installed'])->name('installed');
+        Route::get('{slug}', [PackageController::class, 'show'])->name('show');
 
-            // --- آپدیت‌ها ---
-            Route::post('check-updates', [PackageController::class, 'checkUpdates'])->name('check-updates');
+        // --- آپدیت‌ها ---
+        Route::post('check-updates', [PackageController::class, 'checkUpdates'])->name('check-updates');
 
-            // --- نصب ---
-            Route::post('{slug}/install', [PackageController::class, 'startInstall'])->name('install');
-            Route::post('{slug}/update', [PackageController::class, 'update'])->name('update');
-            Route::post('{slug}/uninstall', [PackageController::class, 'uninstall'])->name('uninstall');
-            Route::post('{slug}/toggle', [PackageController::class, 'toggleActivation'])->name('toggle');
+        // --- نصب ---
+        Route::post('{slug}/install', [PackageController::class, 'startInstall'])->name('install');
+        Route::post('{slug}/update', [PackageController::class, 'update'])->name('update');
+        Route::post('{slug}/uninstall', [PackageController::class, 'uninstall'])->name('uninstall');
+        Route::post('{slug}/toggle', [PackageController::class, 'toggleActivation'])->name('toggle');
 
-            // --- وضعیت (polling) ---
-            Route::get('{slug}/status', [PackageController::class, 'status'])->name('status');
-        });
+        // --- وضعیت (polling) ---
+        Route::get('{slug}/status', [PackageController::class, 'status'])->name('status');
+    });
 
 });
 

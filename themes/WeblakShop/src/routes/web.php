@@ -40,6 +40,7 @@ use Themes\WeblakShop\src\Controllers\sellers\SellerCarrierController;
 use Themes\WeblakShop\src\Controllers\sellers\SellerTariffController;
 use App\Http\Controllers\Back\HolidayController;
 use Themes\WeblakShop\src\Controllers\sellers\SellerStatisticsController;
+use Themes\WeblakShop\src\Controllers\ReturnController;
 // ------------------ Front Part Routes
 
 Route::group(['as' => 'front.'], function () {
@@ -248,6 +249,15 @@ Route::group(['as' => 'front.'], function () {
         Route::resource('profile/comments', CommentController::class)->only(['index', 'store', 'destroy']);
         // ------------------ tickets
         Route::resource('profile/tickets', TicketController::class)->except(['destroy']);
+
+
+        Route::prefix('profile/returns')->name('front.returns.')->middleware(['auth', 'verified'])->group(function () {
+            Route::get('/', [ReturnController::class, 'index'])->name('index');
+            Route::get('/create/{order}/{orderItem}', [ReturnController::class, 'create'])->name('create');
+            Route::post('/create/{order}/{orderItem}', [ReturnController::class, 'store'])->name('store');
+            Route::get('/{returnRequest}', [ReturnController::class, 'show'])->name('show');
+            Route::post('/{returnRequest}/cancel', [ReturnController::class, 'cancel'])->name('cancel');
+        });
 
 
         // ------------------ reviews
