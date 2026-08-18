@@ -1781,13 +1781,13 @@ class ProductController extends Controller
 
             // ==================== پردازش رنگ‌ها با قیمت اختصاصی ====================
             $attribute_group_id = AttributeGroup::where('type', 'color')->first();
-            $attribute_group_id = AttributeGroup::create([
-                'type' => 'color',
-                'name' => 'رنگ',
-
-            ]);
             if (!$attribute_group_id) {
-                throw new \Exception('Attribute group color not found');
+                $attribute_group_id = AttributeGroup::create([
+                    'type' => 'color',
+                    'name' => 'رنگ',
+
+                ]);
+                //throw new \Exception('Attribute group color not found');
             }
             $attribute_group_id = $attribute_group_id->id;
 
