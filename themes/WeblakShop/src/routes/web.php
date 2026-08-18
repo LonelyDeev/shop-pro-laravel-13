@@ -251,12 +251,14 @@ Route::group(['as' => 'front.'], function () {
         Route::resource('profile/tickets', TicketController::class)->except(['destroy']);
 
 
-        Route::prefix('profile/returns')->name('front.returns.')->middleware(['auth', 'verified'])->group(function () {
+        Route::prefix('profile/returns')->name('returns.')->middleware(['auth', 'verified'])->group(function () {
             Route::get('/', [ReturnController::class, 'index'])->name('index');
             Route::get('/create/{order}/{orderItem}', [ReturnController::class, 'create'])->name('create');
             Route::post('/create/{order}/{orderItem}', [ReturnController::class, 'store'])->name('store');
             Route::get('/{returnRequest}', [ReturnController::class, 'show'])->name('show');
             Route::post('/{returnRequest}/cancel', [ReturnController::class, 'cancel'])->name('cancel');
+            // مشتری ثبت می‌کند که محصول را ارسال کرده
+            Route::post('/{returnRequest}/mark-shipped', [ReturnController::class, 'markShipped'])->name('mark_shipped');
         });
 
 

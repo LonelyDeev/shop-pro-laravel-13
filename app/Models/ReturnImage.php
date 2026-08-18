@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class ReturnImage extends Model
 {
     protected $table = 'return_images';
-
     protected $guarded = ['id'];
 
     public function returnRequest(): BelongsTo

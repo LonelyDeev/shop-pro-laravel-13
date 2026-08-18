@@ -8,12 +8,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class ReturnReason extends Model
 {
     protected $table = 'return_reasons';
-
     protected $guarded = ['id'];
-
-    protected $casts = [
-        'is_active' => 'boolean',
-    ];
+    protected $casts = ['is_active' => 'boolean'];
 
     public function returnRequests(): HasMany
     {

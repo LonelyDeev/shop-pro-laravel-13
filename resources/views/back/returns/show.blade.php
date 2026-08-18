@@ -5,6 +5,7 @@
 @section('content')
 @php
     $statusInfo = \App\Models\ReturnRequest::statusLabels()[$returnRequest->status] ?? ['label' => $returnRequest->status, 'color' => '#6b7280', 'bg' => '#f3f4f6', 'icon' => 'fa-circle'];
+    $ptInfo = \App\Models\ReturnRequest::paymentTypeLabels()[$returnRequest->payment_type] ?? ['label' => $returnRequest->payment_type, 'color' => '#6b7280', 'bg' => '#f3f4f6', 'icon' => 'fa-circle'];
     $item = $returnRequest->orderItem;
 @endphp
 
@@ -19,9 +20,14 @@
                     </a>
                     <h4 class="mb-0">جزئیات مرجوعی #{{ $returnRequest->id }}</h4>
                 </div>
-                <span style="background:{{ $statusInfo['bg'] }};color:{{ $statusInfo['color'] }};padding:6px 16px;border-radius:999px;font-weight:700;">
-                    <i class="fas {{ $statusInfo['icon'] }}"></i> {{ $statusInfo['label'] }}
-                </span>
+                <div class="d-flex gap-2">
+                    <span style="background:{{ $ptInfo['bg'] }};color:{{ $ptInfo['color'] }};padding:6px 16px;border-radius:999px;font-weight:700;font-size:0.82rem;">
+                        <i class="fas {{ $ptInfo['icon'] }}"></i> {{ $ptInfo['label'] }}
+                    </span>
+                    <span style="background:{{ $statusInfo['bg'] }};color:{{ $statusInfo['color'] }};padding:6px 16px;border-radius:999px;font-weight:700;">
+                        <i class="fas {{ $statusInfo['icon'] }}"></i> {{ $statusInfo['label'] }}
+                    </span>
+                </div>
             </div>
 
             <div class="row">
@@ -40,10 +46,81 @@
                                     <small class="text-muted">
                                         سفارش: <a href="{{ route('admin.orders.show', $returnRequest->order_id) }}" target="_blank">#{{ $returnRequest->order_id }}</a>
                                         · تعداد: {{ $item?->quantity ?? 0 }}
-                                        · مبلغ: {{ number_format(($item?->price ?? 0) * ($item?->quantity ?? 0)) }} ت
+                                        · مبلغ محصول: {{ number_format(($item?->price ?? 0) * ($item?->quantity ?? 0)) }} ت
                                     </small>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    {{-- اطلاعات مالی مرجوعی --}}
+                    <div class="card mb-3" style="border:2px solid #a7f3d0;">
+                        <div class="card-header" style="background:#d1fae5;color:#065f46;">
+                            <strong><i class="fas fa-wallet"></i> اطلاعات مالی مرجوعی</strong>
+                        </div>
+                        <div class="card-body" style="background:#f0fdf4;">
+                            <div class="row g-2" style="font-size:0.88rem;">
+                                <div class="col-md-6">
+                                    <small class="text-muted d-block">مبلغ محصول (با تخفیف)</small>
+                                    <strong>{{ number_format($returnRequest->total_item_amount) }} ت</strong>
+                                </div>
+                                <div class="col-md-6">
+                                    <small class="text-muted d-block">نوع پرداخت سفارش</small>
+                                    <strong style="color:{{ $ptInfo['color'] }};">
+                                        <i class="fas {{ $ptInfo['icon'] }}"></i> {{ $ptInfo['label'] }}
+                                    </strong>
+                                </div>
+                                <div class="col-md-6 mt-2">
+                                    <small class="text-muted d-block">بازگشت به کیف پول</small>
+                                    <strong class="text-success">
+                                        @if($returnRequest->wallet_refund_amount > 0)
+                                            {{ number_format($returnRequest->wallet_refund_amount) }} ت
+                                            @if($returnRequest->paid_to_wallet)
+                                                <span class="badge bg-success ms-1">واریز شد</span>
+                                            @endif
+                                        @else
+                                            —
+                                        @endif
+                                    </strong>
+                                </div>
+                                <div class="col-md-6 mt-2">
+                                    <small class="text-muted d-block">بازگشت به اعتبار</small>
+                                    <strong class="text-primary">
+                                        @if($returnRequest->credit_restore_amount > 0)
+                                            {{ number_format($returnRequest->credit_restore_amount) }} ت
+                                            @if($returnRequest->credit_restored)
+                                                <span class="badge bg-primary ms-1">برگشت داده شد</span>
+                                            @endif
+                                        @else
+                                            —
+                                        @endif
+                                    </strong>
+                                </div>
+                                <div class="col-12 mt-2">
+                                    <small class="text-muted d-block">هزینه ارسال</small>
+                                    <strong class="text-muted">قابل بازگشت نیست</strong>
+                                </div>
+                                <div class="col-12 mt-2 pt-2" style="border-top:1px dashed #a7f3d0;">
+                                    <small class="text-muted d-block">مبلغ کل قابل برگشت</small>
+                                    <strong style="font-size:1.1rem;color:#10b981;">{{ number_format($returnRequest->refund_amount) }} ت</strong>
+                                </div>
+                            </div>
+
+                            @if($returnRequest->payment_type !== 'cash')
+                            <div class="alert mt-3 mb-0" style="background:{{ $ptInfo['bg'] }};border:1px solid {{ $ptInfo['color'] }}33;color:{{ $ptInfo['color'] }};font-size:0.82rem;">
+                                <i class="fas {{ $ptInfo['icon'] }}"></i>
+                                <strong>نکته درباره سفارش {{ $ptInfo['label'] }}:</strong>
+                                <ul class="mb-0 mt-1" style="padding-right:16px;">
+                                    @if($returnRequest->payment_type === 'credit')
+                                        <li>مبلغ پرداخت‌شده کاربر (قسط اول + اقساط پرداخت‌شده) × سهم این آیتم به کیف پول کاربر واریز شد.</li>
+                                        <li>اعتبار استفاده‌شده برای این آیتم به حساب اعتباری کاربر برگردانده شد.</li>
+                                    @elseif($returnRequest->payment_type === 'installment')
+                                        <li>مبلغ پرداخت‌شده کاربر (پیش‌پرداخت + اقساط پرداخت‌شده) × سهم این آیتم به کیف پول کاربر واریز شد.</li>
+                                    @endif
+                                    <li>هزینه ارسال قابل بازگشت نیست.</li>
+                                </ul>
+                            </div>
+                            @endif
                         </div>
                     </div>
 
@@ -73,6 +150,16 @@
                     </div>
                     @endif
 
+                    {{-- نتیجه بررسی --}}
+                    @if($returnRequest->inspection_result)
+                    <div class="card mb-3">
+                        <div class="card-header"><strong>نتیجه بررسی محصول</strong></div>
+                        <div class="card-body">
+                            <p class="mb-0">{{ $returnRequest->inspection_result }}</p>
+                        </div>
+                    </div>
+                    @endif
+
                     {{-- دلیل رد --}}
                     @if($returnRequest->rejection_reason)
                     <div class="card mb-3 border-danger">
@@ -93,7 +180,7 @@
                             <div class="mb-2"><span class="text-muted">کاربر:</span> {{ $returnRequest->user?->first_name }} {{ $returnRequest->user?->last_name }}</div>
                             <div class="mb-2"><span class="text-muted">موبایل:</span> {{ $returnRequest->user?->mobile }}</div>
                             <div class="mb-2"><span class="text-muted">دلیل:</span> {{ $returnRequest->reason?->title ?? '—' }}</div>
-                            <div class="mb-2"><span class="text-muted">مبلغ برگشتی:</span> <strong class="text-success">{{ number_format($returnRequest->refund_amount) }} ت</strong></div>
+                            <div class="mb-2"><span class="text-muted">مبلغ کل برگشتی:</span> <strong class="text-success">{{ number_format($returnRequest->refund_amount) }} ت</strong></div>
                             <div class="mb-2"><span class="text-muted">تاریخ:</span> {{ jdate($returnRequest->created_at)->format('Y/m/d H:i') }}</div>
                             @if($returnRequest->admin_notes)
                             <div class="mb-2"><span class="text-muted">یادداشت ادمین:</span><br>{{ $returnRequest->admin_notes }}</div>
@@ -151,9 +238,26 @@
                     <div class="card mb-3 border-success">
                         <div class="card-header bg-success"><strong class="text-white">تایید نهایی</strong></div>
                         <div class="card-body">
+                            {{-- نمایش تفکیک مبالغ --}}
                             <div class="alert alert-info py-2 mb-2" style="font-size:0.82rem;">
-                                مبلغ قابل برگشت: <strong>{{ number_format($returnRequest->refund_amount) }} ت</strong>
+                                @if($returnRequest->wallet_refund_amount > 0)
+                                    <div class="d-flex justify-content-between">
+                                        <span>بازگشت به کیف پول:</span>
+                                        <strong class="text-success">{{ number_format($returnRequest->wallet_refund_amount) }} ت</strong>
+                                    </div>
+                                @endif
+                                @if($returnRequest->credit_restore_amount > 0)
+                                    <div class="d-flex justify-content-between">
+                                        <span>بازگشت به اعتبار:</span>
+                                        <strong class="text-primary">{{ number_format($returnRequest->credit_restore_amount) }} ت</strong>
+                                    </div>
+                                @endif
+                                <div class="d-flex justify-content-between mt-1 pt-1" style="border-top:1px dashed #c7d2fe;">
+                                    <span>کل بازگشتی:</span>
+                                    <strong>{{ number_format($returnRequest->refund_amount) }} ت</strong>
+                                </div>
                             </div>
+
                             <form action="{{ route('admin.returns.complete', $returnRequest) }}" method="POST" onsubmit="return confirm('وجه به کیف پول کاربر برگشت داده شود؟')">
                                 @csrf
                                 <div class="mb-2">
@@ -168,6 +272,16 @@
                                 </button>
                             </form>
                             <hr>
+                            <form action="{{ route('admin.returns.reship', $returnRequest) }}" method="POST" onsubmit="return confirm('محصول دوباره ارسال شود؟')">
+                                @csrf
+                                <div class="mb-2">
+                                    <textarea name="inspection_result" class="form-control form-control-sm" rows="2" placeholder="یادداشت بررسی (اختیاری)"></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-info btn-sm w-100">
+                                    <i class="fas fa-truck-fast"></i> محصول مشکلی نداشت - ارسال مجدد
+                                </button>
+                            </form>
+                            <hr>
                             <form action="{{ route('admin.returns.reject', $returnRequest) }}" method="POST" onsubmit="return confirm('رد شود؟')">
                                 @csrf
                                 <div class="mb-2">
@@ -177,6 +291,34 @@
                                     <i class="fas fa-times"></i> رد درخواست
                                 </button>
                             </form>
+                        </div>
+                    </div>
+                    @endif
+
+                    @if($returnRequest->isCompleted())
+                    <div class="card border-success">
+                        <div class="card-header bg-success">
+                            <strong class="text-white"><i class="fas fa-check-double"></i> تکمیل شده</strong>
+                        </div>
+                        <div class="card-body" style="font-size:0.85rem;">
+                            @if($returnRequest->paid_to_wallet)
+                            <div class="mb-2">
+                                <span class="text-muted">واریز به کیف پول:</span>
+                                <strong class="text-success">{{ number_format($returnRequest->wallet_refund_amount) }} ت</strong>
+                                <span class="badge bg-success ms-1">✓</span>
+                            </div>
+                            @endif
+                            @if($returnRequest->credit_restored)
+                            <div class="mb-2">
+                                <span class="text-muted">برگشت به اعتبار:</span>
+                                <strong class="text-primary">{{ number_format($returnRequest->credit_restore_amount) }} ت</strong>
+                                <span class="badge bg-primary ms-1">✓</span>
+                            </div>
+                            @endif
+                            <div class="mt-2">
+                                <small class="text-muted">تاریخ تکمیل:</small><br>
+                                {{ jdate($returnRequest->completed_at)->format('Y/m/d H:i') }}
+                            </div>
                         </div>
                     </div>
                     @endif

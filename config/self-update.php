@@ -2,12 +2,6 @@
 
 return [
 
-    // غیرفعال کردن کامل در لوکال
-    'enabled' => env('SELF_UPDATE_ENABLED', false),
-
-    // غیرفعال کردن چک خودکار
-    'check_updates_automatically' => false,
-
     /*
     |--------------------------------------------------------------------------
     | Default source repository type
@@ -17,7 +11,7 @@ return [
     |
     */
 
-    'default' => env('SELF_UPDATER_SOURCE', 'http'),
+    'default' => env('SELF_UPDATER_SOURCE', 'github'),
 
     /*
     |--------------------------------------------------------------------------
@@ -28,18 +22,7 @@ return [
     |
     */
 
-    'version_installed' => '1.0.0',
-
-    /*
-    |--------------------------------------------------------------------------
-    | Updater Token
-    |--------------------------------------------------------------------------
-    |
-    | This token is used when updating software
-    |
-    */
-
-    'updater_token' => env('SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN'),
+    'version_installed' => env('SELF_UPDATER_VERSION_INSTALLED', ''),
 
     /*
     |--------------------------------------------------------------------------
@@ -65,9 +48,9 @@ return [
         ],
         'http' => [
             'type' => 'http',
-            'repository_url' => env('SELF_UPDATER_REPO_URL', update_url()),
-            'pkg_filename_format' => env('SELF_UPDATER_PKG_FILENAME_FORMAT', 'webapp-v_VERSION_'),
-            'download_path' => env('SELF_UPDATER_DOWNLOAD_PATH', public_path('uploads/temp')),
+            'repository_url' => env('SELF_UPDATER_REPO_URL', ''),
+            'pkg_filename_format' => env('SELF_UPDATER_PKG_FILENAME_FORMAT', 'v_VERSION_'),
+            'download_path' => env('SELF_UPDATER_DOWNLOAD_PATH', '/tmp'),
             'private_access_token' => env('SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN', ''),
         ],
     ],
@@ -87,11 +70,13 @@ return [
     'exclude_folders' => [
         '__MACOSX',
         'node_modules',
+        'bootstrap/cache',
+        'bower',
         'storage/app',
         'storage/framework',
         'storage/logs',
         'storage/self-update',
-        'public/uploads',
+        'vendor',
     ],
 
     /*
@@ -116,9 +101,9 @@ return [
 
     'notifications' => [
         'notifications' => [
-            // \Codedge\Updater\Notifications\Notifications\UpdateSucceeded::class => ['mail'],
-            // \Codedge\Updater\Notifications\Notifications\UpdateFailed::class => ['mail'],
-            // \Codedge\Updater\Notifications\Notifications\UpdateAvailable::class => ['mail'],
+            \Codedge\Updater\Notifications\Notifications\UpdateSucceeded::class => ['mail'],
+            \Codedge\Updater\Notifications\Notifications\UpdateFailed::class => ['mail'],
+            \Codedge\Updater\Notifications\Notifications\UpdateAvailable::class => ['mail'],
         ],
 
         /*
@@ -154,10 +139,7 @@ return [
             //]
         ],
         'post_update' => [
-            'updater:after' => [
-                'class' => \App\Console\Commands\UpdaterAfter::class,
-                'params' => []
-            ]
+
         ],
     ],
 

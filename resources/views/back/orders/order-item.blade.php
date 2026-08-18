@@ -76,6 +76,25 @@
                                 💰 سفارش اقساطی
                             </span>
                         @endif
+                        {{-- Badge مرجوعی --}}
+                        @if($orderItem->refunded || $orderItem->return_status !== 'none')
+                            @php
+                                $returnStatusLabel = [
+                                    'pending'              => ['label' => 'مرجوعی در حال بررسی', 'color' => '#f59e0b', 'bg' => '#fffbeb'],
+                                    'approved'              => ['label' => 'مرجوعی تایید شد', 'color' => '#3b82f6', 'bg' => '#dbeafe'],
+                                    'shipped_by_customer'  => ['label' => 'محصول ارسال شد', 'color' => '#8b5cf6', 'bg' => '#ede9fe'],
+                                    'received'              => ['label' => 'محصول دریافت شد', 'color' => '#06b6d4', 'bg' => '#cffafe'],
+                                    'reshipped'             => ['label' => 'ارسال مجدد', 'color' => '#6366f1', 'bg' => '#e0e7ff'],
+                                    'completed'             => ['label' => 'مرجوعی تکمیل شد', 'color' => '#10b981', 'bg' => '#d1fae5'],
+                                    'rejected'              => ['label' => 'مرجوعی رد شد', 'color' => '#ef4444', 'bg' => '#fee2e2'],
+                                    'cancelled'             => ['label' => 'مرجوعی لغو شد', 'color' => '#6b7280', 'bg' => '#f3f4f6'],
+                                    'failed'                => ['label' => 'مرجوعی ناموفق', 'color' => '#dc2626', 'bg' => '#fef2f2'],
+                                ][$orderItem->return_status] ?? ['label' => 'مرجوع شده', 'color' => '#f59e0b', 'bg' => '#fffbeb'];
+                            @endphp
+                            <span class="status-badge" style="background:{{ $returnStatusLabel['bg'] }};color:{{ $returnStatusLabel['color'] }};font-size:13px;margin-right:8px;">
+                                <i class="fas fa-undo-alt"></i> {{ $returnStatusLabel['label'] }}
+                            </span>
+                        @endif
                     </h4>
                 </div>
                 <div class="actions-row">
@@ -194,6 +213,11 @@
                     </div>
                 </div>
             @endif
+
+
+            {{-- ======== بنر وضعیت مرجوعی ======== --}}
+            @include('back.returns.partials.order_item_return_info', ['orderItem' => $orderItem])
+
 
             {{-- Status Bar --}}
             <div class="status-bar section-gap">
@@ -527,6 +551,11 @@
                     </div>
                 </div>
             </div>
+
+
+            @if(function_exists('module_is_active') && module_is_active('CreditPay'))
+                    @include('credit-pay::back.orders.credit_info', ['order' => $orderItem->order])
+            @endif
 
             {{-- Products Table --}}
             <div class="oi-card section-gap">

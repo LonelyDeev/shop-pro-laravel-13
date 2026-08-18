@@ -17,8 +17,11 @@
                     <th>#</th>
                     <th>شماره سفارش</th>
                     <th>محصول</th>
+                    <th>نوع پرداخت</th>
                     <th>دلیل</th>
-                    <th>مبلغ برگشتی</th>
+                    <th>بازگشت به کیف پول</th>
+                    <th>بازگشت اعتبار</th>
+                    <th>مبلغ کل</th>
                     <th>وضعیت</th>
                     <th>تاریخ</th>
                     <th>جزئیات</th>
@@ -29,6 +32,7 @@
                 @foreach($returns as $return)
                 @php
                     $statusInfo = \App\Models\ReturnRequest::statusLabels()[$return->status] ?? ['label' => $return->status, 'color' => '#6b7280', 'bg' => '#f3f4f6', 'icon' => 'fa-circle'];
+                    $ptInfo = \App\Models\ReturnRequest::paymentTypeLabels()[$return->payment_type] ?? ['label' => $return->payment_type, 'color' => '#6b7280', 'bg' => '#f3f4f6', 'icon' => 'fa-circle'];
                 @endphp
                 <tr>
                     <td>{{ $return->id }}</td>
@@ -40,8 +44,27 @@
                             —
                         @endif
                     </td>
+                    <td>
+                        <span style="background:{{ $ptInfo['bg'] }};color:{{ $ptInfo['color'] }};padding:3px 10px;border-radius:999px;font-size:0.72rem;font-weight:700;">
+                            <i class="fas {{ $ptInfo['icon'] }}"></i> {{ $ptInfo['label'] }}
+                        </span>
+                    </td>
                     <td>{{ $return->reason?->title ?? '—' }}</td>
-                    <td>{{ number_format($return->refund_amount) }} ت</td>
+                    <td class="text-success">
+                        @if($return->wallet_refund_amount > 0)
+                            {{ number_format($return->wallet_refund_amount) }} ت
+                        @else
+                            —
+                        @endif
+                    </td>
+                    <td class="text-primary">
+                        @if($return->credit_restore_amount > 0)
+                            {{ number_format($return->credit_restore_amount) }} ت
+                        @else
+                            —
+                        @endif
+                    </td>
+                    <td><strong>{{ number_format($return->refund_amount) }} ت</strong></td>
                     <td>
                         <span style="background:{{ $statusInfo['bg'] }};color:{{ $statusInfo['color'] }};padding:3px 10px;border-radius:999px;font-size:0.78rem;font-weight:600;">
                             <i class="fas {{ $statusInfo['icon'] }}"></i> {{ $statusInfo['label'] }}
@@ -56,7 +79,7 @@
                 </tr>
                 @endforeach
                 @else
-                <tr><td colspan="8" class="text-center text-muted py-4">هیچ درخواست مرجوعی ثبت نشده است.</td></tr>
+                <tr><td colspan="11" class="text-center text-muted py-4">هیچ درخواست مرجوعی ثبت نشده است.</td></tr>
                 @endif
             </tbody>
         </table>

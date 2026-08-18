@@ -1,14 +1,13 @@
 <?php
 
 return [
-
-    /**
+    /*
      * What attributes do we use to build the slug?
      * This can be a single field, like "name" which will build a slug from:
      *
      *     $model->name;
      *
-     * Or it can be an array of fields, like ("name", "company"), which builds a slug from:
+     * Or it can be an array of fields, like ["name", "company"], which builds a slug from:
      *
      *     $model->name . ' ' . $model->company;
      *
@@ -20,7 +19,7 @@ return [
 
     'source' => null,
 
-    /**
+    /*
      * The maximum length of a generated slug.  Defaults to "null", which means
      * no length restrictions are enforced.  Set it to a positive integer if you
      * want to make sure your slugs aren't too long.
@@ -28,7 +27,7 @@ return [
 
     'maxLength' => null,
 
-    /**
+    /*
      * If you are setting a maximum length on your slugs, you may not want the
      * truncated string to split a word in half.  The default setting of "true"
      * will ensure this, e.g. with a maxLength of 12:
@@ -43,7 +42,7 @@ return [
 
     'maxLengthKeepWords' => true,
 
-    /**
+    /*
      * If left to "null", then use the cocur/slugify package to generate the slug
      * (with the separator defined below).
      *
@@ -59,15 +58,13 @@ return [
      *    'method' => array('Str','slug'),
      */
 
-    'method' => 'sluggable_helper_function',
+    'method' => null,
 
-    /**
-     * Separator to use when generating slugs.  Defaults to a hyphen.
-     */
+    // Separator to use when generating slugs.  Defaults to a hyphen.
 
     'separator' => '-',
 
-    /**
+    /*
      * Enforce uniqueness of slugs?  Defaults to true.
      * If a generated slug already exists, an incremental numeric
      * value will be appended to the end until a unique slug is found.  e.g.:
@@ -79,7 +76,7 @@ return [
 
     'unique' => true,
 
-    /**
+    /*
      * If you are enforcing unique slugs, the default is to add an
      * incremental value to the end of the base slug.  Alternatively, you
      * can change this value to a closure that accepts three parameters:
@@ -90,7 +87,18 @@ return [
 
     'uniqueSuffix' => null,
 
-    /**
+    /*
+     * What is the first suffix to add to a slug to make it unique?
+     * For the default method of adding incremental integers, we start
+     * counting at 2, so the list of slugs would be, e.g.:
+     *
+     *   - my-post
+     *   - my-post-2
+     *   - my-post-3
+     */
+    'firstUniqueSuffix' => 2,
+
+    /*
      * Should we include the trashed items when generating a unique slug?
      * This only applies if the softDelete property is set for the Eloquent model.
      * If set to "false", then a new slug could duplicate one that exists on a trashed model.
@@ -99,7 +107,7 @@ return [
 
     'includeTrashed' => false,
 
-    /**
+    /*
      * An array of slug names that can never be used for this model,
      * e.g. to prevent collisions with existing routes or controller methods, etc..
      * Defaults to null (i.e. no reserved names).
@@ -125,7 +133,7 @@ return [
 
     'reserved' => null,
 
-    /**
+    /*
      * Whether to update the slug value when a model is being
      * re-saved (i.e. already exists).  Defaults to false, which
      * means slugs are not updated.
@@ -136,6 +144,11 @@ return [
      * Only set this to true if you understand the possible consequences.
      */
 
-    'onUpdate' => true,
+    'onUpdate' => false,
 
+    /*
+     * If the default slug engine of cocur/slugify is used, this array of
+     * configuration options will be used when instantiating the engine.
+     */
+    'slugEngineOptions' => [],
 ];

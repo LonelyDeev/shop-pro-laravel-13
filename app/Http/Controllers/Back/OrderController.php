@@ -570,6 +570,12 @@ class OrderController extends Controller
             ]);
         }
 
+        if ($request->shipping_status=="delivered"){
+            $order->items()->where('seller_id', $sellerId)->update([
+                'delivery_date' =>now()
+            ]);
+        }
+
         // به‌روزرسانی وضعیت ارسال برای همه آیتم‌های同一 فروشنده
         $order->items()->where('seller_id', $sellerId)->update([
             'shipping_status' => $request->shipping_status

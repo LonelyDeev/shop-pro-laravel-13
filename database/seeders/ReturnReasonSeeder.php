@@ -22,8 +22,7 @@ class ReturnReasonSeeder extends Seeder
             ReturnReason::firstOrCreate(['title' => $reason['title']], $reason);
         }
 
-        option_update('return_days_limit', '7');
-        option_update('return_enabled', '1');
-
+        option_update('return_days_limit',7);
+        option_update('return_enabled',1);
     }
 }

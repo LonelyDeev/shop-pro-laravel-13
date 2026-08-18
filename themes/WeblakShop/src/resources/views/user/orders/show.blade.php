@@ -1,5 +1,7 @@
 @extends('front::user.layouts.master')
-
+@push('styles')
+    <link rel="stylesheet" type="text/css" href="{{theme_asset('css/order.css')}}">
+@endpush
 @section('user-content')
 
     @php
@@ -466,6 +468,7 @@
 
                                 {{-- لیست محصولات --}}
                                 @foreach($group['items'] as $item)
+
                                     @php
                                         $itemReturnStatus = $item->return_status ?? 'none';
                                         $itemReturnInfo = $returnStatusLabels[$itemReturnStatus] ?? null;
@@ -587,7 +590,7 @@
                                                                 </div>
                                                                 <div>
                                                                     <span style="color:#10b981;font-size:0.82rem;font-weight:700;">قابل بازگشت توسط مشتری</span>
-                                                                    <div style="font-size:0.72rem;color:#64748b;">مهلت مرجوعی: {{ \App\Models\Setting::where('key', 'return_days_limit')->first()?->value ?? 7 }} روز پس از تحویل</div>
+                                                                    <div style="font-size:0.72rem;color:#64748b;">مهلت مرجوعی: {{ option('return_days_limit',7) }} روز پس از تحویل</div>
                                                                 </div>
                                                             </div>
                                                             <a href="{{ route('front.returns.create', ['order' => $order, 'orderItem' => $item]) }}"
@@ -826,70 +829,8 @@
                 @endif
             </div>
         </div>
-        </div>
     </section>
 
-    <style>
-        .badge{
-            color: #fff;
-        }
-        .gap-1 { gap: 0.25rem; }
-        .gap-2 { gap: 0.5rem; }
-        .gap-3 { gap: 1rem; }
-        .object-fit-cover {
-            object-fit: cover;
-        }
-        .card-header {
-            cursor: pointer;
-        }
-        .card-header i.fa-chevron-down {
-            transition: transform 0.2s ease;
-        }
-        .card-header[aria-expanded="true"] i.fa-chevron-down {
-            transform: rotate(180deg);
-        }
-        .order-status-container .progress-bar {
-            position: relative;
-            overflow: hidden;
-        }
 
-        .order-status-container .progress-bar::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-            animation: shimmer 2s infinite;
-        }
-
-        @keyframes shimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-        }
-
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        .order-status-container .fa-spinner {
-            animation: spin 1s linear infinite;
-        }
-        .order-product-attribute{
-            padding: 2px 10px;
-            background: #f5f6f7;
-            border-radius: 8px;
-            display: inline-block;
-            margin-bottom: 7px;
-            float: right;
-            margin-left: 5px;
-            font-size: 12px;
-        }
-        .width-max-content{
-            width: max-content;
-        }
-    </style>
 
 @endsection

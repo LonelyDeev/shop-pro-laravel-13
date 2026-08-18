@@ -20,8 +20,7 @@
                 <span>انتخاب شیوه پرداخت</span>
             </div>
 
-            <div class="row">
-                        <div class="checkout-time-table checkout-time-table-time">
+             <div class="row checkout-time-table checkout-time-table-time d-flex">
 
 
 
@@ -70,9 +69,10 @@
 
                             @endforeach
 
-
+                            @if(function_exists('module_is_active') && module_is_active('DigiPay'))
+                                      @include('digipay::front.checkout_hook', ['cart' => $cart])
+                             @endif
                         </div>
-                    </div>
 
 
 

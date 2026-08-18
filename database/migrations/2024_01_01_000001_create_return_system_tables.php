@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // ۱. جدول دلایل مرجوعی (قابل مدیریت از پنل ادمین)
+        // ۱. دلایل مرجوعی
         Schema::create('return_reasons', function (Blueprint $table) {
             $table->id();
             $table->string('title');
@@ -18,7 +18,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // ۲. جدول درخواست‌های مرجوعی
+        // ۲. درخواست‌های مرجوعی
         Schema::create('return_requests', function (Blueprint $table) {
             $table->id();
             $table->foreignId('order_id')->constrained()->cascadeOnDelete();
@@ -27,23 +27,45 @@ return new class extends Migration
             $table->foreignId('product_id')->constrained()->cascadeOnDelete();
             $table->foreignId('return_reason_id')->nullable()->constrained('return_reasons')->nullOnDelete();
             $table->foreignId('seller_id')->nullable();
-            $table->foreignId('admin_id')->nullable(); // ادمینی که بررسی کرده
+            $table->foreignId('admin_id')->nullable();
 
-            // وضعیت: pending, approved, received, completed, rejected, cancelled
-            $table->enum('status', ['pending', 'approved', 'received', 'completed', 'rejected', 'cancelled'])->default('pending');
+            $table->enum('status', [
+                'pending',
+                'approved',
+                'shipped_by_customer',
+                'received',
+                'reshipped',
+                'completed',
+                'rejected',
+                'cancelled',
+                'failed',
+            ])->default('pending');
 
-            // اطلاعات درخواست
-            $table->text('description')->nullable(); // توضیحات کاربر
-            $table->decimal('refund_amount', 20, 0)->default(0); // مبلغ برگشتی
-            $table->boolean('refund_to_wallet')->default(false); // آیا به کیف پول برگشت داده شد
+            $table->text('description')->nullable();
 
-            // یادداشت‌های ادمین
+            $table->decimal('item_price', 20, 0)->default(0);
+            $table->integer('quantity')->default(1);
+            $table->decimal('total_item_amount', 20, 0)->default(0);
+            $table->decimal('discount_amount', 20, 0)->default(0);
+            $table->decimal('refund_amount', 20, 0)->default(0);
+
+            $table->string('payment_type', 32)->default('cash')->index();
+            $table->decimal('wallet_refund_amount', 20, 0)->default(0);
+            $table->decimal('credit_restore_amount', 20, 0)->default(0);
+            $table->boolean('paid_to_wallet')->default(false);
+            $table->boolean('credit_restored')->default(false);
+
+            $table->boolean('refund_to_wallet')->default(false);
+            $table->boolean('reship_product')->default(false);
+
             $table->text('admin_notes')->nullable();
             $table->text('rejection_reason')->nullable();
+            $table->text('inspection_result')->nullable();
 
-            // زمان‌بندی
             $table->timestamp('approved_at')->nullable();
+            $table->timestamp('customer_shipped_at')->nullable();
             $table->timestamp('received_at')->nullable();
+            $table->timestamp('reshipped_at')->nullable();
             $table->timestamp('completed_at')->nullable();
             $table->timestamp('rejected_at')->nullable();
             $table->timestamp('cancelled_at')->nullable();
@@ -55,7 +77,7 @@ return new class extends Migration
             $table->index('status');
         });
 
-        // ۳. جدول تصاویر مرجوعی
+        // ۳. تصاویر مرجوعی
         Schema::create('return_images', function (Blueprint $table) {
             $table->id();
             $table->foreignId('return_request_id')->constrained()->cascadeOnDelete();
@@ -64,18 +86,31 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // ۴. افزودن وضعیت مرجوعی به order_items
+        // ۴. افزودن return_status به order_items (با بررسی وجود ستون)
         Schema::table('order_items', function (Blueprint $table) {
-            $table->enum('return_status', ['none', 'pending', 'approved', 'received', 'completed', 'rejected', 'cancelled'])
-                  ->default('none')
-                  ->after('refunded');
+            if (!Schema::hasColumn('order_items', 'return_status')) {
+                $table->enum('return_status', [
+                    'none',
+                    'pending',
+                    'approved',
+                    'shipped_by_customer',
+                    'received',
+                    'reshipped',
+                    'completed',
+                    'rejected',
+                    'cancelled',
+                    'failed',
+                ])->default('none')->after('refunded');
+            }
         });
     }
 
     public function down(): void
     {
         Schema::table('order_items', function (Blueprint $table) {
-            $table->dropColumn('return_status');
+            if (Schema::hasColumn('order_items', 'return_status')) {
+                $table->dropColumn('return_status');
+            }
         });
         Schema::dropIfExists('return_images');
         Schema::dropIfExists('return_requests');

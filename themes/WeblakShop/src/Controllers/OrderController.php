@@ -68,6 +68,7 @@ class OrderController extends Controller
         $active = "orders";
         return view('front::user.orders.index', compact('orders', 'active'));
     }
+
     public function show(Order $order)
     {
         if ($order->user_id != auth()->user()->id) {
@@ -409,11 +410,22 @@ class OrderController extends Controller
         }
 
         elseif ($isCredit) {
-            // ==========  برسی پرداخت اعتباری قبل از حذف سبد ==========
-            // ۲. جمع‌آوری اطلاعات سبد برای ارسال به canUserUseCredit
+
+            // ۱. بررسی فعال بودن ماژول
+            if (!function_exists('module_is_active') || !module_is_active('CreditPay')) {
+                return redirect()->back()->with('error', 'ماژول خرید اعتباری فعال نیست.')->withInput();
+            }
+
+            $creditService = app(\Modules\CreditPay\Services\CreditService::class);
+
+            // ۲. جمع‌آوری اطلاعات سبد
             $productIds = $cart->products->pluck('id')->toArray();
             $cartTotal  = (int) $cart->finalPrice();
-            $creditService = app(\Modules\CreditPay\Services\CreditService::class);
+            // مبلغ سبد بدون هزینه ارسال
+            $totalShippingCost = (int) ($cart->shippingCostAmount() ?? 0);
+            $cartItemsTotal     = max(0, $cartTotal - $totalShippingCost);
+
+            // ۳. بررسی شرط‌ها
             $canUseCredit = $creditService->canUserUseCredit(
                 $user->id,
                 $cartTotal,
@@ -423,6 +435,203 @@ class OrderController extends Controller
             if (!$canUseCredit['can']) {
                 return redirect()->back()->with('error', $canUseCredit['reason'])->withInput();
             }
+
+            $account = $canUseCredit['account'];
+
+            // ۴. تحلیل سبد با prepareCartItems (نه toArray!)
+            //    toArray ساختار pivot نداره و باعث می‌شه همه مقادیر 0 بشن
+            $cartItems = $creditService->prepareCartItems($cart);
+            $cartAnalysis = $creditService->analyzeCart($cartItems);
+
+            // اگه هیچ آیتم اعتباری وجود نداره → ارور
+            if (!$cartAnalysis['has_credit_items']) {
+                return redirect()->back()
+                    ->with('error', 'هیچ محصولی در سبد شما قابل خرید اعتباری نیست.')
+                    ->withInput();
+            }
+
+            // ۵. محاسبه اعتبار واقعاً استفاده‌شده
+            $availableCredit = (int) $account->available_credit;
+            $creditEligibleTotal = (int) $cartAnalysis['credit_total'];
+
+            // اگه creditEligibleTotal صفره → یه مشکل وجود داره
+            if ($creditEligibleTotal <= 0) {
+                \Log::error('CreditPay: creditEligibleTotal is 0 in OrderController', [
+                    'cartItems'   => $cartItems,
+                    'cartAnalysis' => $cartAnalysis,
+                    'cartTotal'    => $cartTotal,
+                    'cartItemsTotal' => $cartItemsTotal,
+                ]);
+                return redirect()->back()
+                    ->with('error', 'خطا در محاسبه مبلغ سبد. لطفاً با پشتیبانی تماس بگیرید.')
+                    ->withInput();
+            }
+
+            // creditUsed = min(availableCredit, creditEligibleTotal)
+            $creditUsed = min($availableCredit, $creditEligibleTotal);
+            $creditUsed = max(0, $creditUsed);
+
+            // ۶. محاسبه markup فقط روی مبلغ اعتبار استفاده‌شده
+            $markupData  = $creditService->calculateMarkup($cartAnalysis['credit_items']);
+            $markupAmount = (int) round($markupData['markup_amount']);
+
+            // اگه اعتبار کمتر از کل اقساطی است، markup را متناسب کاهش بده
+            if ($creditUsed < $creditEligibleTotal && $creditEligibleTotal > 0) {
+                $ratio = $creditUsed / $creditEligibleTotal;
+                $markupAmount = (int) round($markupAmount * $ratio);
+            }
+            $markupAmount = max(0, $markupAmount);
+
+            // ۷. محاسبه مبالغ نهایی
+            $creditTotalWithMarkup = $creditUsed + $markupAmount;
+            $creditShortfall = max(0, $creditEligibleTotal - $creditUsed);
+            $cashItemsTotal  = (int) $cartAnalysis['cash_total'];
+
+            // مبلغ نقدی که کاربر باید بده:
+            // - آیتم‌های نقدی (فروشنده/مستثنی)
+            // - هزینه ارسال ($totalShippingCost از OrderController)
+            // - مابقی مبلغ اقساطی که اعطار پوشش نمی‌ده
+            $cashPaid = $cashItemsTotal + $creditShortfall + $totalShippingCost;
+
+            // ۸. تنظیمات اقساط (فقط روی مبلغ اعتباری استفاده‌شده محاسبه می‌شه)
+            $installmentsCount       = (int) \Modules\CreditPay\Models\CreditSetting::get('default_installments', 4);
+            $firstInstallmentPercent = (float) \Modules\CreditPay\Models\CreditSetting::get('first_installment_percent', 25);
+            $firstInstallmentAmount  = (int) round($creditTotalWithMarkup * $firstInstallmentPercent / 100);
+
+            // ۹. مبلغ قابل پرداخت الان
+            //    نقدی (مابقی + ارسال + آیتم‌های نقدی) + قسط اول
+            $payNowAmount = $cashPaid + $firstInstallmentAmount;
+
+            // ===== ۱۰. بررسی موجودی کیف پول (اگه روش پرداخت کیف پول هست) =====
+            if ($request->input('gateway') === 'wallet') {
+                $wallet = $user->getWallet();
+                $walletBalance = $wallet ? (int) $wallet->balance() : 0;
+
+                if ($walletBalance < $payNowAmount) {
+                    return redirect()->back()
+                        ->with('error', sprintf(
+                            'موجودی کیف پول شما (%s تومان) برای پرداخت مبلغ اعتباری (%s تومان) کافی نیست. لطفاً کیف پول خود را شارژ کنید یا از درگاه بانکی استفاده کنید.',
+                            number_format($walletBalance),
+                            number_format($payNowAmount)
+                        ))
+                        ->withInput();
+                }
+            }
+
+            // لاگ دیباگ قبل از ثبت
+            \Log::info('CreditPay: creating credit order', [
+                'user_id'              => $user->id,
+                'cartTotal'            => $cartTotal,
+                'cartItemsTotal'       => $cartItemsTotal,
+                'totalShippingCost'    => $totalShippingCost,
+                'availableCredit'      => $availableCredit,
+                'creditEligibleTotal' => $creditEligibleTotal,
+                'creditUsed'           => $creditUsed,
+                'markupAmount'         => $markupAmount,
+                'creditTotalWithMarkup' => $creditTotalWithMarkup,
+                'creditShortfall'      => $creditShortfall,
+                'cashItemsTotal'       => $cashItemsTotal,
+                'cashPaid'             => $cashPaid,
+                'firstInstallmentAmount' => $firstInstallmentAmount,
+                'installmentsCount'    => $installmentsCount,
+                'payNowAmount'         => $payNowAmount,
+            ]);
+
+            // ۱۱. ساخت سفارش اعتباری (بدون کسر اعتبار - کسر در orderPaid انجام می‌شه)
+            try {
+                $creditOrder = \Modules\CreditPay\Models\CreditOrder::create([
+                    'order_id'                  => $order->id,
+                    'account_id'                => $account->id,
+                    'original_amount'           => $creditUsed,
+                    'markup_amount'             => $markupAmount,
+                    'total_amount'              => $creditTotalWithMarkup,
+                    'credit_used'               => $creditUsed,
+                    'cash_paid'                 => $cashPaid,
+                    'installments_count'        => $installmentsCount,
+                    'first_installment_percent' => $firstInstallmentPercent,
+                    'first_installment_amount'  => $firstInstallmentAmount,
+                    'first_installment_paid'    => false,
+                    'status'                    => \Modules\CreditPay\Models\CreditOrder::STATUS_ACTIVE,
+                ]);
+
+                // ۱۲. ساخت اقساط (همگی در حالت pending) - فقط روی مبلغ اعتباری
+                $remainingAmount = $creditTotalWithMarkup - $firstInstallmentAmount;
+                $monthlyAmount   = $installmentsCount > 1 ? (int) round($remainingAmount / ($installmentsCount - 1)) : 0;
+
+                // قسط اول (سررسید = امروز، برای پرداخت آنی)
+                \Modules\CreditPay\Models\CreditInstallment::create([
+                    'credit_order_id'    => $creditOrder->id,
+                    'installment_number' => 1,
+                    'amount'             => $firstInstallmentAmount,
+                    'total_amount'       => $firstInstallmentAmount,
+                    'due_date'           => now()->toDateString(),
+                    'status'             => \Modules\CreditPay\Models\CreditInstallment::STATUS_PENDING,
+                ]);
+
+                // اقساط ماهانه بعدی
+                for ($i = 2; $i <= $installmentsCount; $i++) {
+                    \Modules\CreditPay\Models\CreditInstallment::create([
+                        'credit_order_id'    => $creditOrder->id,
+                        'installment_number' => $i,
+                        'amount'             => $monthlyAmount,
+                        'total_amount'       => $monthlyAmount,
+                        'due_date'           => now()->addMonths($i - 1)->toDateString(),
+                        'status'             => \Modules\CreditPay\Models\CreditInstallment::STATUS_PENDING,
+                    ]);
+                }
+
+            } catch (\Exception $e) {
+                \Log::error('Credit order creation failed', [
+                    'user_id'  => $user->id,
+                    'order_id' => $order->id,
+                    'error'    => $e->getMessage(),
+                    'trace'    => $e->getTraceAsString(),
+                ]);
+                return redirect()->back()->with('error', 'خطا در ثبت خرید اعتباری: ' . $e->getMessage())->withInput();
+            }
+
+            // ۱۳. تغییر مبلغ سفارش به مبلغ نقدی + قسط اول + هزینه ارسال
+            $order->update(['price' => $payNowAmount]);
+
+            // ۱۴. ثبت در session برای استفاده در orderPaid
+            session()->flash('credit_order_id', $creditOrder->id);
+
+            // ۱۵. پیام به کاربر
+            $messages = [];
+            if ($cartAnalysis['has_cash_items']) {
+                $messages = $cartAnalysis['messages'];
+            }
+            if ($creditShortfall > 0) {
+                $messages[] = sprintf(
+                    'فقط %s تومان از اعتبار شما برای اقساط استفاده شد. مابقی (%s تومان) نقدی پرداخت شد.',
+                    number_format($creditUsed),
+                    number_format($creditShortfall)
+                );
+            }
+            if ($totalShippingCost > 0) {
+                $messages[] = sprintf(
+                    'هزینه ارسال (%s تومان) جزو اقساط نیست و نقدی پرداخت شد.',
+                    number_format($totalShippingCost)
+                );
+            }
+            if (!empty($messages)) {
+                session()->flash('credit_cash_items_info', implode(' ', $messages));
+            }
+
+            \Log::info('Credit order created (pending payment)', [
+                'credit_order_id'      => $creditOrder->id,
+                'order_id'             => $order->id,
+                'user_id'              => $user->id,
+                'credit_eligible_total' => $creditEligibleTotal,
+                'credit_used'           => $creditUsed,
+                'markup_amount'         => $markupAmount,
+                'credit_total_with_markup' => $creditTotalWithMarkup,
+                'credit_shortfall'      => $creditShortfall,
+                'cash_items_total'      => $cashItemsTotal,
+                'shipping_cost'         => $totalShippingCost,
+                'first_installment'     => $firstInstallmentAmount,
+                'pay_now'               => $payNowAmount,
+            ]);
         }
         // ==========  برسی پرداخت اعتباری قبل از حذف سبد ==========
 
@@ -748,10 +957,94 @@ class OrderController extends Controller
 
 
 
-
-        return $this->pay($order, $request);
+        return $this->resolvePaymentGateway($request, $order);
+       // return $this->pay($order, $request);
 
     }
+
+    protected function paymentModuleGateways(): array
+    {
+        return [
+            'digipay' => \Modules\DigiPay\Http\Controllers\DigiPayController::class,
+            'snappay' => \Modules\SnappPay\Http\Controllers\SnappPayController::class,
+        ];
+    }
+
+    /**
+     * =========================================================================
+     *  متد مرکزی برای مدیریت gatewayهای پرداخت
+     * =========================================================================
+     *
+     *  این متد:
+     *  ۱. gateway انتخاب‌شده رو بررسی می‌کنه
+     *  ۲. اگه متعلق به یکی از ماژول‌های پرداخت اختصاصی (DigiPay, SnappPay, etc)
+     *     باشه، از اون ماژول استفاده می‌کنه
+     *  ۳. در غیر این صورت به منطق قبلی (wallet یا درگاه‌های شتابی) برمی‌گرده
+     *
+     *  این متد به‌جای `return $this->pay($order, $request);` در انتهای متد
+     *  store() استفاده می‌شه.
+     * =========================================================================
+     */
+    protected function resolvePaymentGateway(StoreOrderRequest $request, Order $order)
+    {
+        $selectedGateway = $request->input('gateway');
+
+        // ===== ۱. بررسی ماژول‌های پرداخت اختصاصی =====
+        // اگه gateway انتخاب‌شده با یکی از keyهای ماژول‌های پرداخت اختصاصی
+        // تطابق داشت، از اون ماژول استفاده می‌کنیم
+        foreach ($this->paymentModuleGateways() as $gatewayKey => $controllerClass) {
+
+            if ($selectedGateway !== $gatewayKey) {
+                continue;
+            }
+
+            // نام ماژول از namespace استخراج می‌شه
+            // مثلاً Modules\DigiPay\Http\Controllers\DigiPayController → DigiPay
+            $moduleName = $this->extractModuleName($controllerClass);
+
+            // بررسی فعال بودن ماژول
+            if (!function_exists('module_is_active') || !module_is_active($moduleName)) {
+                return redirect()->back()
+                    ->with('error', "ماژول {$moduleName} فعال نیست.")
+                    ->withInput();
+            }
+
+            // فراخوانی initiatePayment از کنترلر ماژول
+            try {
+                $controller = app($controllerClass);
+                return $controller->initiatePayment($request, $order);
+            } catch (\Exception $e) {
+                Log::error("OrderController: Error in module gateway {$gatewayKey}", [
+                    'order_id'   => $order->id,
+                    'gateway'    => $gatewayKey,
+                    'module'     => $moduleName,
+                    'error'      => $e->getMessage(),
+                ]);
+
+                return redirect()->back()
+                    ->with('error', "خطا در اتصال به درگاه {$moduleName}: " . $e->getMessage())
+                    ->withInput();
+            }
+        }
+
+        // ===== ۲. fallback به wallet یا درگاه‌های شتابی =====
+        // wallet و درگاه‌های شتابی موجود در جدول gateways در StoreOrderRequest
+        // به‌صورت خودکار validate می‌شن. ما فقط متد pay() قبلی رو صدا می‌زنیم.
+        return $this->pay($order, $request);
+    }
+
+    /**
+     * استخراج نام ماژول از namespace کنترلر.
+     */
+    private function extractModuleName(string $controllerClass): string
+    {
+        // Modules\DigiPay\Http\Controllers\DigiPayController → DigiPay
+        if (preg_match('/^Modules\\\\([^\\\\]+)\\\\/', $controllerClass, $matches)) {
+            return $matches[1];
+        }
+        return '';
+    }
+
 
     /**
      * استخراج ویژگی‌های محصول

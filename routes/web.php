@@ -70,6 +70,7 @@ use App\Http\Controllers\PushSubscriptionController;
 use Illuminate\Support\Facades\Route;
 use Rap2hpoutre\LaravelLogViewer\LogViewerController;
 use App\Http\Controllers\Back\ReturnController;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -304,20 +305,33 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
     Route::prefix('returns')->name('returns.')->group(function () {
         Route::get('/', [ReturnController::class, 'index'])->name('index');
         Route::get('/{returnRequest}', [ReturnController::class, 'show'])->name('show');
+
+        // ۱. تایید اولیه (پس از بررسی → منتظر ارسال محصول توسط مشتری)
         Route::post('/{returnRequest}/approve', [ReturnController::class, 'approve'])->name('approve');
+
+        // ۲. ثبت ارسال محصول توسط مشتری (ادمین تایید می‌کند که مشتری محصول را ارسال کرده)
+        Route::post('/{returnRequest}/customer-shipped', [ReturnController::class, 'markCustomerShipped'])->name('customer_shipped');
+
+        // ۳. محصول دریافت شد — در حال بررسی نهایی
         Route::post('/{returnRequest}/received', [ReturnController::class, 'markReceived'])->name('received');
+
+        // ۴الف. محصول مشکلی نداشت → دوباره ارسال شود
+        Route::post('/{returnRequest}/reship', [ReturnController::class, 'reship'])->name('reship');
+
+        // ۴ب. محصول مشکل داشت → تایید نهایی + بازگشت وجه به کیف پول
         Route::post('/{returnRequest}/complete', [ReturnController::class, 'complete'])->name('complete');
+
+        // ۵. رد درخواست
         Route::post('/{returnRequest}/reject', [ReturnController::class, 'reject'])->name('reject');
     });
-
     Route::prefix('return')->name('returns.')->group(function () {
         // مدیریت دلایل مرجوعی
         Route::get('/reasons', [ReturnController::class, 'reasonsIndex'])->name('reasons');
         Route::post('/reasons', [ReturnController::class, 'reasonsStore'])->name('reasons.store');
         Route::delete('/reasons/{reason}', [ReturnController::class, 'reasonsDestroy'])->name('reasons.destroy');
         Route::post('/reasons/{reason}/toggle', [ReturnController::class, 'reasonsToggle'])->name('reasons.toggle');
-
     });
+
 
     // ------------------ carriers
     Route::resource('carriers', CarrierController::class);
