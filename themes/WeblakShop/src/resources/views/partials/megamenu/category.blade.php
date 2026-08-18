@@ -1,4 +1,4 @@
-@if($category)
+@if(isset($menu->category))
     @if(!$menu->category->getCategoriesCount() || !$menu->children)
         <li class="item-menu-2">
             <a href="{{ $menu->category->link }}" class="list-category-menu-2"><i
