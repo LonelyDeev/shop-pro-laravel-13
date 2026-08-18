@@ -14,11 +14,9 @@ class AddDiscountExpireAtColumnsToPricesTable extends Migration
     public function up()
     {
         Schema::table('prices', function (Blueprint $table) {
-            if (!Schema::hasColumn('prices', 'discount_expire_at')) {
-                $table->timestamp('discount_expire_at')->nullable()->after('discount');
+            $table->timestamp('discount_expire_at')->nullable()->after('discount');
 
-                $table->index('discount_expire_at');
-            }
+            $table->index('discount_expire_at');
         });
     }
 

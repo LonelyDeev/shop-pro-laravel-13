@@ -16,23 +16,17 @@ class AddReferralToUsersTable extends Migration
     public function up()
     {
         Schema::table('users', function (Blueprint $table) {
-            if (!Schema::hasColumn('users', 'referral_code')) {
-                $table->string('referral_code')->unique()->nullable()->after('email');
-            }
-            if (!Schema::hasColumn('users', 'referral_id')) {
-                $table->unsignedBigInteger('referral_id')->nullable()->after('referral_code');
-                $table->foreign('referral_id')->references('id')->on('users')->onDelete('set null');
-            }
+            $table->string('referral_code')->unique()->nullable()->after('email');
+            $table->unsignedBigInteger('referral_id')->nullable()->after('referral_code');
+            $table->foreign('referral_id')->references('id')->on('users')->onDelete('set null');
         });
 
-        if (Schema::hasColumn('users', 'referral_code')) {
-            $users = User::select('id')->get();
+        $users = User::select('id')->get();
 
-            foreach ($users as $user) {
-                $user->update([
-                    'referral_code' => Referral::generateCode()
-                ]);
-            }
+        foreach ($users as $user) {
+            $user->update([
+                'referral_code' => Referral::generateCode()
+            ]);
         }
     }
 

@@ -14,15 +14,13 @@ class AddPriceIdToCartProductTable extends Migration
     public function up()
     {
         Schema::table('cart_product', function (Blueprint $table) {
-            if (!Schema::hasColumn('cart_product', 'price_id')) {
-                $table->unsignedBigInteger('price_id')->nullable();
-                $table->foreign('price_id')->references('id')->on('prices')->onDelete('cascade');
+            $table->unsignedBigInteger('price_id')->nullable();
+            $table->foreign('price_id')->references('id')->on('prices')->onDelete('cascade');
 
-                $table->unique(['cart_id', 'product_id', 'price_id']);
-                $table->dropUnique("cart_product_cart_id_product_id_unique");
+            $table->unique(['cart_id', 'product_id', 'price_id']);
+            $table->dropUnique("cart_product_cart_id_product_id_unique");
 
-                $table->index('price_id');
-            }
+            $table->index('price_id');
         });
     }
 

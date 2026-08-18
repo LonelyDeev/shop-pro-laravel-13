@@ -14,10 +14,8 @@ class AddPriceIdToOrderItemsTable extends Migration
     public function up()
     {
         Schema::table('order_items', function (Blueprint $table) {
-            if (!Schema::hasColumn('order_items', 'price_id')) {
-                $table->unsignedBigInteger('price_id')->nullable();
-                $table->foreign('price_id')->references('id')->on('prices')->onDelete('set null');
-            }
+            $table->unsignedBigInteger('price_id')->nullable();
+            $table->foreign('price_id')->references('id')->on('prices')->onDelete('set null');
         });
     }
 

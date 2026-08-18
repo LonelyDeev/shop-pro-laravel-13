@@ -14,9 +14,7 @@ class AddChildrenToMenusTable extends Migration
     public function up()
     {
         Schema::table('menus', function (Blueprint $table) {
-            if (!Schema::hasColumn('menus', 'children')) {
-                $table->boolean('children')->index()->nullable();
-            }
+            $table->boolean('children')->index()->nullable();
         });
     }
 

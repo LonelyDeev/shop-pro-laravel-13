@@ -14,12 +14,10 @@ class AddGatewayIdToOrdersTable extends Migration
     public function up()
     {
         Schema::table('orders', function (Blueprint $table) {
-            if (!Schema::hasColumn('orders', 'gateway_id')) {
-                $table->unsignedBigInteger('gateway_id')->nullable()->after('shipping_cost');
-                $table->foreign('gateway_id')->references('id')->on('gateways')->onDelete('set null');
+            $table->unsignedBigInteger('gateway_id')->nullable()->after('shipping_cost');
+            $table->foreign('gateway_id')->references('id')->on('gateways')->onDelete('set null');
 
-                $table->index('gateway_id');
-            }
+            $table->index('gateway_id');
         });
     }
 

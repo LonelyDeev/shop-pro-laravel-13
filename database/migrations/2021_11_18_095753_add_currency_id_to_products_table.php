@@ -14,16 +14,10 @@ class AddCurrencyIdToProductsTable extends Migration
     public function up()
     {
         Schema::table('products', function (Blueprint $table) {
-            if (!Schema::hasColumn('products', 'rounding_type')) {
-                $table->enum('rounding_type', ['default', 'close', 'up', 'down'])->default('default')->after('view');
-            }
-            if (!Schema::hasColumn('products', 'rounding_amount')) {
-                $table->enum('rounding_amount', ['default', 'no', '100', '1000', '10000', '100000'])->default('default')->after('rounding_type');
-            }
-            if (!Schema::hasColumn('products', 'currency_id')) {
-                $table->unsignedBigInteger('currency_id')->nullable()->after('rounding_amount');
-                $table->foreign('currency_id')->references('id')->on('currencies')->onDelete('set null');
-            }
+            $table->enum('rounding_type', ['default', 'close', 'up', 'down'])->default('default')->after('view');
+            $table->enum('rounding_amount', ['default', 'no', '100', '1000', '10000', '100000'])->default('default')->after('rounding_type');
+            $table->unsignedBigInteger('currency_id')->nullable()->after('rounding_amount');
+            $table->foreign('currency_id')->references('id')->on('currencies')->onDelete('set null');
         });
 
         Schema::table('prices', function (Blueprint $table) {

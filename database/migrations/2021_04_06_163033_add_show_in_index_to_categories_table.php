@@ -14,11 +14,9 @@ class AddShowInIndexToCategoriesTable extends Migration
     public function up()
     {
         Schema::table('categories', function (Blueprint $table) {
-            if (!Schema::hasColumn('categories', 'show_in_index')) {
-                $table->boolean('show_in_index')->default(false);
+            $table->boolean('show_in_index')->default(false);
 
-                $table->index('show_in_index');
-            }
+            $table->index('show_in_index');
         });
     }
 

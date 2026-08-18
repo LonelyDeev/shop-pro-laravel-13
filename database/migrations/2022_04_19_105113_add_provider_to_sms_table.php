@@ -14,14 +14,10 @@ class AddProviderToSmsTable extends Migration
     public function up()
     {
         Schema::table('sms', function (Blueprint $table) {
-            if (!Schema::hasColumn('sms', 'provider')) {
-                $table->string('provider')->default('ippanel')->after('type');
+            $table->string('provider')->default('ippanel')->after('type');
+            $table->text('message')->nullable()->after('provider');
 
-                $table->index('provider');
-            }
-            if (!Schema::hasColumn('sms', 'message')) {
-                $table->text('message')->nullable()->after('provider');
-            }
+            $table->index('provider');
         });
     }
 

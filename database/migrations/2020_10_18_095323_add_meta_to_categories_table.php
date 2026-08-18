@@ -14,15 +14,9 @@ class AddMetaToCategoriesTable extends Migration
     public function up()
     {
         Schema::table('categories', function (Blueprint $table) {
-            if (!Schema::hasColumn('categories', 'meta_title')) {
-                $table->string('meta_title')->nullable();
-            }
-            if (!Schema::hasColumn('categories', 'meta_description')) {
-                $table->text('meta_description', 500)->nullable();
-            }
-            if (!Schema::hasColumn('categories', 'background_image')) {
-                $table->string('background_image')->nullable();
-            }
+            $table->string('meta_title')->nullable();
+            $table->text('meta_description', 500)->nullable();
+            $table->string('background_image')->nullable();
         });
     }
 

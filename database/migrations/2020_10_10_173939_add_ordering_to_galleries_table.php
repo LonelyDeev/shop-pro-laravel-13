@@ -14,9 +14,7 @@ class AddOrderingToGalleriesTable extends Migration
     public function up()
     {
         Schema::table('galleries', function (Blueprint $table) {
-            if (!Schema::hasColumn('galleries', 'ordering')) {
-                $table->integer('ordering')->nullable();
-            }
+            $table->integer('ordering')->nullable();
         });
     }
 

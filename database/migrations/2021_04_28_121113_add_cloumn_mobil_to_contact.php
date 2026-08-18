@@ -14,10 +14,8 @@ class AddCloumnMobilToContact extends Migration
     public function up()
     {
         Schema::table('contacts', function (Blueprint $table) {
-            if (!Schema::hasColumn('contacts', 'mobile')) {
-                $table->string('mobile')->nullable();
+            $table->string('mobile')->nullable();
 
-            }
         });
     }
 

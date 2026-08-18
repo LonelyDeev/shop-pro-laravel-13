@@ -14,12 +14,8 @@ class AddRatingToProductsTable extends Migration
     public function up()
     {
         Schema::table('products', function (Blueprint $table) {
-            if (!Schema::hasColumn('products', 'rating')) {
-                $table->integer('rating')->nullable()->after('view');
-            }
-            if (!Schema::hasColumn('products', 'reviews_count')) {
-                $table->bigInteger('reviews_count')->default(0)->after('rating');
-            }
+            $table->integer('rating')->nullable()->after('view');
+            $table->bigInteger('reviews_count')->default(0)->after('rating');
         });
     }
 

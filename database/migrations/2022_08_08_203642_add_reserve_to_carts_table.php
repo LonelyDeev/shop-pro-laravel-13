@@ -14,9 +14,7 @@ class AddReserveToCartsTable extends Migration
     public function up()
     {
         Schema::table('carts', function (Blueprint $table) {
-            if (!Schema::hasColumn('carts', 'reserve')) {
-                $table->boolean('reserve')->index()->after('carrier_id')->default(false);
-            }
+            $table->boolean('reserve')->index()->after('carrier_id')->default(false);
         });
     }
 

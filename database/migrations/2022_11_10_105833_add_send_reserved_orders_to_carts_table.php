@@ -14,9 +14,7 @@ class AddSendReservedOrdersToCartsTable extends Migration
     public function up()
     {
         Schema::table('carts', function (Blueprint $table) {
-            if (!Schema::hasColumn('carts', 'send_reserved_orders')) {
-                $table->boolean('send_reserved_orders')->index()->default(false)->after('reserve');
-            }
+            $table->boolean('send_reserved_orders')->index()->default(false)->after('reserve');
         });
     }
 

@@ -14,9 +14,7 @@ class AddOrderingToPricesTable extends Migration
     public function up()
     {
         Schema::table('prices', function (Blueprint $table) {
-            if (!Schema::hasColumn('prices', 'ordering')) {
-                $table->integer('ordering')->nullable()->after('cart_max');
-            }
+            $table->integer('ordering')->nullable()->after('cart_max');
         });
     }
 

@@ -14,15 +14,11 @@ class AddCartMinToProductsTable extends Migration
     public function up()
     {
         Schema::table('products', function (Blueprint $table) {
-            if (!Schema::hasColumn('products', 'cart_min')) {
-                $table->integer('cart_min')->nullable();
-            }
+            $table->integer('cart_min')->nullable();
         });
 
         Schema::table('prices', function (Blueprint $table) {
-            if (!Schema::hasColumn('prices', 'cart_min')) {
-                $table->integer('cart_min')->nullable();
-            }
+            $table->integer('cart_min')->nullable();
         });
     }
 

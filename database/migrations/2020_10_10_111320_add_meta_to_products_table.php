@@ -14,25 +14,17 @@ class AddMetaToProductsTable extends Migration
     public function up()
     {
         Schema::table('products', function (Blueprint $table) {
-            if (!Schema::hasColumn('products', 'meta_title')) {
-                $table->string('meta_title')->nullable();
-            }
-            if (!Schema::hasColumn('products', 'meta_description')) {
-                $table->text('meta_description', 500)->nullable();
-            }
-            if (!Schema::hasColumn('products', 'published')) {
-                $table->boolean('published')->default(false);
+            $table->string('meta_title')->nullable();
+            $table->text('meta_description', 500)->nullable();
+            $table->boolean('published')->default(false);
+            $table->string('image_alt')->nullable();
 
 
-                // 1. ایندکس برای فیلتر وضعیت انتشار
-                $table->index('published');
+            // 1. ایندکس برای فیلتر وضعیت انتشار
+            $table->index('published');
 
-                // 2. ایندکس ترکیبی با وضعیت انتشار و دسته‌بندی (برای صفحه محصولات)
-                $table->index(['published', 'category_id']);
-            }
-            if (!Schema::hasColumn('products', 'image_alt')) {
-                $table->string('image_alt')->nullable();
-            }
+            // 2. ایندکس ترکیبی با وضعیت انتشار و دسته‌بندی (برای صفحه محصولات)
+            $table->index(['published', 'category_id']);
         });
     }
 

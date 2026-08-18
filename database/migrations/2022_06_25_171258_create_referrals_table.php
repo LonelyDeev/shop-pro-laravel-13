@@ -19,8 +19,8 @@ class CreateReferralsTable extends Migration
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('owner_discount_id')->nullable()->constrained('discounts')->onDelete('set null');
             $table->foreignId('user_discount_id')->nullable()->constrained('discounts')->onDelete('set null');
-            $table->unsignedBigInteger('owner_wallet_history_id')->nullable()->constrained('wallet_histories')->onDelete('set null');
-            $table->unsignedBigInteger('user_wallet_history_id')->nullable()->constrained('wallet_histories')->onDelete('set null');
+            $table->integer('owner_wallet_history_id')->nullable()->constrained('wallet_histories')->onDelete('set null');
+            $table->integer('user_wallet_history_id')->nullable()->constrained('wallet_histories')->onDelete('set null');
             $table->timestamps();
 
             // 1. ایندکس برای جستجوی معرفی‌های یک کاربر (کسی که معرفی کرده)

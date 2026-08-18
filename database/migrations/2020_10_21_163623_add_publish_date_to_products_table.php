@@ -14,9 +14,7 @@ class AddPublishDateToProductsTable extends Migration
     public function up()
     {
         Schema::table('products', function (Blueprint $table) {
-            if (!Schema::hasColumn('products', 'publish_date')) {
-                $table->timestamp('publish_date')->index()->nullable();
-            }
+            $table->timestamp('publish_date')->index()->nullable();
         });
     }
 

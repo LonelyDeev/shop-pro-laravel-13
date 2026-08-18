@@ -14,12 +14,10 @@ class AddBrandIdToProductsTable extends Migration
     public function up()
     {
         Schema::table('products', function (Blueprint $table) {
-            if (!Schema::hasColumn('products', 'brand_id')) {
-                $table->unsignedBigInteger('brand_id')->nullable();
-                $table->foreign('brand_id')->references('id')->on('brands')->onDelete('set null');
+            $table->unsignedBigInteger('brand_id')->nullable();
+            $table->foreign('brand_id')->references('id')->on('brands')->onDelete('set null');
 
-                $table->index('brand_id');
-            }
+            $table->index('brand_id');
         });
     }
 

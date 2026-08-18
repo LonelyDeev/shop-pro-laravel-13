@@ -19,7 +19,6 @@ class CreateOrdersTable extends Migration
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
 
             $table->unsignedBigInteger('seller_id')->nullable();
-            $table->foreign('seller_id')->references('id')->on('sellers')->onDelete('set null');
             $table->string('name');
             $table->string('mobile');
 

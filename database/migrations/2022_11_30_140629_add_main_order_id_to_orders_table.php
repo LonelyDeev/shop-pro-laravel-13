@@ -14,10 +14,8 @@ class AddMainOrderIdToOrdersTable extends Migration
     public function up()
     {
         Schema::table('orders', function (Blueprint $table) {
-            if (!Schema::hasColumn('orders', 'main_order_id')) {
-                $table->unsignedBigInteger('main_order_id')->index()->nullable()->after('reserve');
-                $table->foreign('main_order_id')->references('id')->on('orders')->cascadeOnDelete();
-            }
+            $table->unsignedBigInteger('main_order_id')->index()->nullable()->after('reserve');
+            $table->foreign('main_order_id')->references('id')->on('orders')->cascadeOnDelete();
         });
     }
 

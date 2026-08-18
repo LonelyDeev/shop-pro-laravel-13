@@ -16,30 +16,26 @@ class AddIsAvailableToPriceChangesTable extends Migration
     public function up()
     {
         Schema::table('price_changes', function (Blueprint $table) {
-            if (!Schema::hasColumn('price_changes', 'is_available')) {
-                $table->boolean('is_available')->index()->default(true)->after('product_id');
-            }
+            $table->boolean('is_available')->index()->default(true)->after('product_id');
         });
 
-        if (Schema::hasColumn('price_changes', 'is_available')) {
-            $prices = Price::all();
+        $prices = Price::all();
 
-            foreach ($prices as $price) {
-                if ($price->stock <= 0) {
-                    $change = $price->changes()->latest()->first();
+        foreach ($prices as $price) {
+            if ($price->stock <= 0) {
+                $change = $price->changes()->latest()->first();
 
-                    if ($change) {
-                        $change->update([
-                            'is_available' => false
-                        ]);
-                    } else {
-                        PriceChange::create([
-                            'product_id' => $price->product_id,
-                            'price_id'   => $price->id,
-                            'price'      => $price->price,
-                            'discount'   => $price->discount
-                        ]);
-                    }
+                if ($change) {
+                    $change->update([
+                        'is_available' => false
+                    ]);
+                } else {
+                    PriceChange::create([
+                        'product_id' => $price->product_id,
+                        'price_id'   => $price->id,
+                        'price'      => $price->price,
+                        'discount'   => $price->discount
+                    ]);
                 }
             }
         }

@@ -14,9 +14,7 @@ class AddPublishedToCategoriesTable extends Migration
     public function up()
     {
         Schema::table('categories', function (Blueprint $table) {
-            if (!Schema::hasColumn('categories', 'published')) {
-                $table->boolean('published')->default(true)->after('image');
-            }
+            $table->boolean('published')->default(true)->after('image');
         });
     }
 

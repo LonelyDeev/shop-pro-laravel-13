@@ -19,6 +19,7 @@ class AddLangColumnToAllTables extends Migration
         'labels'                 => 'title',
         'links'                  => 'title',
         'menus'                  => 'type',
+        'options'                => 'option_value',
         'pages'                  => 'title',
         'posts'                  => 'title',
         'products'               => 'title',
@@ -45,11 +46,11 @@ class AddLangColumnToAllTables extends Migration
                 Schema::table($item, function (Blueprint $table) use ($after_column) {
                     $table->string('lang', 30)->default('fa')->after($after_column);
                 });
-
-                DB::table($item)->update([
-                    'lang' => 'fa'
-                ]);
             }
+
+            DB::table($item)->update([
+                'lang' => 'fa'
+            ]);
         }
     }
 

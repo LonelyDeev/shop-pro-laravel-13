@@ -14,23 +14,23 @@ class AddUserIdToViewersTable extends Migration
     public function up()
     {
         Schema::table('viewers', function (Blueprint $table) {
-            if (!Schema::hasColumn('viewers', 'admin_id')) {
-                $table->unsignedBigInteger('admin_id')->nullable();
-                $table->foreign('admin_id')->references('id')->on('admins')->onDelete('set null');
-                $table->index('admin_id');
-            }
+            $table->unsignedBigInteger('admin_id')->nullable();
+            $table->foreign('admin_id')->references('id')->on('admins')->onDelete('set null');
 
-            if (!Schema::hasColumn('viewers', 'user_id')) {
-                $table->unsignedBigInteger('user_id')->nullable();
-                $table->foreign('user_id')->references('id')->on('users')->onDelete('set null');
-                $table->index('user_id');
-            }
+            $table->unsignedBigInteger('user_id')->nullable();
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('set null');
 
-            if (!Schema::hasColumn('viewers', 'seller_id')) {
-                $table->unsignedBigInteger('seller_id')->nullable();
-                $table->foreign('seller_id')->references('id')->on('sellers')->onDelete('set null');
-                $table->index('seller_id');
-            }
+            $table->unsignedBigInteger('seller_id')->nullable();
+            $table->foreign('seller_id')->references('id')->on('sellers')->onDelete('set null');
+
+            // 1. ایندکس برای جستجوی بازدیدهای یک ادمین
+            $table->index('admin_id');
+
+            // 2. ایندکس برای جستجوی بازدیدهای یک کاربر عادی
+            $table->index('user_id');
+
+            // 3. ایندکس برای جستجوی بازدیدهای یک فروشنده
+            $table->index('seller_id');
         });
     }
 
