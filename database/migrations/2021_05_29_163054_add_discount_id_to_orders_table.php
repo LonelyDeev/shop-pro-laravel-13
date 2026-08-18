@@ -18,16 +18,13 @@ class AddDiscountIdToOrdersTable extends Migration
                 $table->unsignedBigInteger('discount_id')->after('status')->nullable();
                 $table->foreign('discount_id')->references('id')->on('discounts')->onDelete('set null');
 
-                // 1. ایندکس برای جستجوی سفارشات دارای یک تخفیف خاص
+                // ایندکس برای جستجوی سفارشات دارای یک تخفیف خاص
                 $table->index('discount_id');
-
-                // 3. ایندکس ترکیبی برای سفارشات با تخفیف مبلغی
-                $table->index(['discount_id', 'discount_amount']);
             }
             if (!Schema::hasColumn('orders', 'discount_amount')) {
                 $table->unsignedBigInteger('discount_amount')->after('discount_id')->nullable();
 
-                // 2. ایندکس برای فیلتر سفارشات با تخفیف
+                // ایندکس برای فیلتر سفارشات با تخفیف
                 $table->index('discount_amount');
             }
             if (!Schema::hasColumn('orders', 'discount_percent')) {
@@ -35,6 +32,11 @@ class AddDiscountIdToOrdersTable extends Migration
             }
             if (!Schema::hasColumn('orders', 'discount_price')) {
                 $table->unsignedBigInteger('discount_price')->after('discount_percent')->nullable();
+            }
+
+            // ایندکس ترکیبی باید بعد از ایجاد هر دو ستون ساخته شود
+            if (Schema::hasColumn('orders', 'discount_id') && Schema::hasColumn('orders', 'discount_amount')) {
+                $table->index(['discount_id', 'discount_amount']);
             }
         });
     }
