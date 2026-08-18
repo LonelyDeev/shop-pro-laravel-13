@@ -17,13 +17,17 @@ class AddGatewayIdToTransactionsTable extends Migration
     public function up()
     {
         Schema::table('transactions', function (Blueprint $table) {
-            $table->unsignedBigInteger('gateway_id')->nullable()->after('user_id');
-            $table->foreign('gateway_id')->references('id')->on('gateways')->onDelete('set null');
+            if (!Schema::hasColumn('transactions', 'gateway_id')) {
+                $table->unsignedBigInteger('gateway_id')->nullable()->after('user_id');
+                $table->foreign('gateway_id')->references('id')->on('gateways')->onDelete('set null');
 
-            $table->index('gateway_id');
+                $table->index('gateway_id');
+            }
         });
 
-        $this->gatewaysSeed();
+        if (Schema::hasColumn('transactions', 'gateway_id')) {
+            $this->gatewaysSeed();
+        }
     }
 
     /**

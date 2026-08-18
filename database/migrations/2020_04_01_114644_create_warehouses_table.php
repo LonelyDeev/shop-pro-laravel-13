@@ -27,8 +27,8 @@ return new class extends Migration
             $table->enum('type', ['main', 'seller', 'temp'])->default('main');
 
             // اطلاعات اضافی
-            $table->string('province_id')->nullable();
-            $table->string('city_id')->nullable();
+            $table->unsignedBigInteger('province_id')->nullable();
+            $table->unsignedBigInteger('city_id')->nullable();
             $table->json('settings')->nullable();
 
             $table->timestamps();

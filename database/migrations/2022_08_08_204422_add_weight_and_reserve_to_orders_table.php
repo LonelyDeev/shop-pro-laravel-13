@@ -14,15 +14,19 @@ class AddWeightAndReserveToOrdersTable extends Migration
     public function up()
     {
         Schema::table('orders', function (Blueprint $table) {
-            $table->integer('weight')->nullable()->after('shipping_status');
-            $table->boolean('reserve')->default(false)->after('weight');
+            if (!Schema::hasColumn('orders', 'weight')) {
+                $table->integer('weight')->nullable()->after('shipping_status');
+
+                // 2. ایندکس برای محدوده وزنی سفارش‌ها
+                $table->index('weight');
+            }
+            if (!Schema::hasColumn('orders', 'reserve')) {
+                $table->boolean('reserve')->default(false)->after('weight');
 
 
-            // 1. ایندکس برای جستجوی سفارش‌های رزرو شده
-            $table->index('reserve');
-
-            // 2. ایندکس برای محدوده وزنی سفارش‌ها
-            $table->index('weight');
+                // 1. ایندکس برای جستجوی سفارش‌های رزرو شده
+                $table->index('reserve');
+            }
         });
     }
 

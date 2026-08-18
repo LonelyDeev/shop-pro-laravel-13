@@ -14,7 +14,9 @@ class AddSpecialEndDateToProductsTable extends Migration
     public function up()
     {
         Schema::table('products', function (Blueprint $table) {
-            $table->timestamp('special_end_date')->index()->nullable()->after('special');
+            if (!Schema::hasColumn('products', 'special_end_date')) {
+                $table->timestamp('special_end_date')->index()->nullable()->after('special');
+            }
         });
     }
 

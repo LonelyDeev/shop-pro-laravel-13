@@ -14,10 +14,14 @@ class AddCartMaxToProductsTable extends Migration
     public function up()
     {
         Schema::table('products', function (Blueprint $table) {
-            $table->integer('cart_max')->nullable();
-            $table->string('price_type')->default('multiple-price');
+            if (!Schema::hasColumn('products', 'cart_max')) {
+                $table->integer('cart_max')->nullable();
+            }
+            if (!Schema::hasColumn('products', 'price_type')) {
+                $table->string('price_type')->default('multiple-price');
 
-            $table->index('price_type');
+                $table->index('price_type');
+            }
         });
     }
 

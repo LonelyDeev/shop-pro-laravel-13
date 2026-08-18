@@ -29,7 +29,7 @@ class CreateOrderItemsTable extends Migration
             $table->integer('discount')->nullable();
             $table->integer('commission')->nullable();
             $table->string('delivery_date')->nullable();
-            $table->integer('carrier_id')->nullable();
+            $table->unsignedBigInteger('carrier_id')->nullable();
             $table->integer('shipping_cost')->nullable();
 
             $table->string('shipping_status')->default('w-pending');

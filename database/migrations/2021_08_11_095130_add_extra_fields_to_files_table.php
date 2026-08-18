@@ -14,18 +14,24 @@ class AddExtraFieldsToFilesTable extends Migration
     public function up()
     {
         Schema::table('files', function (Blueprint $table) {
-            $table->string('title')->nullable()->after('id');
-            $table->string('disk')->default('public')->after('size');
-            $table->enum('status', ['active', 'inactive'])->default('active')->after('size');
+            if (!Schema::hasColumn('files', 'title')) {
+                $table->string('title')->nullable()->after('id');
 
-            // 1. ایندکس برای فیلتر وضعیت
-            $table->index('status');
+                // 3. ایندکس برای جستجوی عنوان
+                $table->index('title');
+            }
+            if (!Schema::hasColumn('files', 'disk')) {
+                $table->string('disk')->default('public')->after('size');
 
-            // 2. ایندکس برای دیسک ذخیره‌سازی
-            $table->index('disk');
+                // 2. ایندکس برای دیسک ذخیره‌سازی
+                $table->index('disk');
+            }
+            if (!Schema::hasColumn('files', 'status')) {
+                $table->enum('status', ['active', 'inactive'])->default('active')->after('size');
 
-            // 3. ایندکس برای جستجوی عنوان
-            $table->index('title');
+                // 1. ایندکس برای فیلتر وضعیت
+                $table->index('status');
+            }
         });
     }
 

@@ -14,7 +14,9 @@ class AddDeletedAtToPricesTable extends Migration
     public function up()
     {
         Schema::table('prices', function (Blueprint $table) {
-            $table->softDeletes('deleted_at');
+            if (!Schema::hasColumn('prices', 'deleted_at')) {
+                $table->softDeletes('deleted_at');
+            }
         });
     }
 

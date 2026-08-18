@@ -14,7 +14,7 @@ class ModifyNamespacesInMorphDatabase extends Migration
         'push_subscriptions'  => 'subscribable_type',
         'taggables'           => 'taggable_type',
         'transactions'        => 'transactionable_type',
-        'commentable'         => 'commentable_type',
+        'comments'           => 'commentable_type',
     ];
 
     /**

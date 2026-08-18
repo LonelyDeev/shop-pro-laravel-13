@@ -16,18 +16,22 @@ class AddCarrierIdToOrdersTable extends Migration
     public function up()
     {
         Schema::table('orders', function (Blueprint $table) {
-            $table->unsignedBigInteger('carrier_id')->nullable()->after('postal_code');
-            $table->foreign('carrier_id')->references('id')->on('carriers')->onDelete('set null');
+            if (!Schema::hasColumn('orders', 'carrier_id')) {
+                $table->unsignedBigInteger('carrier_id')->nullable()->after('postal_code');
+                $table->foreign('carrier_id')->references('id')->on('carriers')->onDelete('set null');
 
-            $table->index('carrier_id');
+                $table->index('carrier_id');
+            }
         });
 
-        $carrier = Carrier::find(1);
+        if (Schema::hasColumn('orders', 'carrier_id')) {
+            $carrier = Carrier::find(1);
 
-        if ($carrier) {
-            DB::table('orders')->update([
-                'carrier_id' => $carrier->id
-            ]);
+            if ($carrier) {
+                DB::table('orders')->update([
+                    'carrier_id' => $carrier->id
+                ]);
+            }
         }
     }
 

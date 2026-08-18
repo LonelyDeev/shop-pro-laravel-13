@@ -26,8 +26,8 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('product_id')->constrained()->cascadeOnDelete();
             $table->foreignId('return_reason_id')->nullable()->constrained('return_reasons')->nullOnDelete();
-            $table->foreignId('seller_id')->nullable();
-            $table->foreignId('admin_id')->nullable();
+            $table->foreignId('seller_id')->nullable()->constrained('sellers');
+            $table->foreignId('admin_id')->nullable()->constrained('admins');
 
             $table->enum('status', [
                 'pending',

@@ -14,7 +14,9 @@ class AddSeparatorToFilterablesTable extends Migration
     public function up()
     {
         Schema::table('filterables', function (Blueprint $table) {
-            $table->string('separator')->nullable();
+            if (!Schema::hasColumn('filterables', 'separator')) {
+                $table->string('separator')->nullable();
+            }
         });
     }
 

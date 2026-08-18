@@ -15,22 +15,31 @@ class AddOrderingToProvincesTable extends Migration
     public function up()
     {
         Schema::table('provinces', function (Blueprint $table) {
-            $table->integer('ordering')->nullable();
-            $table->boolean('is_active')->default(true);
-            $table->softDeletes();
+            if (!Schema::hasColumn('provinces', 'ordering')) {
+                $table->integer('ordering')->nullable();
 
-            $table->index('ordering');
-            $table->index('is_active');
+                $table->index('ordering');
+            }
+            if (!Schema::hasColumn('provinces', 'is_active')) {
+                $table->boolean('is_active')->default(true);
+
+                $table->index('is_active');
+            }
+            if (!Schema::hasColumn('provinces', 'deleted_at')) {
+                $table->softDeletes();
+            }
         });
 
-        $ordering = 1;
+        if (Schema::hasColumn('provinces', 'ordering')) {
+            $ordering = 1;
 
-        $provinces = Province::all();
+            $provinces = Province::all();
 
-        foreach ($provinces as $province) {
-            $province->update([
-                'ordering' => $ordering++
-            ]);
+            foreach ($provinces as $province) {
+                $province->update([
+                    'ordering' => $ordering++
+                ]);
+            }
         }
     }
 

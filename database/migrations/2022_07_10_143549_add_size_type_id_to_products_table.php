@@ -14,8 +14,10 @@ class AddSizeTypeIdToProductsTable extends Migration
     public function up()
     {
         Schema::table('products', function (Blueprint $table) {
-            $table->unsignedBigInteger('size_type_id')->nullable()->after('spec_type_id');
-            $table->foreign('size_type_id')->references('id')->on('size_types')->cascadeOnDelete();
+            if (!Schema::hasColumn('products', 'size_type_id')) {
+                $table->unsignedBigInteger('size_type_id')->nullable()->after('spec_type_id');
+                $table->foreign('size_type_id')->references('id')->on('size_types')->cascadeOnDelete();
+            }
         });
     }
 

@@ -14,15 +14,19 @@ class AddFilterFieldToCategoriesTable extends Migration
     public function up()
     {
         Schema::table('categories', function (Blueprint $table) {
-            $table->enum('filter_type', ['inherit', 'none', 'filterId'])->default('inherit');
-            $table->unsignedBigInteger('filter_id')->nullable();
-            $table->foreign('filter_id')->references('id')->on('filters')->onDelete('set null');
+            if (!Schema::hasColumn('categories', 'filter_type')) {
+                $table->enum('filter_type', ['inherit', 'none', 'filterId'])->default('inherit');
 
-            // 1. ایندکس برای فیلتر نوع
-            $table->index('filter_type');
+                // 1. ایندکس برای فیلتر نوع
+                $table->index('filter_type');
+            }
+            if (!Schema::hasColumn('categories', 'filter_id')) {
+                $table->unsignedBigInteger('filter_id')->nullable();
+                $table->foreign('filter_id')->references('id')->on('filters')->onDelete('set null');
 
-            // 2. ایندکس برای فیلتر خارجی
-            $table->index('filter_id');
+                // 2. ایندکس برای فیلتر خارجی
+                $table->index('filter_id');
+            }
         });
     }
 

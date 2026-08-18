@@ -15,13 +15,17 @@ class AddRegularPriceToPricesTable extends Migration
     public function up()
     {
         Schema::table('prices', function (Blueprint $table) {
-            $table->bigInteger('regular_price')->after('discount_price')->nullable();
+            if (!Schema::hasColumn('prices', 'regular_price')) {
+                $table->bigInteger('regular_price')->after('discount_price')->nullable();
+            }
         });
 
-        foreach (Price::with('product:id,currency_id,rounding_amount,rounding_type')->withTrashed()->get() as $price) {
-            $price->update([
-                'regular_price' => get_discount_price($price->price, 0, $price->product)
-            ]);
+        if (Schema::hasColumn('prices', 'regular_price')) {
+            foreach (Price::with('product:id,currency_id,rounding_amount,rounding_type')->withTrashed()->get() as $price) {
+                $price->update([
+                    'regular_price' => get_discount_price($price->price, 0, $price->product)
+                ]);
+            }
         }
     }
 

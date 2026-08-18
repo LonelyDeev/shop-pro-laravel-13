@@ -37,8 +37,8 @@ class CreateSellersInfoTable extends Migration
             $table->string('contract_start_date')->nullable();
             $table->string('contract_end_date')->nullable();
 
-            $table->integer('state_id');
-            $table->integer('city_id');
+            $table->unsignedBigInteger('state_id')->nullable();
+            $table->unsignedBigInteger('city_id')->nullable();
             $table->text('address');
             $table->string('post_code',10);
             $table->string('location')->nullable();

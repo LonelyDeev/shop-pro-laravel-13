@@ -14,7 +14,9 @@ class AddForceToPasswordChangeToUsersTable extends Migration
     public function up()
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->boolean('force_to_password_change')->default(false);
+            if (!Schema::hasColumn('users', 'force_to_password_change')) {
+                $table->boolean('force_to_password_change')->default(false);
+            }
         });
     }
 

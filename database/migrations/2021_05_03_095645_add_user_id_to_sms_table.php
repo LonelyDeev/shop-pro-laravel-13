@@ -14,19 +14,23 @@ class AddUserIdToSmsTable extends Migration
     public function up()
     {
         Schema::table('sms', function (Blueprint $table) {
-            $table->unsignedBigInteger('user_id')->nullable()->after('type');
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('set null');
+            if (!Schema::hasColumn('sms', 'user_id')) {
+                $table->unsignedBigInteger('user_id')->nullable()->after('type');
+                $table->foreign('user_id')->references('id')->on('users')->onDelete('set null');
 
-            $table->unsignedBigInteger('seller_id')->nullable()->after('user_id');
-            $table->foreign('seller_id')->references('id')->on('sellers')->onDelete('set null');
+                // 1. ایندکس برای جستجوی پیامک‌های یک کاربر
+                $table->index('user_id');
+            }
+            if (!Schema::hasColumn('sms', 'seller_id')) {
+                $table->unsignedBigInteger('seller_id')->nullable()->after('user_id');
+                $table->foreign('seller_id')->references('id')->on('sellers')->onDelete('set null');
 
-            $table->text('response')->nullable()->after('seller_id');
-
-            // 1. ایندکس برای جستجوی پیامک‌های یک کاربر
-            $table->index('user_id');
-
-            // 2. ایندکس برای جستجوی پیامک‌های یک فروشنده
-            $table->index('seller_id');
+                // 2. ایندکس برای جستجوی پیامک‌های یک فروشنده
+                $table->index('seller_id');
+            }
+            if (!Schema::hasColumn('sms', 'response')) {
+                $table->text('response')->nullable()->after('seller_id');
+            }
         });
     }
 

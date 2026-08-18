@@ -14,11 +14,15 @@ class AddTitleAndDescriptionCloumnsToBannersTable extends Migration
     public function up()
     {
         Schema::table('banners', function (Blueprint $table) {
-            $table->string('title')->nullable();
-            $table->text('description')->nullable();
+            if (!Schema::hasColumn('banners', 'title')) {
+                $table->string('title')->nullable();
 
-            // 1. ایندکس برای جستجوی عنوان بنر
-            $table->index('title');
+                // 1. ایندکس برای جستجوی عنوان بنر
+                $table->index('title');
+            }
+            if (!Schema::hasColumn('banners', 'description')) {
+                $table->text('description')->nullable();
+            }
         });
     }
 

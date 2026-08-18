@@ -15,18 +15,26 @@ class AddOrderingToCitiesTable extends Migration
     public function up()
     {
         Schema::table('cities', function (Blueprint $table) {
-            $table->integer('ordering')->nullable();
-            $table->boolean('is_active')->default(true);
-            $table->softDeletes();
+            if (!Schema::hasColumn('cities', 'ordering')) {
+                $table->integer('ordering')->nullable();
+            }
+            if (!Schema::hasColumn('cities', 'is_active')) {
+                $table->boolean('is_active')->default(true);
+            }
+            if (!Schema::hasColumn('cities', 'deleted_at')) {
+                $table->softDeletes();
+            }
         });
 
-        foreach (Province::all() as $province) {
-            $ordering = 1;
+        if (Schema::hasColumn('cities', 'ordering')) {
+            foreach (Province::all() as $province) {
+                $ordering = 1;
 
-            foreach ($province->cities as $city) {
-                $city->update([
-                    'ordering' => $ordering++
-                ]);
+                foreach ($province->cities as $city) {
+                    $city->update([
+                        'ordering' => $ordering++
+                    ]);
+                }
             }
         }
     }

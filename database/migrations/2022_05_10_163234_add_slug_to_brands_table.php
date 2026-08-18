@@ -15,16 +15,18 @@ class AddSlugToBrandsTable extends Migration
      */
     public function up()
     {
-        Schema::table('brands', function (Blueprint $table) {
-            $table->string('slug')->nullable()->index()->after('name');
-        });
+        if (!Schema::hasColumn('brands', 'slug')) {
+            Schema::table('brands', function (Blueprint $table) {
+                $table->string('slug')->nullable()->index()->after('name');
+            });
 
-        $brands = Brand::all();
+            $brands = Brand::all();
 
-        foreach ($brands as $brand) {
-            $brand->update([
-                'slug'  => Str::slug($brand->name)
-            ]);
+            foreach ($brands as $brand) {
+                $brand->update([
+                    'slug'  => Str::slug($brand->name)
+                ]);
+            }
         }
     }
 

@@ -14,10 +14,12 @@ class AddDiscountIdToCartsTable extends Migration
     public function up()
     {
         Schema::table('carts', function (Blueprint $table) {
-            $table->unsignedBigInteger('discount_id')->nullable()->after('user_id');
-            $table->foreign('discount_id')->references('id')->on('discounts')->onDelete('set null');
+            if (!Schema::hasColumn('carts', 'discount_id')) {
+                $table->unsignedBigInteger('discount_id')->nullable()->after('user_id');
+                $table->foreign('discount_id')->references('id')->on('discounts')->onDelete('set null');
 
-            $table->index('discount_id');
+                $table->index('discount_id');
+            }
         });
     }
 

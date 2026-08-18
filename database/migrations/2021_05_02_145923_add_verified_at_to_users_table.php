@@ -15,16 +15,20 @@ class AddVerifiedAtToUsersTable extends Migration
     public function up()
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->timestamp('verified_at')->nullable();
+            if (!Schema::hasColumn('users', 'verified_at')) {
+                $table->timestamp('verified_at')->nullable();
 
+            }
         });
 
-        $users = DB::table('users')->get(['id', 'created_at']);
+        if (Schema::hasColumn('users', 'verified_at')) {
+            $users = DB::table('users')->get(['id', 'created_at']);
 
-        foreach ($users as $user) {
-            DB::table('users')->where('id', $user->id)->update([
-                'verified_at' => $user->created_at
-            ]);
+            foreach ($users as $user) {
+                DB::table('users')->where('id', $user->id)->update([
+                    'verified_at' => $user->created_at
+                ]);
+            }
         }
     }
 

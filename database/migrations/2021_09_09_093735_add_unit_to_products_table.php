@@ -14,7 +14,9 @@ class AddUnitToProductsTable extends Migration
     public function up()
     {
         Schema::table('products', function (Blueprint $table) {
-            $table->string('unit')->default('تعداد')->after('weight');
+            if (!Schema::hasColumn('products', 'unit')) {
+                $table->string('unit')->default('تعداد')->after('weight');
+            }
         });
     }
 

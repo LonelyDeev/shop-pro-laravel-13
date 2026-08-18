@@ -14,7 +14,9 @@ class AddPublishDateToPostsTable extends Migration
     public function up()
     {
         Schema::table('posts', function (Blueprint $table) {
-            $table->timestamp('publish_date')->index()->nullable();
+            if (!Schema::hasColumn('posts', 'publish_date')) {
+                $table->timestamp('publish_date')->index()->nullable();
+            }
         });
     }
 

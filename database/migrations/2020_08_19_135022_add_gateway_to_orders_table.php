@@ -14,9 +14,11 @@ class AddGatewayToOrdersTable extends Migration
     public function up()
     {
         Schema::table('orders', function (Blueprint $table) {
-            $table->string('gateway')->default('payir');
+            if (!Schema::hasColumn('orders', 'gateway')) {
+                $table->string('gateway')->default('payir');
 
-            $table->index('gateway');
+                $table->index('gateway');
+            }
 
         });
     }

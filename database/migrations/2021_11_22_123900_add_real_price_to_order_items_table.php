@@ -15,21 +15,25 @@ class AddRealPriceToOrderItemsTable extends Migration
     public function up()
     {
         Schema::table('order_items', function (Blueprint $table) {
-            $table->bigInteger('real_price')->after('price');
+            if (!Schema::hasColumn('order_items', 'real_price')) {
+                $table->bigInteger('real_price')->after('price');
+            }
         });
 
-        $order_items = OrderItem::select('id', 'price', 'discount')->get();
+        if (Schema::hasColumn('order_items', 'real_price')) {
+            $order_items = OrderItem::select('id', 'price', 'discount')->get();
 
-        foreach ($order_items as $order_item) {
-            if ($order_item->discount == 100) {
-                $real_price = 0;
-            } else {
-                $real_price = ($order_item->price * 100) / (100 - $order_item->discount);
+            foreach ($order_items as $order_item) {
+                if ($order_item->discount == 100) {
+                    $real_price = 0;
+                } else {
+                    $real_price = ($order_item->price * 100) / (100 - $order_item->discount);
+                }
+
+                $order_item->update([
+                    'real_price' => $real_price
+                ]);
             }
-
-            $order_item->update([
-                'real_price' => $real_price
-            ]);
         }
     }
 

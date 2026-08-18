@@ -14,7 +14,9 @@ class AddLangColumnToCurrenciesTable extends Migration
     public function up()
     {
         Schema::table('currencies', function (Blueprint $table) {
-            $table->string('lang', 30)->default('fa')->after('amount');
+            if (!Schema::hasColumn('currencies', 'lang')) {
+                $table->string('lang', 30)->default('fa')->after('amount');
+            }
         });
     }
 

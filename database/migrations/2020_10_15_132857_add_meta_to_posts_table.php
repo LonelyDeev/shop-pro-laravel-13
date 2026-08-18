@@ -14,8 +14,12 @@ class AddMetaToPostsTable extends Migration
     public function up()
     {
         Schema::table('posts', function (Blueprint $table) {
-            $table->text('meta_title')->nullable();
-            $table->text('meta_description', 500)->nullable();
+            if (!Schema::hasColumn('posts', 'meta_title')) {
+                $table->text('meta_title')->nullable();
+            }
+            if (!Schema::hasColumn('posts', 'meta_description')) {
+                $table->text('meta_description', 500)->nullable();
+            }
         });
     }
 
