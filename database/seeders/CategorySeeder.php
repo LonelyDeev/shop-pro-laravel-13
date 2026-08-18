@@ -41,11 +41,13 @@ class CategorySeeder extends Seeder
         $this->seedPostCategories();
     }
 
+    /**
+     * ایجاد دسته‌بندی‌های محصولات
+     */
     private function createCategories(array $categories, $parentId = null, &$ordering)
     {
         foreach ($categories as $title => $children) {
-            $slug = is_array($children) ? Str::slug($title) : Str::slug($children);
-
+            // ایجاد دسته اصلی
             $category = Category::create([
                 'title' => $title,
                 'slug' => sluggable_helper_function($title),
@@ -55,15 +57,46 @@ class CategorySeeder extends Seeder
                 'show_in_index' => 1,
             ]);
 
+            // اگر زیردسته‌ها وجود دارند
             if (is_array($children) && !empty($children)) {
-                $this->createCategories($children, $category->id, $ordering);
+                // بررسی می‌کنیم که آیا کلیدها عددی هستند (آرایه ساده از مقادیر)
+                if ($this->isSequentialArray($children)) {
+                    // آرایه ساده از مقادیر - زیردسته‌ها را ایجاد می‌کنیم
+                    foreach ($children as $childTitle) {
+                        if (is_string($childTitle)) {
+                            Category::create([
+                                'title' => $childTitle,
+                                'slug' => sluggable_helper_function($childTitle),
+                                'category_id' => $category->id,
+                                'type' => 'productcat',
+                                'ordering' => $ordering++,
+                                'show_in_index' => 1,
+                            ]);
+                        }
+                    }
+                } else {
+                    // آرایه تو در تو - بازگشت به حلقه
+                    $this->createCategories($children, $category->id, $ordering);
+                }
             }
         }
     }
 
+    /**
+     * بررسی می‌کند که آیا آرایه یک آرایه ساده با کلیدهای عددی متوالی است
+     */
+    private function isSequentialArray(array $array): bool
+    {
+        if (empty($array)) {
+            return false;
+        }
+
+        // بررسی می‌کنیم که آیا کلیدها عددی و متوالی هستند
+        return array_keys($array) === range(0, count($array) - 1);
+    }
 
     /**
-     * ایجاد دسته‌بندی‌های پست (نسخه ساده)
+     * ایجاد دسته‌بندی‌های پست
      */
     private function seedPostCategories()
     {
@@ -125,7 +158,7 @@ class CategorySeeder extends Seeder
             'سرمایه‌گذاری' => [],
         ];
 
-        $ordering = 1;
+        $ordering = 1000; // شروع از ۱۰۰۰ برای جلوگیری از تداخل با دسته‌بندی محصولات
 
         foreach ($postCategories as $parentTitle => $children) {
             // ایجاد دسته اصلی
@@ -138,18 +171,19 @@ class CategorySeeder extends Seeder
             ]);
 
             // ایجاد زیردسته‌ها
-            foreach ($children as $childTitle) {
-                Category::create([
-                    'title' => $childTitle,
-                    'slug' => sluggable_helper_function($childTitle),
-                    'category_id' => $parent->id,
-                    'type' => 'postcat',
-                    'image' => '',
-                    'show_in_index' => 1,
-                    'ordering' => $ordering++,
-                ]);
+            if (!empty($children)) {
+                foreach ($children as $childTitle) {
+                    Category::create([
+                        'title' => $childTitle,
+                        'slug' => sluggable_helper_function($childTitle),
+                        'category_id' => $parent->id,
+                        'type' => 'postcat',
+                        'image' => '',
+                        'show_in_index' => 1,
+                        'ordering' => $ordering++,
+                    ]);
+                }
             }
         }
     }
-
 }
