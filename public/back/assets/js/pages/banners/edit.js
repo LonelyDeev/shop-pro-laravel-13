@@ -124,4 +124,4 @@ var initialPage = $('#page_select').val();
 if(initialPage) {
     updateGroupsByPage(initialPage, currentGroup);
 }
-});
+
