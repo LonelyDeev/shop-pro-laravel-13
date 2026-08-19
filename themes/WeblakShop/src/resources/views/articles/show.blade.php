@@ -15,7 +15,11 @@
 @push('styles')
     <link rel="stylesheet" href="{{theme_asset('js/plugins/plyr/plyr.css')}}" />
     <link rel="stylesheet" href="{{theme_asset('css/single-articles.css')}}">
-
+    <style>
+        .article-container .article--right-meta > ul.meta-list{
+            top: 120px;
+        }
+    </style>
 @endpush
 
 
@@ -60,7 +64,7 @@
 
                    <div class="article-main-container">
                         {{-- نوار کناری راست (لایک و اشتراک گذاری) --}}
-                        <div class="article--right-meta">
+                        <div class="article--right-meta pl-3">
                             <ul class="meta-list">
                                 <li>
                                     <button class="like-button" data-action="{{ route("front.articles.like") }}" data-post-id="{{ $post->id }}">
