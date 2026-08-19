@@ -42,7 +42,8 @@
                                                     <div class="post-grid-thumbnail-video-type">
                                                         <i class=" fas fa-play" style="color:red"></i>
                                                     </div>
-                                                @elseif($post->post_type=="podcast")
+                                                @endif
+                                                @if($post->post_type=="podcast")
                                                     <div class="post-grid-thumbnail-video-type">
                                                         <i class=" fa fa-headphones" style="color:red"></i>
                                                     </div>
@@ -95,7 +96,8 @@
                                                                 <div class="post-grid-thumbnail-video-type small">
                                                                     <i class=" fas fa-play" style="color:red"></i>
                                                                 </div>
-                                                            @elseif($post->post_type=="podcast")
+                                                            @endif
+                                                            @if($post->post_type=="podcast")
                                                                 <div class="post-grid-thumbnail-video-type small">
                                                                     <i class=" fa fa-headphones" style="color:red"></i>
                                                                 </div>
