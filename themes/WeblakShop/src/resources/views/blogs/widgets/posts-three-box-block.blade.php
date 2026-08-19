@@ -40,7 +40,7 @@
                                                 <i class=" fas fa-play"></i>
                                             </div>
                                         @elseif($post->post_type=="podcast")
-                                            <div class="post-grid-thumbnail-video-type minimal">
+                                            <div class="post-grid-thumbnail-video-type">
                                                 <i class=" fa fa-headphones" style="color:red"></i>
                                             </div>
                                         @endif
@@ -93,6 +93,10 @@
                                                 @if($smallPost->post_type=="video")
                                                     <div class="post-grid-thumbnail-video-type minimal">
                                                         <i class=" fas fa-play"></i>
+                                                    </div>
+                                                @elseif($post->post_type=="podcast")
+                                                    <div class="post-grid-thumbnail-video-type minimal">
+                                                        <i class=" fa fa-headphones" style="color:red"></i>
                                                     </div>
                                                 @endif
 
