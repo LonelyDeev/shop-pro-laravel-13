@@ -102,15 +102,23 @@
                         <div class="article--details">
                             {{-- تصویر یا ویدیوی اصلی --}}
                             <div class="article--image mb-3 pr-3">
-                                @if($post->post_type == 'video' && $post->video_url)
+                                @php
+                                    $isVideo = $post->post_type == 'video' && $post->video_url;
+                                    $isPodcast = $post->post_type == 'podcast' && $post->podcast_url;
+                                    $isMedia = $isVideo || $isPodcast;
+                                    $mediaUrl = $isVideo ? $post->video_url : ($isPodcast ? $post->podcast_url : null);
+                                    $readingTime = ceil(str_word_count(strip_tags($post->body)) / 200);
+                                @endphp
+
+                                @if($isMedia)
                                     <video class="articles-video-player shadow-1 w-100" controls style="border-radius: 12px;" poster="{{ asset($post->image) }}">
-                                        <source src="{{ asset($post->video_url) }}" type="video/mp4">
+                                        <source src="{{ asset($mediaUrl) }}" type="video/mp4">
                                         مرورگر شما از ویدیو پشتیبانی نمی‌کند.
                                     </video>
                                 @else
                                     <img class="shadow-1 w-100" src="{{ asset($post->image) }}" alt="{{ $post->title }}" loading="lazy" style="border-radius: 12px;">
                                     <div class="read-time-badge shadow-1">
-                                        <i class="fa-regular fa-clock"></i> زمان مطالعه: <span>{{ ceil(str_word_count(strip_tags($post->body)) / 200) }} دقیقه</span>
+                                        <i class="fa-regular fa-clock"></i> زمان مطالعه: <span>{{ $readingTime }} دقیقه</span>
                                     </div>
                                 @endif
 
