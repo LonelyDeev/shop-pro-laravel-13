@@ -19,6 +19,9 @@
         .article-container .article--right-meta > ul.meta-list{
             top: 120px;
         }
+        .plyr audio, .plyr iframe, .plyr video{
+            max-height: 500px;
+        }
     </style>
 @endpush
 
