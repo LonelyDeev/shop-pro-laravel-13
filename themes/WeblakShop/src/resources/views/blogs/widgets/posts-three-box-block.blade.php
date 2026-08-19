@@ -39,6 +39,10 @@
                                             <div class="post-grid-thumbnail-video-type">
                                                 <i class=" fas fa-play"></i>
                                             </div>
+                                        @elseif($post->post_type=="podcast")
+                                            <div class="post-grid-thumbnail-video-type minimal">
+                                                <i class=" fa fa-headphones" style="color:red"></i>
+                                            </div>
                                         @endif
 
 
