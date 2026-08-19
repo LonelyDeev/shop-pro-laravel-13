@@ -42,6 +42,10 @@
                                                     <div class="post-grid-thumbnail-video-type">
                                                         <i class=" fas fa-play"></i>
                                                     </div>
+                                                @elseif($post->post_type=="podcast")
+                                                    <div class="post-grid-thumbnail-video-type">
+                                                        <i class=" fa fa-headphones" style="color:red"></i>
+                                                    </div>
                                                 @endif
                                             </div>
                                             <a class="article-link" href="{{ route('front.articles.show', $post->slug) }}"></a>
@@ -90,6 +94,10 @@
                                                             @if($smallPost->post_type=="video")
                                                                 <div class="post-grid-thumbnail-video-type small">
                                                                     <i class=" fas fa-play"></i>
+                                                                </div>
+                                                            @elseif($post->post_type=="podcast")
+                                                                <div class="post-grid-thumbnail-video-type small">
+                                                                    <i class=" fa fa-headphones" style="color:red"></i>
                                                                 </div>
                                                             @endif
                                                         </div>
