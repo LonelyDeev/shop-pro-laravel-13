@@ -43,7 +43,7 @@
 
                                             @if($post->post_type=="video")
                                                 <div class="post-grid-thumbnail-video-type minimal">
-                                                    <i class=" fas fa-play"></i>
+                                                    <i class=" fas fa-play" style="color:red"></i>
                                                 </div>
                                             @elseif($post->post_type=="podcast")
                                                 <div class="post-grid-thumbnail-video-type minimal">
