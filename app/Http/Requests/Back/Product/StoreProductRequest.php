@@ -30,6 +30,7 @@ class StoreProductRequest extends FormRequest
             'title_en'        => 'nullable|string|max:191',
             'category_id'     => 'required|exists:categories,id',
             'image'           => 'image',
+            'image_alt'       => 'nullable|string|max:191',
             'slug'            => "nullable|unique:products,slug",
             'publish_date'    => 'nullable|date',
             'special_end_date' => 'nullable|date',

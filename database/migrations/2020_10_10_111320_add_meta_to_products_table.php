@@ -14,10 +14,10 @@ class AddMetaToProductsTable extends Migration
     public function up()
     {
         Schema::table('products', function (Blueprint $table) {
-            $table->string('meta_title')->nullable();
-            $table->text('meta_description', 500)->nullable();
+            $table->text('meta_title',500)->nullable();
+            $table->text('meta_description', 1000)->nullable();
             $table->boolean('published')->default(false);
-            $table->string('image_alt')->nullable();
+            $table->string('image_alt',255)->nullable();
 
 
             // 1. ایندکس برای فیلتر وضعیت انتشار

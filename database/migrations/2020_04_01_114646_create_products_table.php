@@ -16,7 +16,7 @@ class CreateProductsTable extends Migration
         Schema::create('products', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('product_id')->unique();
-            $table->string('title');
+            $table->string('title',255);
             $table->string('title_en')->nullable();
             $table->string('type')->nullable()->default('physical');
 
