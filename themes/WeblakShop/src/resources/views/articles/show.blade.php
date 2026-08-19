@@ -101,7 +101,7 @@
                         {{-- محتوای اصلی مقاله --}}
                         <div class="article--details">
                             {{-- تصویر یا ویدیوی اصلی --}}
-                            <div class="article--image mb-3">
+                            <div class="article--image mb-3 pr-3">
                                 @if($post->post_type == 'video' && $post->video_url)
                                     <video class="articles-video-player shadow-1 w-100" controls style="border-radius: 12px;" poster="{{ asset($post->image) }}">
                                         <source src="{{ asset($post->video_url) }}" type="video/mp4">
