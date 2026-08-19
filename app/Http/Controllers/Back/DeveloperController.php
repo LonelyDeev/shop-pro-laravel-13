@@ -46,7 +46,7 @@ class DeveloperController extends Controller
 
     public function updateSettings(Request $request)
     {
-        $developer_options = $request->except(['SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN']);
+        $developer_options = $request->all();
 
         foreach ($developer_options as $option => $value) {
             option_update($option, $value);
@@ -65,6 +65,7 @@ class DeveloperController extends Controller
         } else {
             change_env('DEBUGBAR_ENABLED', 'false');
         }
+        Artisan::call('config:clear');
 
         return response('success');
     }
