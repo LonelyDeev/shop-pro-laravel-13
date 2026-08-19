@@ -140,7 +140,7 @@
                                         <div class="col-md-3">
                                             <label>شماره سفارش</label>
                                             <div class="input-group mb-75">
-                                                <input type="text" name="SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN" class="form-control ltr" value="{{ config('self-update.updater_token') }}">
+                                                <input type="text" name="SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN" class="form-control ltr" value="{{ env('SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN', env('PACKAGES_API_PROJECT_KEY')) }}">
                                             </div>
                                         </div>
 
