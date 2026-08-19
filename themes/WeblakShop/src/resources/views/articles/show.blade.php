@@ -105,7 +105,7 @@
                         {{-- محتوای اصلی مقاله --}}
                         <div class="article--details">
                             {{-- تصویر یا ویدیوی اصلی --}}
-                            <div class="article--image mb-3 pr-3">
+                            <div class="article--image mb-3">
                                 @php
                                     $isVideo = $post->post_type == 'video' && $post->video_url;
                                     $isPodcast = $post->post_type == 'podcast' && $post->podcast_url;
