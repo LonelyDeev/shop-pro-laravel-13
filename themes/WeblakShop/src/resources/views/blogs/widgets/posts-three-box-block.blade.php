@@ -96,7 +96,7 @@
                                                         <i class=" fas fa-play" style="color:red"></i>
                                                     </div>
                                                 @endif
-                                                @if($post->post_type=="podcast")
+                                                @if($smallPost->post_type=="podcast")
                                                     <div class="post-grid-thumbnail-video-type minimal">
                                                         <i class=" fa fa-headphones" style="color:red"></i>
                                                     </div>
