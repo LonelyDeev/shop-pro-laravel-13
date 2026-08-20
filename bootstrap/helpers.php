@@ -1271,9 +1271,11 @@ function random_code($letter_count = 2, $number_count = 3)
 
 function get_slider_search()
 {
-    return Slider::where('group', 'search_sliders')->where('published', true)->orderBy('ordering')->get();
+    return Slider::whereJsonContains('groups', 'search_sliders')
+        ->where('published', true)
+        ->orderBy('ordering')
+        ->get();
 }
-
 function seller()
 {
     $seller = Seller::where('id', Auth::guard('seller')->id())->first();

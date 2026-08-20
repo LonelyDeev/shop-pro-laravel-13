@@ -32,22 +32,30 @@
             ],
         ];
     @endphp
-
-    <div class="container-fluid py-4">
-
-        {{-- هدر --}}
-        <div class="sk-page-header d-flex align-items-center justify-content-between">
-            <div>
-                <h3>
-                    <span class="icon-wrap"><i class="fa fa-images"></i></span>
-                    مدیریت بنرها
-                </h3>
-                <p>بنرها بر اساس صفحه نمایش، به‌صورت کارت گروه‌بندی شده‌اند.</p>
+    <div class="app-content content">
+        <div class="content-overlay"></div>
+        <div class="header-navbar-shadow"></div>
+        <div class="content-wrapper">
+            <div class="content-header row">
+                <div class="content-header-left col-md-9 col-12 mb-2">
+                    <div class="row breadcrumbs-top">
+                        <div class="col-12">
+                            <div class="breadcrumb-wrapper col-12">
+                                <ol class="breadcrumb no-border">
+                                    <li class="breadcrumb-item">مدیریت
+                                    </li>
+                                    <li class="breadcrumb-item">مدیریت بنرها
+                                    </li>
+                                    <li class="breadcrumb-item active">لیست بنرها
+                                    </li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <a href="{{ route('admin.banners.create') }}" class="btn btn-primary">
-                <i class="fa fa-plus ms-1"></i> بنر جدید
-            </a>
-        </div>
+            <div class="content-body" id="main-card">
+    <div class="container-fluid py-4">
 
         {{-- آمار --}}
         <div class="sk-stats">
@@ -139,6 +147,9 @@
             </div>
         @endif
 
+    </div>
+            </div>
+        </div>
     </div>
 
 @endsection

@@ -16,280 +16,278 @@ function get_widget($widget)
     if (WidgetRegistry::has($widget->key)) {
         return WidgetRegistry::handle($widget->key, $widget);
     }
+
     $variables = [];
 
     switch ($widget->key) {
+
         case 'fullscreen-slider': {
-            $variables['fullscreen_slider'] = Slider::detectLang()->where('group', 'fullscreen_slider')
-                ->where('page', $widget->page)
+            $variables['fullscreen_slider'] = Slider::detectLang()
+                ->whereJsonContains('groups', 'fullscreen_slider')
+                ->whereJsonContains('pages', $widget->page)
                 ->where('published', true)
                 ->orderBy('ordering', $widget->option('ordering', 'asc'))
                 ->take($widget->option('number', 5))
                 ->get();
 
-            $variables['mobile_sliders'] = Slider::detectLang()->where('group', 'mobile_sliders')
+            $variables['mobile_sliders'] = Slider::detectLang()
+                ->whereJsonContains('groups', 'mobile_sliders')
+                ->whereJsonContains('pages', $widget->page)
                 ->where('published', true)
-                ->where('page', $widget->page)
                 ->orderBy('ordering', $widget->option('ordering', 'asc'))
                 ->take($widget->option('number', 5))
                 ->get();
 
             break;
         }
+
         case 'main-slider': {
-                $variables['main_sliders'] = Slider::where('group', 'main_sliders')
-                    ->where('published', true)
-                    ->where('page', $widget->page)
-                    ->orderBy('ordering', $widget->option('ordering', 'asc'))
-                    ->take($widget->option('number', 5))
-                    ->get();
+            $variables['main_sliders'] = Slider::whereJsonContains('groups', 'main_sliders')
+                ->whereJsonContains('pages', $widget->page)
+                ->where('published', true)
+                ->orderBy('ordering', $widget->option('ordering', 'asc'))
+                ->take($widget->option('number', 5))
+                ->get();
 
-                $variables['mobile_sliders'] = Slider::where('group', 'mobile_sliders')
-                    ->where('published', true)
-                    ->where('page', $widget->page)
-                    ->orderBy('ordering', $widget->option('ordering', 'asc'))
-                    ->take($widget->option('number', 5))
-                    ->get();
+            $variables['mobile_sliders'] = Slider::whereJsonContains('groups', 'mobile_sliders')
+                ->whereJsonContains('pages', $widget->page)
+                ->where('published', true)
+                ->orderBy('ordering', $widget->option('ordering', 'asc'))
+                ->take($widget->option('number', 5))
+                ->get();
 
-                $variables['index_slider_banners'] = Banner::where('group', 'index_slider_banners')
-                    ->where('published', true)
-                    ->where('page', $widget->page)
-                    ->orderBy('ordering', $widget->option('ordering', 'asc'))
-                    ->take(2)
-                    ->get();
+            $variables['index_slider_banners'] = Banner::whereJsonContains('groups', 'index_slider_banners')
+                ->whereJsonContains('pages', $widget->page)
+                ->where('published', true)
+                ->orderBy('ordering', $widget->option('ordering', 'asc'))
+                ->take(2)
+                ->get();
 
-                break;
-            }
+            break;
+        }
 
         case 'middle-banners': {
-                $variables['index_middle_banners'] = Banner::where('group', 'index_middle_banners')
-                    ->where('published', true)
-                    ->where('page', $widget->page)
-                    ->orderBy('ordering', $widget->option('ordering', 'asc'))
-                    ->get();
-
-                break;
-            }
-        case 'middle-banners-2': {
-                $variables['index_middle_2_banners'] = Banner::where('group', 'index_middle_2_banners')
-                    ->where('published', true)
-                    ->where('page', $widget->page)
-                    ->orderBy('ordering', $widget->option('ordering', 'asc'))
-                    ->get();
-
-                break;
-            }
-        case 'middle-banners-4': {
-            $variables['index_middle_4_banners'] = Banner::where('group', 'index_middle_4_banners')
+            $variables['index_middle_banners'] = Banner::whereJsonContains('groups', 'index_middle_banners')
+                ->whereJsonContains('pages', $widget->page)
                 ->where('published', true)
-                ->where('page', $widget->page)
                 ->orderBy('ordering', $widget->option('ordering', 'asc'))
                 ->get();
+
             break;
         }
 
+        case 'middle-banners-2': {
+            $variables['index_middle_2_banners'] = Banner::whereJsonContains('groups', 'index_middle_2_banners')
+                ->whereJsonContains('pages', $widget->page)
+                ->where('published', true)
+                ->orderBy('ordering', $widget->option('ordering', 'asc'))
+                ->get();
+
+            break;
+        }
+
+        case 'middle-banners-4': {
+            $variables['index_middle_4_banners'] = Banner::whereJsonContains('groups', 'index_middle_4_banners')
+                ->whereJsonContains('pages', $widget->page)
+                ->where('published', true)
+                ->orderBy('ordering', $widget->option('ordering', 'asc'))
+                ->get();
+
+            break;
+        }
 
         case 'coworker-sliders': {
-                $variables['coworker_sliders'] = Slider::where('group', 'coworker_sliders')
-                    ->where('published', true)
-                    ->where('page', $widget->page)
-                    ->orderBy('ordering')
-                    ->take($widget->option('number', 2))
-                    ->get();
+            $variables['coworker_sliders'] = Slider::whereJsonContains('groups', 'coworker_sliders')
+                ->whereJsonContains('pages', $widget->page)
+                ->where('published', true)
+                ->orderBy('ordering')
+                ->take($widget->option('number', 2))
+                ->get();
 
-                break;
-            }
-
+            break;
+        }
 
         case 'sevices-sliders': {
-                $variables['sevices_sliders'] = Slider::where('group', 'sevices_sliders')
-                    ->where('published', true)
-                    ->where('page', $widget->page)
-                    ->orderBy('ordering')
-                    ->take($widget->option('number', 2))
-                    ->get();
+            $variables['sevices_sliders'] = Slider::whereJsonContains('groups', 'sevices_sliders')
+                ->whereJsonContains('pages', $widget->page)
+                ->where('published', true)
+                ->orderBy('ordering')
+                ->take($widget->option('number', 2))
+                ->get();
 
-                break;
-            }
-
+            break;
+        }
 
         case 'categories': {
+            $ids             = [];
+            $category_filter = $widget->options->where('key', 'categories')->first();
 
-                $ids             = [];
-                $category_filter = $widget->options->where('key', 'categories')->first();
-
-                if ($category_filter && $category_filter->hasCategory()) {
-                    $ids = $category_filter->categories()->pluck('categories.id');
-                }
-
-                $variables['categories'] = Category::published()
-                    ->orderBy('ordering')
-                    ->whereIn('id', $ids)
-                    ->get();
-
-                break;
+            if ($category_filter && $category_filter->hasCategory()) {
+                $ids = $category_filter->categories()->pluck('categories.id');
             }
+
+            $variables['categories'] = Category::published()
+                ->orderBy('ordering')
+                ->whereIn('id', $ids)
+                ->get();
+
+            break;
+        }
 
         case 'post-categories': {
+            $ids             = [];
+            $category_filter = $widget->options->where('key', 'post_categories')->first();
 
-                $ids             = [];
-                $category_filter = $widget->options->where('key', 'post_categories')->first();
-
-                if ($category_filter && $category_filter->hasCategory()) {
-                    $ids = $category_filter->categories()->pluck('categories.id');
-                }
-                $variables['categories'] = Category::published()
-                    ->orderBy('ordering')
-                    ->whereIn('id', $ids)
-                    ->get();
-
-                break;
+            if ($category_filter && $category_filter->hasCategory()) {
+                $ids = $category_filter->categories()->pluck('categories.id');
             }
+            $variables['categories'] = Category::published()
+                ->orderBy('ordering')
+                ->whereIn('id', $ids)
+                ->get();
+
+            break;
+        }
 
         case 'posts': {
-                $posts = Post::query();
+            $posts = Post::query();
 
-                $category_filter = $widget->options->where('key', 'categories')->first();
+            $category_filter = $widget->options->where('key', 'categories')->first();
 
-                if ($category_filter && $category_filter->hasCategory()) {
+            if ($category_filter && $category_filter->hasCategory()) {
+                $ids = $category_filter->categories()->pluck('categories.id');
+                $categories = [];
 
-                    $ids = $category_filter->categories()->pluck('categories.id');
-                    $categories = [];
+                foreach ($ids as $id) {
+                    $category = Category::find($id);
 
-                    foreach ($ids as $id) {
-                        $category = Category::find($id);
-
-                        if ($category) {
-                            $categories = array_merge($categories, $category->allChildCategories());
-                        }
+                    if ($category) {
+                        $categories = array_merge($categories, $category->allChildCategories());
                     }
-
-                    $posts->whereIn('category_id', $categories);
                 }
 
-                switch ($widget->option('sort_type', 'latest')) {
-                    case 'latest': {
-                            $posts->latest();
-                            break;
-                        }
-                    case 'view': {
-                            $posts->orderBy('view', 'desc');
-                            break;
-                        }
-                }
-
-                $posts->published()->latest()->take($widget->option('number', 10));
-
-                $variables['posts'] = $posts->get();
-
-                break;
+                $posts->whereIn('category_id', $categories);
             }
+
+            switch ($widget->option('sort_type', 'latest')) {
+                case 'latest': {
+                    $posts->latest();
+                    break;
+                }
+                case 'view': {
+                    $posts->orderBy('view', 'desc');
+                    break;
+                }
+            }
+
+            $posts->published()->latest()->take($widget->option('number', 10));
+
+            $variables['posts'] = $posts->get();
+
+            break;
+        }
 
         case 'products-default-block':
         case 'products-moment-block':
         case 'products-colorful-block': {
-                $products = Product::query()
-                    ->with('lowestPrice', 'category:id,title,slug,type')
-                    ->select(
-                        'id',
-                        'title',
-                        'type',
-                        'category_id',
-                        'slug',
-                        'image',
-                        'special',
-                        'image_alt'
-                    );
+            $products = Product::query()
+                ->with('lowestPrice', 'category:id,title,slug,type')
+                ->select(
+                    'id',
+                    'title',
+                    'type',
+                    'category_id',
+                    'slug',
+                    'image',
+                    'special',
+                    'image_alt'
+                );
 
-                $category_filter = $widget->options->where('key', 'categories')->first();
-                if ($category_filter && $category_filter->hasCategory()) {
+            $category_filter = $widget->options->where('key', 'categories')->first();
+            if ($category_filter && $category_filter->hasCategory()) {
+                $ids = $category_filter->categories()->pluck('categories.id');
+                $categories = [];
 
-                    $ids = $category_filter->categories()->pluck('categories.id');
-                    $categories = [];
+                foreach ($ids as $id) {
+                    $category = Category::find($id);
 
-                    foreach ($ids as $id) {
-                        $category = Category::find($id);
-
-                        if ($category && $widget->option('sub_category_products', 'yes') == 'yes') {
-                            $categories = array_merge($categories, $category->allChildCategories());
-                        } else if ($category) {
-                            $categories = array_merge($categories, [$category->id]);
-                        }
+                    if ($category && $widget->option('sub_category_products', 'yes') == 'yes') {
+                        $categories = array_merge($categories, $category->allChildCategories());
+                    } else if ($category) {
+                        $categories = array_merge($categories, [$category->id]);
                     }
-
-                    $products->whereIn('category_id', $categories);
                 }
 
-
-                switch ($widget->option('order_by_stock', 'yes')) {
-                    case 'yes': {
-                            $products->orderByStock();
-                            break;
-                        }
-                }
-
-                switch ($widget->option('products_type', 'all')) {
-                    case 'discount': {
-                            $products->discount();
-                            break;
-                        }
-                    case 'special': {
-                            $products->special();
-                            break;
-                        }
-                    case 'moment': {
-                            $products->special();
-                            break;
-                        }
-
-                }
-
-                switch ($widget->option('inventory_status', 'all')) {
-                    case 'available': {
-                            $products->available();
-                            break;
-                        }
-                    case 'unavailable': {
-                            $products->unavailable();
-                            break;
-                        }
-                }
-
-                switch ($widget->option('sort_type', 'latest')) {
-                    case 'latest': {
-                            $products->latest();
-                            break;
-                        }
-                    case 'sell': {
-                            $products->orderBy('sell', 'desc');
-                            break;
-                        }
-                    case 'view': {
-                            $products->orderBy('view', 'desc');
-                            break;
-                        }
-                    case 'cheapest': {
-                            $products->orderByPrice('asc');
-                            break;
-                        }
-                    case 'expensivest': {
-                            $products->orderByPrice('desc');
-                            break;
-                        }
-                }
-
-                $products->published()->latest()->take($widget->option('number', 10));
-
-                $variables['products'] = $products->get();
-
-                break;
+                $products->whereIn('category_id', $categories);
             }
+
+            switch ($widget->option('order_by_stock', 'yes')) {
+                case 'yes': {
+                    $products->orderByStock();
+                    break;
+                }
+            }
+
+            switch ($widget->option('products_type', 'all')) {
+                case 'discount': {
+                    $products->discount();
+                    break;
+                }
+                case 'special': {
+                    $products->special();
+                    break;
+                }
+                case 'moment': {
+                    $products->special();
+                    break;
+                }
+            }
+
+            switch ($widget->option('inventory_status', 'all')) {
+                case 'available': {
+                    $products->available();
+                    break;
+                }
+                case 'unavailable': {
+                    $products->unavailable();
+                    break;
+                }
+            }
+
+            switch ($widget->option('sort_type', 'latest')) {
+                case 'latest': {
+                    $products->latest();
+                    break;
+                }
+                case 'sell': {
+                    $products->orderBy('sell', 'desc');
+                    break;
+                }
+                case 'view': {
+                    $products->orderBy('view', 'desc');
+                    break;
+                }
+                case 'cheapest': {
+                    $products->orderByPrice('asc');
+                    break;
+                }
+                case 'expensivest': {
+                    $products->orderByPrice('desc');
+                    break;
+                }
+            }
+
+            $products->published()->latest()->take($widget->option('number', 10));
+
+            $variables['products'] = $products->get();
+
+            break;
+        }
 
         case 'posts-default-block': {
             $posts = Post::query()
-            ->with('category:id,title,slug');
+                ->with('category:id,title,slug');
 
-            // فیلتر بر اساس دسته بندی
             $category_filter = $widget->options->where('key', 'post_categories')->first();
             if ($category_filter && $category_filter->hasCategory()) {
                 $ids = $category_filter->categories()->pluck('categories.id');
@@ -308,7 +306,6 @@ function get_widget($widget)
                 $posts->whereIn('category_id', $categories);
             }
 
-            // فیلتر بر اساس نوع مقاله
             switch ($widget->option('posts_type', 'all')) {
                 case 'is_editor_pick': {
                     $posts->where('is_editor_pick', true);
@@ -316,7 +313,6 @@ function get_widget($widget)
                 }
             }
 
-            // مرتب سازی
             switch ($widget->option('sort_type', 'latest')) {
                 case 'latest': {
                     $posts->latest();
@@ -336,18 +332,17 @@ function get_widget($widget)
                 }
             }
 
-            // فقط مقالات منتشر شده
             $posts->published()->take($widget->option('number', 10));
 
             $variables['posts'] = $posts->get();
 
             break;
         }
+
         case 'posts-three-box-block': {
             $posts = Post::query()
-            ->with('category:id,title,slug');
+                ->with('category:id,title,slug');
 
-            // فیلتر بر اساس دسته بندی
             $category_filter = $widget->options->where('key', 'post_categories')->first();
             if ($category_filter && $category_filter->hasCategory()) {
                 $ids = $category_filter->categories()->pluck('categories.id');
@@ -366,7 +361,6 @@ function get_widget($widget)
                 $posts->whereIn('category_id', $categories);
             }
 
-            // فیلتر بر اساس نوع مقاله
             switch ($widget->option('posts_type', 'all')) {
                 case 'is_editor_pick': {
                     $posts->where('is_editor_pick', true);
@@ -374,7 +368,6 @@ function get_widget($widget)
                 }
             }
 
-            // مرتب سازی
             switch ($widget->option('sort_type', 'latest')) {
                 case 'latest': {
                     $posts->latest();
@@ -394,18 +387,17 @@ function get_widget($widget)
                 }
             }
 
-            // فقط مقالات منتشر شده
             $posts->published()->take(3);
 
             $variables['posts'] = $posts->get();
 
             break;
         }
+
         case 'posts-big-box-block': {
             $posts = Post::query()
-            ->with('category:id,title,slug');
+                ->with('category:id,title,slug');
 
-            // فیلتر بر اساس دسته بندی
             $category_filter = $widget->options->where('key', 'post_categories')->first();
             if ($category_filter && $category_filter->hasCategory()) {
                 $ids = $category_filter->categories()->pluck('categories.id');
@@ -424,7 +416,6 @@ function get_widget($widget)
                 $posts->whereIn('category_id', $categories);
             }
 
-            // فیلتر بر اساس نوع مقاله
             switch ($widget->option('posts_type', 'all')) {
                 case 'is_editor_pick': {
                     $posts->where('is_editor_pick', true);
@@ -432,7 +423,6 @@ function get_widget($widget)
                 }
             }
 
-            // مرتب سازی
             switch ($widget->option('sort_type', 'latest')) {
                 case 'latest': {
                     $posts->latest();
@@ -452,7 +442,6 @@ function get_widget($widget)
                 }
             }
 
-            // فقط مقالات منتشر شده
             $posts->published()->take(6);
 
             $variables['posts'] = $posts->get();
@@ -463,15 +452,13 @@ function get_widget($widget)
         case 'posts-tags': {
             $tags = Tag::query()
                 ->select('tags.*')
-                ->whereHas('posts', function($query) {
-                    // فقط تگ‌هایی که حداقل یک پست منتشر شده دارند
+                ->whereHas('posts', function ($query) {
                     $query->published();
                 })
-                ->withCount(['posts' => function($query) {
-                    $query->published(); // تعداد پست‌های منتشر شده
+                ->withCount(['posts' => function ($query) {
+                    $query->published();
                 }]);
 
-            // مرتب سازی بر اساس نوع انتخاب شده
             switch ($widget->option('sort_type', 'most_used')) {
                 case 'most_used': {
                     $tags->orderBy('posts_count', 'desc');
@@ -495,13 +482,11 @@ function get_widget($widget)
                 }
             }
 
-            // ترتیب نهایی (صعودی/نزولی)
             $ordering = $widget->option('ordering', 'asc');
             if ($widget->option('sort_type', 'most_used') != 'random') {
                 $tags->orderBy('name', $ordering);
             }
 
-            // محدودیت تعداد
             $tags->take($widget->option('number', 10));
 
             $variables['tags'] = $tags->get();
@@ -510,16 +495,22 @@ function get_widget($widget)
         }
 
         case 'faqs':
-            $variables['faqs']=\App\Models\Faq::where('published', true)
+            $variables['faqs'] = \App\Models\Faq::where('published', true)
                 ->take($widget->option('number', 10))
-                ->orderBy('order', 'asc')->get();
+                ->orderBy('order', 'asc')
+                ->get();
+            break;
     }
 
     return $variables;
 }
 
-function highest_banner(){
-    return Banner::where('group', 'index_highest_banner')->where('published', true)->get();
+function highest_banner()
+{
+    return Banner::whereJsonContains('groups', 'index_highest_banner')
+        ->where('published', true)
+        ->orderBy('ordering')
+        ->get();
 }
 
 

@@ -649,63 +649,276 @@
 .sk-stat--amber  { --stat-color: #f59e0b; --stat-color-dark: #d97706; --stat-shadow: rgba(245, 158, 11, .35); }
 .sk-stat--purple { --stat-color: #8b5cf6; --stat-color-dark: #7c3aed; --stat-shadow: rgba(139, 92, 246, .35); }
 
-/* ===== جدول ایندکس ===== */
-.sk-table-card {
+/* ===== بخش گروه‌بندی ایندکس (بر اساس صفحه) ===== */
+.sk-page-section {
     background: var(--sk-bg);
     border: 1px solid var(--sk-border);
     border-radius: var(--sk-radius);
     box-shadow: var(--sk-shadow-sm);
+    margin-bottom: 1.5rem;
     overflow: hidden;
+    position: relative;
 }
-.sk-table {
-    margin: 0;
+.sk-page-section::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0; left: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--page-color-from), var(--page-color-to));
 }
-.sk-table thead th {
-    background: var(--sk-bg-soft);
-    color: var(--sk-text-soft);
-    font-size: .73rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .04em;
-    padding: 1rem 1.1rem;
-    border-bottom: 1px solid var(--sk-border);
-    white-space: nowrap;
-}
-.sk-table tbody td {
-    padding: 1rem 1.1rem;
-    vertical-align: middle;
+.sk-page-section--home    { --page-color-from: #6366f1; --page-color-to: #8b5cf6; --page-color: #6366f1; --page-color-soft: #eef2ff; }
+.sk-page-section--posts   { --page-color-from: #f59e0b; --page-color-to: #ef4444; --page-color: #f59e0b; --page-color-soft: #fffbeb; }
+.sk-page-section--sellers { --page-color-from: #10b981; --page-color-to: #059669; --page-color: #10b981; --page-color-soft: #ecfdf5; }
+
+.sk-page-section-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem 1.5rem;
     border-bottom: 1px solid var(--sk-border-soft);
+    background: linear-gradient(135deg, var(--page-color-soft) 0%, transparent 100%);
 }
-.sk-table tbody tr {
-    transition: background .15s ease;
+.sk-page-section-icon {
+    width: 52px; height: 52px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--page-color-from), var(--page-color-to));
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+    box-shadow: 0 10px 20px -5px rgba(0, 0, 0, .15);
 }
-.sk-table tbody tr:hover {
-    background: var(--sk-bg-soft);
+.sk-page-section-info {
+    flex: 1;
 }
-.sk-table tbody tr:last-child td {
-    border-bottom: 0;
+.sk-page-section-title {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--sk-text);
+}
+.sk-page-section-subtitle {
+    font-size: .8rem;
+    color: var(--sk-text-soft);
+    margin-top: 2px;
+}
+.sk-page-section-count {
+    background: var(--page-color);
+    color: #fff;
+    font-size: .85rem;
+    font-weight: 700;
+    padding: 5px 14px;
+    border-radius: 999px;
+    box-shadow: 0 4px 10px -2px rgba(0, 0, 0, .15);
 }
 
-.sk-thumb {
-    width: 100px;
-    height: 64px;
-    object-fit: cover;
-    border-radius: 10px;
-    border: 1px solid var(--sk-border);
-    background: var(--sk-bg-soft);
+.sk-page-section-body {
+    padding: 1.5rem;
 }
-.sk-thumb-ph {
-    width: 100px;
-    height: 64px;
-    border-radius: 10px;
+
+/* ===== کارت اسلایدر در ایندکس ===== */
+.sk-slider-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.25rem;
+}
+.sk-slider-card {
+    background: var(--sk-bg);
+    border: 1px solid var(--sk-border);
+    border-radius: 14px;
+    overflow: hidden;
+    transition: all .25s ease;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+.sk-slider-card:hover {
+    border-color: #cbd5e1;
+    transform: translateY(-3px);
+    box-shadow: var(--sk-shadow-lg);
+}
+.sk-slider-card.is-draft {
+    opacity: .85;
+}
+
+.sk-slider-card-image {
+    position: relative;
+    width: 100%;
+    height: 180px;
     background: var(--sk-bg-soft);
+    overflow: hidden;
+}
+.sk-slider-card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform .35s ease;
+}
+.sk-slider-card:hover .sk-slider-card-image img {
+    transform: scale(1.05);
+}
+.sk-slider-card-image-placeholder {
+    width: 100%;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
     color: var(--sk-text-mute);
-    border: 1px dashed var(--sk-border);
+    font-size: 2.5rem;
+    background:
+        repeating-linear-gradient(45deg, var(--sk-bg-soft), var(--sk-bg-soft) 10px, var(--sk-bg) 10px, var(--sk-bg) 20px);
 }
 
+.sk-slider-card-status {
+    position: absolute;
+    top: 12px; right: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 11px;
+    border-radius: 999px;
+    font-size: .7rem;
+    font-weight: 700;
+    backdrop-filter: blur(10px);
+}
+.sk-slider-card-status--published {
+    background: rgba(16, 185, 129, .92);
+    color: #fff;
+}
+.sk-slider-card-status--draft {
+    background: rgba(100, 116, 139, .92);
+    color: #fff;
+}
+.sk-slider-card-status .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.sk-slider-card-order {
+    position: absolute;
+    top: 12px; left: 12px;
+    background: rgba(0, 0, 0, .65);
+    color: #fff;
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: .8rem;
+    backdrop-filter: blur(10px);
+}
+
+.sk-slider-card-body {
+    padding: 1rem 1.1rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+.sk-slider-card-title {
+    font-size: .95rem;
+    font-weight: 700;
+    color: var(--sk-text);
+    margin: 0 0 .35rem;
+    line-height: 1.4;
+}
+.sk-slider-card-motion {
+    font-size: .75rem;
+    color: var(--sk-text-soft);
+    margin-bottom: .5rem;
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+}
+.sk-slider-card-link {
+    font-size: .72rem;
+    color: var(--sk-primary);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+    margin-bottom: .75rem;
+    word-break: break-all;
+}
+.sk-slider-card-link:hover {
+    text-decoration: underline;
+}
+
+.sk-slider-card-groups {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .35rem;
+    margin-top: auto;
+    padding-top: .75rem;
+    border-top: 1px dashed var(--sk-border-soft);
+}
+.sk-slider-card-groups-label {
+    width: 100%;
+    font-size: .68rem;
+    font-weight: 700;
+    color: var(--sk-text-mute);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    margin-bottom: .35rem;
+}
+
+.sk-group-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 9px;
+    border-radius: 7px;
+    font-size: .7rem;
+    font-weight: 600;
+    background: rgba(245, 158, 11, .12);
+    color: #92400e;
+    line-height: 1.3;
+}
+.sk-group-chip .size {
+    opacity: .7;
+    font-weight: 500;
+}
+
+.sk-slider-card-actions {
+    display: flex;
+    gap: .4rem;
+    padding: .75rem 1.1rem;
+    background: var(--sk-bg-soft);
+    border-top: 1px solid var(--sk-border-soft);
+}
+.sk-slider-card-actions .sk-action-btn {
+    flex: 1;
+    height: 38px;
+}
+.sk-slider-card-actions .sk-action-btn--delete {
+    flex: 0 0 38px;
+}
+
+/* حالت خالی داخل یک بخش صفحه */
+.sk-page-empty {
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    color: var(--sk-text-mute);
+}
+.sk-page-empty-icon {
+    width: 56px; height: 56px;
+    border-radius: 16px;
+    background: var(--sk-bg-soft);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    margin-bottom: .75rem;
+}
+.sk-page-empty p {
+    margin: 0;
+    font-size: .85rem;
+}
+
+/* ===== ابزارک‌های مشترک (chip, status, action-btn) ===== */
 .sk-chip {
     display: inline-flex;
     align-items: center;
@@ -716,63 +929,6 @@
     font-weight: 600;
     line-height: 1.4;
     white-space: nowrap;
-}
-.sk-chip--page {
-    background: rgba(59, 130, 246, .12);
-    color: #1e40af;
-}
-.sk-chip--group {
-    background: rgba(245, 158, 11, .14);
-    color: #92400e;
-}
-.sk-chip--group .size {
-    font-weight: 500;
-    opacity: .8;
-}
-.sk-chip--place {
-    background: rgba(20, 184, 166, .12);
-    color: #0f766e;
-}
-
-/* helper برای toggle با jQuery (مثل بنر قدیمی) */
-.display-hidden {
-    display: none !important;
-}
-
-.sk-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 5px 12px;
-    border-radius: 999px;
-    font-size: .72rem;
-    font-weight: 700;
-}
-.sk-status--published {
-    background: rgba(16, 185, 129, .12);
-    color: #047857;
-}
-.sk-status--draft {
-    background: rgba(100, 116, 139, .12);
-    color: #475569;
-}
-.sk-status .dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: currentColor;
-}
-
-.sk-order {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 34px; height: 34px;
-    border-radius: 9px;
-    background: var(--sk-bg-soft);
-    color: var(--sk-text-soft);
-    font-weight: 700;
-    font-size: .85rem;
-    border: 1px solid var(--sk-border-soft);
 }
 
 .sk-action-btn {
@@ -786,6 +942,8 @@
     color: var(--sk-text-soft);
     transition: all .2s ease;
     padding: 0;
+    cursor: pointer;
+    text-decoration: none;
 }
 .sk-action-btn:hover {
     transform: translateY(-2px);
@@ -803,7 +961,7 @@
     box-shadow: 0 6px 12px -3px rgba(239, 68, 68, .25);
 }
 
-/* حالت خالی */
+/* حالت خالی کلی */
 .sk-empty {
     padding: 4.5rem 2rem;
     text-align: center;
@@ -843,6 +1001,9 @@
     }
     .sk-page-header p {
         margin-left: 0;
+    }
+    .sk-slider-cards {
+        grid-template-columns: 1fr;
     }
 }
 .remove-img-uploader{
