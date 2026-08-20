@@ -580,11 +580,11 @@ $(document).ready(function () {
         responsiveClass: true,
         responsive: {
             0: {        // موبایل (کمتر از 576px)
-                items: 4,
+                items: 3,
                 slideBy: 2
             },
             768: {      // تبلت (بین 768px تا 991px)
-                items: 7,
+                items: 6,
                 slideBy: 3
             },
             1200: {     // دسکتاپ (1200px به بالا)
