@@ -16999,3 +16999,46 @@ img.captcha {
     background: linear-gradient(135deg, #fff, #f5f7ff);
 }
 
+
+/* عرض کامل صفحه (حتی اگر داخل کانتینر با padding باشد) */
+.full-width-slider-wrapper {
+    width: 100vw;
+    max-width: 100vw;
+    margin-left: calc(50% - 50vw);
+    overflow: hidden;
+}
+
+/* ارتفاع دسکتاپ — به دلخواه تغییر بدهید */
+.full-width-carousel-item {
+    height: auto;
+}
+
+.full-width-carousel-inner {
+    height: 100%;
+}
+
+.full-width-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;      /* تصویر فضای اسلاید را کامل پر می‌کند */
+    object-position: center;
+    /* جلوگیری از درگ شدن تصویر توسط مرورگر */
+    -webkit-user-drag: none;
+    user-select: none;
+    pointer-events: none;
+}
+
+/* نشانگر موس */
+.full-width-carousel {
+    cursor: grab;
+}
+.full-width-carousel:active {
+    cursor: grabbing;
+}
+
+/* ---------- موبایل: ارتفاع ۳۰۰ ---------- */
+@media (max-width: 768px) {
+    .full-width-carousel-item {
+        height: 300px;
+    }
+}
