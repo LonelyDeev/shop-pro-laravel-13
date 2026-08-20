@@ -767,71 +767,80 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 $(function () {
-    var $carousel = $('#mainCarousel');
-
-    $carousel.carousel({
-        interval: 5000,
-        pause: 'hover',
-        wrap: true
-    });
-
-    var startX = 0, startY = 0, deltaX = 0;
-    var swiping = false, dragging = false;
     var THRESHOLD = 50; // حداقل فاصله درگ برای تغییر اسلاید
 
-    function handleSwipe() {
-        if (Math.abs(deltaX) >= THRESHOLD) {
-            if (deltaX < 0) {
-                $carousel.carousel('next'); // درگ به چپ
-            } else {
-                $carousel.carousel('prev'); // درگ به راست
+    function initSwipeCarousel($carousel) {
+        // اگر این کاروسل روی صفحه وجود ندارد، رد شو
+        if (!$carousel.length) return;
+
+        // مقداردهی اولیه
+        $carousel.carousel({
+            interval: 5000,
+            pause: 'hover',
+            wrap: true
+        });
+
+        var startX = 0, startY = 0, deltaX = 0;
+        var swiping = false, dragging = false;
+
+        function handleSwipe() {
+            if (Math.abs(deltaX) >= THRESHOLD) {
+                if (deltaX < 0) {
+                    $carousel.carousel('next'); // درگ به چپ
+                } else {
+                    $carousel.carousel('prev'); // درگ به راست
+                }
             }
         }
+
+        // ---------- سوایپ تاچ (موبایل) ----------
+        $carousel.on('touchstart', function (e) {
+            startX = e.originalEvent.touches[0].clientX;
+            startY = e.originalEvent.touches[0].clientY;
+            deltaX = 0;
+            swiping = false;
+        });
+
+        $carousel.on('touchmove', function (e) {
+            var moveX = e.originalEvent.touches[0].clientX;
+            var moveY = e.originalEvent.touches[0].clientY;
+            deltaX = moveX - startX;
+            var deltaY = Math.abs(moveY - startY);
+
+            // فقط حرکت افقی
+            if (!swiping && Math.abs(deltaX) > deltaY && Math.abs(deltaX) > 10) {
+                swiping = true;
+            }
+            if (swiping) e.preventDefault();
+        });
+
+        $carousel.on('touchend', function () {
+            if (swiping) handleSwipe();
+            swiping = false;
+        });
+
+        // ---------- درگ با موس (دسکتاپ) ----------
+        $carousel.on('mousedown', function (e) {
+            dragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            deltaX = 0;
+            e.preventDefault(); // جلوگیری از درگِ خودِ تصویر توسط مرورگر
+        });
+
+        $(document).on('mousemove', function (e) {
+            if (!dragging) return;
+            deltaX = e.clientX - startX;
+        });
+
+        $(document).on('mouseup', function () {
+            if (!dragging) return;
+            dragging = false;
+            handleSwipe();
+        });
     }
 
-    // ---------- سوایپ تاچ (موبایل) ----------
-    $carousel.on('touchstart', function (e) {
-        startX = e.originalEvent.touches[0].clientX;
-        startY = e.originalEvent.touches[0].clientY;
-        deltaX = 0;
-        swiping = false;
-    });
-
-    $carousel.on('touchmove', function (e) {
-        var moveX = e.originalEvent.touches[0].clientX;
-        var moveY = e.originalEvent.touches[0].clientY;
-        deltaX = moveX - startX;
-        var deltaY = Math.abs(moveY - startY);
-
-        // فقط حرکت افقی
-        if (!swiping && Math.abs(deltaX) > deltaY && Math.abs(deltaX) > 10) {
-            swiping = true;
-        }
-        if (swiping) e.preventDefault();
-    });
-
-    $carousel.on('touchend', function () {
-        if (swiping) handleSwipe();
-        swiping = false;
-    });
-
-    // ---------- درگ با موس (دسکتاپ) ----------
-    $carousel.on('mousedown', function (e) {
-        dragging = true;
-        startX = e.clientX;
-        startY = e.clientY;
-        deltaX = 0;
-        e.preventDefault(); // جلوگیری از درگِ خودِ تصویر توسط مرورگر
-    });
-
-    $(document).on('mousemove', function (e) {
-        if (!dragging) return;
-        deltaX = e.clientX - startX;
-    });
-
-    $(document).on('mouseup', function () {
-        if (!dragging) return;
-        dragging = false;
-        handleSwipe();
-    });
+    // ---------- فعال‌سازی هر دو کاروسل ----------
+    initSwipeCarousel($('#mainCarousel'));
+    initSwipeCarousel($('#carouselExampleIndicators'));
 });
