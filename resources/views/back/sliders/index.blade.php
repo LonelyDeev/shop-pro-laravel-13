@@ -150,7 +150,9 @@
         </div>
 
         @endsection
-        @push('scripts')
+        @include('back.partials.plugins', ['plugins' => ['jquery-ui', 'jquery.validate']])
+
+    @push('scripts')
             <script>
               window.pages = @json(array_keys(\App\Models\Slider::availablePages()));
             </script>
