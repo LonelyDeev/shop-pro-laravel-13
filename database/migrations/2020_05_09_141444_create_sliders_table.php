@@ -15,43 +15,29 @@ class CreateSlidersTable extends Migration
     {
         Schema::create('sliders', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->string('page')->default('home')->nullable();
+
+            // به جای یک صفحه/گروه واحد، آرایه‌ای از صفحات و گروه‌ها ذخیره می‌شود
+            $table->json('pages')->nullable();   // مثال: ["home","products"]
+            $table->json('groups')->nullable();  // مثال: ["main","banner"]
+
             $table->string('title')->nullable();
+            $table->string('motionTitle')->nullable();
             $table->text('description')->nullable();
             $table->string('image');
-            $table->boolean('published')->default(true);
             $table->string('link')->nullable();
+            $table->string('lang')->nullable();
+
+            $table->boolean('published')->default(true);
             $table->integer('ordering')->nullable();
-            $table->string('group');
             $table->timestamps();
 
-
-            // 1. ایندکس برای فیلتر صفحه (اسلایدر صفحه اصلی، محصولات، ...)
-            $table->index('page');
-
-            // 2. ایندکس برای فیلتر وضعیت انتشار
+            // ایندکس‌های اصلی
             $table->index('published');
-
-            // 3. ایندکس برای گروه اسلایدر (اسلایدر اصلی، اسلایدر محصولات، ...)
-            $table->index('group');
-
-            // 4. ایندکس برای مرتب‌سازی بر اساس ترتیب
             $table->index('ordering');
-
-            // 5. ایندکس ترکیبی برای اسلایدرهای منتشر شده یک صفحه
-            $table->index(['page', 'published']);
-
-            // 6. ایندکس ترکیبی برای اسلایدرهای منتشر شده یک گروه
-            $table->index(['group', 'published']);
-
-            // 7. ایندکس ترکیبی برای اسلایدرهای یک صفحه با ترتیب
-            $table->index(['page', 'ordering']);
-
-            // 8. ایندکس ترکیبی برای اسلایدرهای یک گروه با ترتیب
-            $table->index(['group', 'ordering']);
-
-            // 9. ایندکس برای مرتب‌سازی بر اساس زمان ایجاد
             $table->index('created_at');
+
+            // ایندکس ترکیبی برای مرتب‌سازی اسلایدرهای منتشر شده
+            $table->index(['published', 'ordering']);
         });
     }
 

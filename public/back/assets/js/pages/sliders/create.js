@@ -1,180 +1,96 @@
-// validate form with jquery validation plugin
-jQuery('#slider-create-form').validate({
-    errorClass: 'invalid-feedback animated fadeInDown',
-    errorPlacement: function(error, e) {
-        jQuery(e).parents('.form-group').append(error);
-    },
-    highlight: function(e) {
-        jQuery(e).closest('.form-group').find('input').removeClass('is-invalid').addClass('is-invalid');
-    },
-    success: function(e) {
-        jQuery(e).closest('.form-group').find('input').removeClass('is-invalid');
-        jQuery(e).remove();
-    },
-    invalidHandler: function(form, validator) {
 
-        if (!validator.numberOfInvalids())
-            return;
+(function () {
+    'use strict';
 
-        $('html, body').animate({
-            scrollTop: $(validator.errorList[0].element).offset().top - 150
-        }, 200);
-
-        $(validator.errorList[0].element).focus();
-
-    },
-    rules: {
-        'image': {
-            required: true,
-        },
-        'group': {
-            required: true,
-        },
-    },
-});
-
-$(".slider-link").autocomplete({
-    source: pages
-});
-
-$('#slider-create-form').submit(function(e) {
-    e.preventDefault();
-
-    if ($(this).valid() && !$(this).data('disabled')) {
-        var formData = new FormData(this);
-
-        $.ajax({
-            url: $(this).attr('action'),
-            type: 'POST',
-            data: formData,
-            success: function(data) {
-                $('#slider-create-form').data('disabled', true);
-                window.location.href = BASE_URL + "/sliders";
-            },
-            beforeSend: function(xhr) {
-                block('#main-card');
-                xhr.setRequestHeader("X-CSRF-TOKEN", $('meta[name="csrf-token"]').attr('content'));
-            },
-            complete: function() {
-                unblock('#main-card');
-            },
-            cache: false,
-            contentType: false,
-            processData: false
-        });
-    }
-
-});
-
-$('select[name=group]').change(function () {
-    var select = this;
-    if ($(select).val()=="main_story"){
-        $('#story-only').removeClass('d-none');
-        $('.story-hide').addClass('d-none');
-        $('.story-hide input').attr('disabled','disabled');
-        $('#story-only input').removeAttr('disabled');
-    }else {
-        $('#story-only').addClass('d-none');
-        $('.story-hide').removeClass('d-none');
-        $('.story-hide input').removeAttr('disabled');
-        $('#story-only input').attr('disabled','disabled');
-    }
-});
-
-
-document.addEventListener("DOMContentLoaded", function () {
-
-    document.getElementById('button-image').addEventListener('click', (event) => {
-        event.preventDefault();
-
-        window.open('/file-manager/fm-button', 'fm', 'width=1400,height=800');
-    });
-});
-
-// set file link
-function fmSetLink($url) {
-    document.getElementById('image_label').value = $url;
-    $('#button-image .img-uploader').removeClass('display-hidden');
-    $('.remove-img-uploader').removeClass('display-hidden');
-    $('#button-image img').attr('src', $url)
-}
-
-$('.remove-img-uploader').click(function () {
-    $('#button-image .img-uploader').addClass('display-hidden');
-    $('.remove-img-uploader').addClass('display-hidden');
-    document.getElementById('image_label').value = null;
-})
-
-
-// دریافت تمام گروه‌های اسلایدر از کانفیگ
-
-
-// تابع برای آپدیت کردن گروه‌ها بر اساس صفحه انتخاب شده
-function updateGroupsByPage(selectedPage) {
-    var groupSelect = $('#group_select');
-    groupSelect.html('');
-
-    if(sliderGroups[selectedPage] && sliderGroups[selectedPage].length > 0) {
-        $.each(sliderGroups[selectedPage], function(index, group) {
-            groupSelect.append(
-                $('<option></option>')
-                    .val(group.group)
-                    .text(group.name + ' (' + group.size + ')')
-                    .data('width', group.width)
-                    .data('height', group.height)
-            );
-        });
-
-        // نمایش اطلاعات سایز برای گروه اول
-        showImageSizeInfo(groupSelect.find('option:first'));
-    } else {
-        groupSelect.append(
-            $('<option></option>')
-                .val('')
-                .text('هیچ گروهی برای این صفحه تعریف نشده است')
-        );
-        $('#image_size_info').hide();
-    }
-}
-
-// تابع برای نمایش اطلاعات سایز تصویر
-function showImageSizeInfo(selectedOption) {
-    if(selectedOption && selectedOption.length > 0) {
-        var width = selectedOption.data('width');
-        var height = selectedOption.data('height');
-        if(width && height) {
-            $('#recommended_size').text(width + ' × ' + height + ' پیکسل');
-            $('#image_size_info').show();
-        } else {
-            $('#image_size_info').hide();
+    function syncCounter(section) {
+        var checked = section.querySelectorAll('.scs-input:checked').length;
+        var subtitle = section.querySelector('.scs-subtitle');
+        if (subtitle) {
+            subtitle.textContent = checked + ' مورد انتخاب شده — می‌توانید چند مورد را همزمان انتخاب کنید';
         }
+    }
+
+    function bindCardClick(card) {
+        var input = card.querySelector('.scs-input');
+        if (!input) return;
+
+        // وقتی کاربر روی کل کارت کلیک می‌کند، چک‌باکس toggle شود
+        card.addEventListener('click', function (e) {
+            // اگر خود input کلیک شد، اجازه دهیم پیش‌فرض کار کند
+            if (e.target === input) return;
+
+            e.preventDefault();
+            input.checked = !input.checked;
+
+            // trigger event برای کدهای دیگر
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+
+        input.addEventListener('change', function () {
+            card.classList.toggle('is-checked', input.checked);
+            syncCounter(card.closest('.slider-checkbox-section'));
+        });
+    }
+
+    function bindButtons(section) {
+        var target   = section.dataset.target || section.querySelector('[data-target]')?.dataset.target;
+        var selectAll = section.querySelector('.scs-btn--select-all');
+        var clear     = section.querySelector('.scs-btn--clear');
+
+        if (selectAll) {
+            selectAll.addEventListener('click', function () {
+                section.querySelectorAll('.scs-input').forEach(function (input) {
+                    input.checked = true;
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                });
+            });
+        }
+        if (clear) {
+            clear.addEventListener('click', function () {
+                section.querySelectorAll('.scs-input').forEach(function (input) {
+                    input.checked = false;
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                });
+            });
+        }
+    }
+
+    function init() {
+        document.querySelectorAll('.slider-checkbox-section').forEach(function (section) {
+            // دکمه‌ها داخل پارشال هستند و data-target روی خودشان می‌نشیند
+            var target = section.querySelector('.scs-btn--select-all')?.dataset.target;
+            if (target) section.dataset.target = target;
+
+            section.querySelectorAll('.scs-card').forEach(bindCardClick);
+            bindButtons(section);
+            syncCounter(section);
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
     } else {
-        $('#image_size_info').hide();
+        init();
     }
-}
+})();
 
-// رویداد تغییر صفحه
-$('#page_select').on('change', function() {
-    var selectedPage = $(this).val();
-    updateGroupsByPage(selectedPage);
-});
+(function() {
+    var input = document.getElementById('image-input');
+    var wrap = document.getElementById('image-preview-wrap');
+    var img = document.getElementById('image-preview');
+    if (!input) return;
 
-// رویداد تغییر گروه (برای نمایش سایز)
-$('#group_select').on('change', function() {
-    var selectedOption = $(this).find('option:selected');
-    showImageSizeInfo(selectedOption);
-});
-
-// اجرای اولیه برای صفحه فعلی (در حالت ویرایش)
-var initialPage = $('#page_select').val();
-if(initialPage) {
-    updateGroupsByPage(initialPage);
-
-    // در حالت ویرایش، گروه فعلی را انتخاب کن
-
-    if(currentGroup) {
-        setTimeout(function() {
-            $('#group_select').val(currentGroup).trigger('change');
-        }, 100);
-    }
-}
+    input.addEventListener('change', function() {
+        var file = input.files && input.files[0];
+        if (!file) {
+            wrap.style.display = 'none';
+            return;
+        }
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            img.src = e.target.result;
+            wrap.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    });
+})();

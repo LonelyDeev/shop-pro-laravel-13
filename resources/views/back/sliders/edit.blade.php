@@ -1,192 +1,133 @@
 @extends('back.layouts.master')
-
 @push('styles')
-    <link rel="stylesheet" type="text/css" href="{{ asset('back/app-assets/plugins/jquery-ui/jquery-ui.css') }}">
-    <style>
-        .file-uploader.dropzone .dz-message{
-            top: 14%;
-        }
-        .file-uploader.dropzone .dz-message:before{
-            top: 100px;
-        }
-    </style>
+    <link rel="stylesheet" type="text/css" href="{{asset('back/assets/css/pages/sliders.css')}}">
 @endpush
-
 @section('content')
 
-<div class="app-content content">
-    <div class="content-overlay"></div>
-    <div class="header-navbar-shadow"></div>
-    <div class="content-wrapper">
-        <div class="content-header row">
-            <div class="content-header-left col-md-9 col-12 mb-2">
-                <div class="row breadcrumbs-top">
-                    <div class="col-12">
-                        <div class="breadcrumb-wrapper col-12">
-                            <ol class="breadcrumb no-border">
-                                <li class="breadcrumb-item">مدیریت
-                                </li>
-                                <li class="breadcrumb-item">مدیریت اسلایدرها
-                                </li>
-                                <li class="breadcrumb-item active">ویرایش اسلایدر
-                                </li>
-                            </ol>
-                        </div>
-                    </div>
-                </div>
+    <div class="container-fluid py-4">
+
+        {{-- هدر --}}
+        <div class="sk-page-header d-flex align-items-center justify-content-between">
+            <div>
+                <h3>
+                    <span class="icon-wrap"><i class="fa fa-pen-to-square"></i></span>
+                    ویرایش اسلایدر
+                </h3>
+                <p>اسلایدر را در چند صفحه و چند گروه به‌صورت همزمان نمایش دهید.</p>
             </div>
-
+            <a href="{{ route('admin.sliders.index') }}" class="btn btn-light">
+                <i class="fa fa-arrow-right ms-1"></i> بازگشت به لیست
+            </a>
         </div>
-        <div class="content-body">
-            <!-- Description -->
-            <section class="card">
-                <div class="card-header">
-                    <h4 class="card-title">ویرایش اسلایدر </h4>
-                </div>
 
-                <div id="main-card" class="card-content">
-                    <div class="card-body">
-                        <div class="col-12 col-md-10 offset-md-1">
-                            <form class="form" id="slider-edit-form" action="{{ route('admin.sliders.update', ['slider' => $slider]) }}" method="slider">
-                                @csrf
-                                @method('put')
-                                <div class="form-body">
-                                    <div class="row">
-                                        <div class="col-12 col-md-12">
-                                            <fieldset class="form-group">
-                                                <label>تصویر شاخص</label>
+        <form id="slider-edit-form"
+              method="POST"
+              action="{{ route('admin.sliders.update', $slider) }}"
+              enctype="multipart/form-data">
+            @csrf
+            @method('PUT')
 
-                                                <input type="text" id="image_label"
-                                                       class="form-control display-hidden" name="image"
-                                                       aria-label="Image" aria-describedby="button-image" value="{{@$slider->image}}">
+            <div id="main-card">
 
-                                                <span class="remove-img-uploader @if(!$slider->image)display-hidden @endif">
-                                                            <i class="fa fa-trash text-danger px-1"></i>
-                                                    </span>
+                {{-- دراپ‌زون --}}
+                @include('back.sliders._image_uploader', [
+                    'currentImage' => old('image', $slider->image),
+                    'required'     => true,
+                ])
 
-                                                <div class="file-uploader dropzone dropzone-area mb-2 ui-sortable dz-clickable"
-                                                     id="button-image">
-                                                    <div class="img-uploader @if(!$slider->image)display-hidden @endif">
-                                                        <?php
-                                                        $pathInfo = pathinfo($slider->image);
-                                                        ?>
-                                                        @if($pathInfo['extension']=="mp4" or $pathInfo['extension']=="gif" or $pathInfo['extension']=="m4a")
-                                                            <video controls class='w-100' style='max-height: 150px'>
-                                                                <source src="{{asset($slider->image)}}" type="video/mp4">
-                                                            </video>
-                                                        @else
-                                                            <img src="{{asset($slider->image)}}">
-                                                        @endif
+                <div class="row g-4">
+                    {{-- چک‌باکس‌ها --}}
+                    <div class="col-lg-7">
 
+                        {{-- بخش صفحات (هاردکد شده با ۳ صفحه ثابت) --}}
+                        @include('back.sliders._pages_section', [
+                            'selected' => old('pages', $slider->pages ?: []),
+                        ])
 
-                                                    </div>
-                                                    <div class="dz-message">برای آپلود کلیک کنید</div>
-                                                </div>
-                                                {{--  <p><small>بهترین اندازه <span class="text-danger">{{ config('front.imageSizes.postImage') }}</span> پیکسل میباشد.</small></p>--}}
+                        @include('back.sliders._checkbox_grid', [
+                            'name'    => 'groups',
+                            'options' => $groups,
+                            'selected'=> old('groups', $slider->groups ?: []),
+                            'title'   => 'گروه‌های نمایش',
+                            'icon'    => 'fa-layer-group',
+                            'variant' => 'groups',
+                        ])
 
-                                            </fieldset>
-                                        </div>
-                                        <div class="story-hide col-md-6 col-12 {{$slider->group=="main_story" ? 'd-none' : ''}}">
-                                            <div class="form-group">
-                                                <label>عنوان <small>(اختیاری)</small></label>
-                                                <input type="text" class="form-control" {{$slider->group=="main_story" ? 'disabled' : ''}}  name="title" value="{{ $slider->title }}">
-                                            </div>
-                                        </div>
-                                        <div class="story-hide col-md-6 col-12 {{$slider->group=="main_story" ? 'd-none' : ''}}">
-                                            <div class="form-group">
-                                                <label>لینک <small>(اختیاری)</small></label>
-                                                <input type="text" class="form-control slider-link ltr" name="link" value="{{ $slider->link }}">
-                                            </div>
-                                        </div>
+                    </div>
 
+                    {{-- اطلاعات --}}
+                    <div class="col-lg-5">
+                        <div class="sk-info-card">
+                            <div class="sk-info-card-header">
+                                <i class="fa fa-circle-info"></i>
+                                <h5>اطلاعات اسلایدر</h5>
+                            </div>
+                            <div class="sk-info-card-body">
+
+                                <div class="mb-3">
+                                    <label class="form-label">عنوان</label>
+                                    <input type="text" name="title"
+                                           value="{{ old('title', $slider->title) }}"
+                                           class="form-control">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">عنوان متحرک</label>
+                                    <input type="text" name="motionTitle"
+                                           value="{{ old('motionTitle', $slider->motionTitle) }}"
+                                           class="form-control">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">لینک</label>
+                                    <input type="text" name="link"
+                                           value="{{ old('link', $slider->link) }}"
+                                           class="form-control slider-link">
+                                    <small class="text-muted">با تایپ کردن، صفحات داخلی پیشنهاد داده می‌شوند.</small>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">توضیحات</label>
+                                    <textarea name="description" rows="4"
+                                              class="form-control">{{ old('description', $slider->description) }}</textarea>
+                                </div>
+
+                                <div class="publish-box">
+                                    <div class="form-check form-switch m-0">
+                                        <input class="form-check-input" type="checkbox" role="switch"
+                                               name="published" value="1" id="published"
+                                               {{ old('published', $slider->published) ? 'checked' : '' }}>
                                     </div>
-
-                                    <div class="row">
-                                        <div class="col-12 col-md-6">
-                                            <div class="form-group">
-                                                <label>نمایش در صفحه</label>
-                                                <select class="form-control" name="page" id="page_select">
-                                                    @if(config('front.slider_sections'))
-                                                        @foreach(config('front.slider_sections') as $sliderSections)
-                                                            <option value="{{ $sliderSections['key'] }}" {{ ($slider->page == $sliderSections['key']) ? 'selected' : '' }}>
-                                                                {{ $sliderSections['name'] }}
-                                                            </option>
-                                                        @endforeach
-                                                    @endif
-                                                </select>
-                                            </div>
-                                        </div>
-
-                                        <div class="col-md-6 col-12">
-                                            <div class="form-group">
-                                                <label>گروه</label>
-                                                <select class="form-control" name="group" id="group_select">
-                                                    @if(config('front.sliderGroups') && isset(config('front.sliderGroups')[$slider->page]))
-                                                        @foreach(config('front.sliderGroups')[$slider->page] as $sliderGroup)
-                                                            <option value="{{ $sliderGroup['group'] }}" {{ ($slider->group == $sliderGroup['group']) ? 'selected' : '' }}>
-                                                                {{ $sliderGroup['name'] }} ({{ $sliderGroup['size'] }})
-                                                            </option>
-                                                        @endforeach
-                                                    @endif
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <div class="col-12 col-md-12">
-                                            <div class="form-group">
-                                                <label for="first-name-vertical">توضیحات <small>(اختیاری)</small></label>
-                                                <textarea id="description" class="form-control" rows="4" name="description">{{ $slider->description }}</textarea>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-12">
-                                        <fieldset class="checkbox">
-                                            <div class="vs-checkbox-con vs-checkbox-primary">
-                                                <input type="checkbox" name="published" {{ $slider->published ? 'checked' : '' }}>
-                                                <span class="vs-checkbox">
-                                                        <span class="vs-checkbox--check">
-                                                            <i class="vs-icon feather icon-check"></i>
-                                                        </span>
-                                                    </span>
-                                                <span>انتشار اسلایدر؟</span>
-                                            </div>
-                                        </fieldset>
-                                    </div>
-                                    <div class="row mt-2">
-                                        <div class="col-12">
-                                            <button type="submit" class="btn btn-primary mr-1 mb-1 waves-effect waves-light">ویرایش اسلایدر</button>
-                                        </div>
+                                    <div class="publish-info">
+                                        <strong>انتشار اسلایدر</strong>
+                                        <small>اگر فعال باشد، اسلایدر در سایت نمایش داده می‌شود.</small>
                                     </div>
                                 </div>
-                            </form>
+
+                            </div>
+                            <div class="sk-info-card-footer">
+                                <a href="{{ route('admin.sliders.index') }}" class="btn btn-light">
+                                    انصراف
+                                </a>
+                                <button type="submit" class="btn btn-primary px-4">
+                                    <i class="fa fa-save ms-1"></i> به‌روزرسانی
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </section>
-            <!--/ Description -->
 
-        </div>
+            </div>
+        </form>
+
     </div>
-</div>
+
 
 @endsection
-
 @push('scripts')
-    <script src="{{ asset('back/app-assets/plugins/jquery-ui/jquery-ui.js') }}"></script>
-
     <script>
-        var pages =  [
-            @foreach($pages as $page)
-                "/pages/{{ $page }}",
-            @endforeach
-        ];
-        var sliderGroups = @json(config('front.sliderGroups'));
-        var currentGroup = "{{ $slider->group }}";
+      window.BASE_URL = "{{ url('/') }}";
+      window.pages = @json(array_keys(\App\Models\Slider::availablePages()));
     </script>
-
-    <script src="{{ asset('back/assets/js/pages/sliders/edit.js') }}"></script>
-    <script>
-
-
-
-    </script>
+    <script src="{{ asset('back/assets/js/pages/sliders/all.js') }}?v=2"></script>
 @endpush

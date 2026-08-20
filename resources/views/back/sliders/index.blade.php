@@ -1,128 +1,159 @@
 @extends('back.layouts.master')
-
+@push('styles')
+    <link rel="stylesheet" type="text/css" href="{{asset('back/assets/css/pages/sliders.css')}}">
+@endpush
 @section('content')
 
+    @php
+        // آمار کلی
+        $total     = $sliders->count();
+        $published = $sliders->where('published', true)->count();
+        $drafts    = $sliders->where('published', false)->count();
+        $pagesCovered = $sliders->flatMap(fn ($s) => $s->pages ?: [])->unique()->count();
+
+        // کاتالوگ گروه‌ها
+        $groupCatalog = \App\Models\Slider::availableGroups();
+
+        // تعریف ۳ صفحه ثابت با اطلاعات نمایشی
+        $pageSections = [
+            'home' => [
+                'label'    => 'صفحه اصلی',
+                'icon'     => 'fa-house',
+                'subtitle' => 'اسلایدرهای نمایش‌داده‌شده در صفحه اصلی سایت',
+                'css'      => 'home',
+            ],
+            'posts' => [
+                'label'    => 'صفحه اصلی مقالات',
+                'icon'     => 'fa-newspaper',
+                'subtitle' => 'اسلایدرهای نمایش‌داده‌شده در صفحه مقالات',
+                'css'      => 'posts',
+            ],
+            'sellers' => [
+                'label'    => 'صفحه اصلی فروشندگان',
+                'icon'     => 'fa-store',
+                'subtitle' => 'اسلایدرهای نمایش‌داده‌شده در صفحه فروشندگان',
+                'css'      => 'sellers',
+            ],
+        ];
+    @endphp
     <div class="app-content content">
         <div class="content-overlay"></div>
         <div class="header-navbar-shadow"></div>
         <div class="content-wrapper">
-            <div class="content-header row">
-                <div class="content-header-left col-md-9 col-12 mb-2">
-                    <div class="row breadcrumbs-top">
-                        <div class="col-12">
-                            <div class="breadcrumb-wrapper col-12">
-                                <ol class="breadcrumb no-border">
-                                    <li class="breadcrumb-item">مدیریت
-                                    </li>
-                                    <li class="breadcrumb-item">مدیریت اسلایدرها
-                                    </li>
-                                    <li class="breadcrumb-item active">لیست اسلایدرها
-                                    </li>
-                                </ol>
+            <div class="content-body" id="main-card">
+                <div class="container-fluid py-4">
+
+                    {{-- هدر --}}
+                    <div class="sk-page-header d-flex align-items-center justify-content-between">
+                        <div>
+                            <h3>
+                                <span class="icon-wrap"><i class="fa fa-images"></i></span>
+                                مدیریت اسلایدرها
+                            </h3>
+                            <p>اسلایدرها بر اساس صفحه نمایش، به‌صورت کارت گروه‌بندی شده‌اند.</p>
+                        </div>
+                        <a href="{{ route('admin.sliders.create') }}" class="btn btn-primary">
+                            <i class="fa fa-plus ms-1"></i> اسلایدر جدید
+                        </a>
+                    </div>
+
+                    {{-- آمار --}}
+                    <div class="sk-stats">
+                        <div class="sk-stat sk-stat--blue">
+                            <div class="sk-stat-icon"><i class="fa fa-images"></i></div>
+                            <div class="sk-stat-info">
+                                <div class="sk-stat-value">{{ $total }}</div>
+                                <div class="sk-stat-label">کل اسلایدرها</div>
+                            </div>
+                        </div>
+                        <div class="sk-stat sk-stat--green">
+                            <div class="sk-stat-icon"><i class="fa fa-circle-check"></i></div>
+                            <div class="sk-stat-info">
+                                <div class="sk-stat-value">{{ $published }}</div>
+                                <div class="sk-stat-label">منتشر شده</div>
+                            </div>
+                        </div>
+                        <div class="sk-stat sk-stat--amber">
+                            <div class="sk-stat-icon"><i class="fa fa-pen-ruler"></i></div>
+                            <div class="sk-stat-info">
+                                <div class="sk-stat-value">{{ $drafts }}</div>
+                                <div class="sk-stat-label">پیش‌نویس</div>
+                            </div>
+                        </div>
+                        <div class="sk-stat sk-stat--purple">
+                            <div class="sk-stat-icon"><i class="fa fa-file-lines"></i></div>
+                            <div class="sk-stat-info">
+                                <div class="sk-stat-value">{{ $pagesCovered }}</div>
+                                <div class="sk-stat-label">صفحات پوشش‌داده‌شده</div>
                             </div>
                         </div>
                     </div>
-                </div>
-                <div class="content-header-right text-md-right col-md-3 col-12 d-md-block d-none">
-                    <div class="form-group breadcrum-right">
-                        <div id="save-changes" class="spinner-border text-success" role="status" style="display: none">
-                            <span class="sr-only">Loading...</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="content-body" id="main-card">
-                <div class="nav-vertical">
-                    <div class=" nav nav-tabs flex-column nav-left ">
-                        <ul class="nav nav-tabs flex-column nav-vertical-right" role="tablist">
-                            @if(config('front.slider_sections'))
-                                @foreach (config('front.slider_sections')  as $key => $sliderSections)
-                                    <li class="nav-item">
-                                        <a class="nav-link {{$key==0 ? 'active' : '' }}"
-                                           id="baseVerticalLeft-{{$sliderSections['key']}}" data-toggle="tab"
-                                           aria-controls="tabVerticalLeft1-{{$sliderSections['key']}}"
-                                           href="#tabVerticalLeft1-{{$sliderSections['key']}}" role="tab"
-                                           aria-selected="false"><i style="margin-left: 5px"
-                                                                    class=" fas fa-clipboard-list"></i>{{$sliderSections['name']}}
-                                        </a>
-                                    </li>
-                                @endforeach
-                            @endif
-                        </ul>
 
-                    </div>
-                    <div class="tab-content">
-                        @if(config('front.slider_sections'))
-                            @foreach (config('front.slider_sections')  as $key => $sliderSections)
-
-                                <div class="tab-pane {{$key==0 ? 'active' : '' }}"
-                                     id="tabVerticalLeft1-{{$sliderSections['key']}}" role="tabpanel"
-                                     aria-labelledby="baseVerticalLeft-{{$sliderSections['key']}}">
-                                    @if($sliders->where('page',$sliderSections['key'])->count())
-                                        @if (config('front.sliderGroups'))
-                                            @foreach (config('front.sliderGroups.'.$sliderSections['key']) as $sliderGroup)
-                                                @include('back.partials.sliders', ['sliders' => $sliders->where('group', $sliderGroup['group'])->where('page',$sliderSections['key']), 'group' => $sliderGroup['group'], 'title' => $sliderGroup['name'],'pageTitle'=>$sliderSections['name']])
+                    @if ($total > 0)
+                        {{-- بخش‌های گروه‌بندی‌شده بر اساس صفحه --}}
+                        @foreach ($pageSections as $pageKey => $pageInfo)
+                            @php
+                                $pageSliders = $sliders->filter(fn ($s) => in_array($pageKey, $s->pages ?: []));
+                            @endphp
+                            <div class="sk-page-section sk-page-section--{{ $pageInfo['css'] }}">
+                                <div class="sk-page-section-header">
+                        <span class="sk-page-section-icon">
+                            <i class="fa {{ $pageInfo['icon'] }}"></i>
+                        </span>
+                                    <div class="sk-page-section-info">
+                                        <h4 class="sk-page-section-title">{{ $pageInfo['label'] }}</h4>
+                                        <small class="sk-page-section-subtitle">{{ $pageInfo['subtitle'] }}</small>
+                                    </div>
+                                    <span class="sk-page-section-count">{{ $pageSliders->count() }} اسلایدر</span>
+                                </div>
+                                <div class="sk-page-section-body">
+                                    @if ($pageSliders->count() > 0)
+                                        <div class="sk-slider-cards">
+                                            @foreach ($pageSliders as $slider)
+                                                @include('back.sliders._slider_card', [
+                                                    'slider'       => $slider,
+                                                    'groupCatalog' => $groupCatalog,
+                                                ])
                                             @endforeach
-                                        @endif
+                                        </div>
                                     @else
-                                        <section class="card">
-                                            <div class="card-header">
-                                                <h4 class="card-title"></h4>
+                                        <div class="sk-page-empty">
+                                            <div class="sk-page-empty-icon">
+                                                <i class="fa {{ $pageInfo['icon'] }}"></i>
                                             </div>
-                                            <div class="card-content">
-                                                <div class="card-body">
-                                                    <div class="card-text">
-                                                        <p>چیزی برای نمایش وجود ندارد!</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </section>
+                                            <p>هیچ اسلایدری برای این صفحه ثبت نشده است.</p>
+                                        </div>
                                     @endif
                                 </div>
+                            </div>
+                        @endforeach
+                    @else
+                        {{-- حالت خالی کلی --}}
+                        <div class="sk-page-section sk-page-section--home">
+                            <div class="sk-page-section-body">
+                                <div class="sk-empty">
+                                    <div class="sk-empty-icon">
+                                        <i class="fa fa-image"></i>
+                                    </div>
+                                    <h4>هنوز اسلایدری ثبت نشده است</h4>
+                                    <p>اولین اسلایدر خود را ایجاد کنید تا در صفحات سایت نمایش داده شود.</p>
+                                    <a href="{{ route('admin.sliders.create') }}" class="btn btn-primary px-4">
+                                        <i class="fa fa-plus ms-1"></i> ایجاد اسلایدر
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
 
-                            @endforeach
-
-                        @endif
-                    </div>
-                </div>
-
-            </div>
-        </div>
-    </div>
-
-    {{-- delete slider modal --}}
-    <div class="modal fade text-left" id="delete-modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel19"
-         style="display: none;" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-sm" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title" id="myModalLabel19">آیا مطمئن هستید؟</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">×</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    با حذف اسلایدر دیگر قادر به بازیابی آن نخواهید بود
-                </div>
-                <div class="modal-footer">
-                    <form action="#" id="slider-delete-form">
-                        @csrf
-                        @method('delete')
-                        <button type="button" class="btn personal-success-btn waves-effect waves-light"
-                                data-dismiss="modal">خیر
-                        </button>
-                        <button type="submit" class="btn personal-danger-btn waves-effect waves-light">بله حذف شود
-                        </button>
-                    </form>
                 </div>
             </div>
         </div>
-    </div>
-@endsection
 
-@include('back.partials.plugins', ['plugins' => ['jquery-ui-sortable']])
-
-@push('scripts')
-    <!-- Page Js codes -->
-    <script src="{{ asset('back/assets/js/pages/sliders/index.js') }}"></script>
-@endpush
+        @endsection
+        @push('scripts')
+            <script>
+              window.BASE_URL = "{{ url('/') }}";
+              window.pages = @json(array_keys(\App\Models\Slider::availablePages()));
+            </script>
+            <script src="{{ asset('back/assets/js/pages/sliders/all.js') }}?v=2"></script>
+    @endpush
