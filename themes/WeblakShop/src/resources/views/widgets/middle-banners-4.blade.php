@@ -11,7 +11,7 @@
         <div class="adplacement">
             @php $i=1; @endphp
             @foreach ($index_middle_4_banners as $banner)
-                @if(in_array($widget->option('place'), json_decode($banner->place, true) ?? []))
+                @if(in_array($widget->option('place'), $banner->places ?? []))
                     @if($i<=$widget->option('number'))
                         <div class="col-6 col-lg-3 pull-right" @if($i==1 or $i==3) style="padding-left:0;" @endif>
                             <a href="{{ $banner->link }}" class="item-adplacement image-data-src">
