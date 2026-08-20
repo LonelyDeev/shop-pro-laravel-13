@@ -407,6 +407,7 @@ $(document).ready(function () {
     });
 
     $('#mainCarousel').carousel({
+        interval: 5000,
         pause: 'hover',
         wrap: true
     });
