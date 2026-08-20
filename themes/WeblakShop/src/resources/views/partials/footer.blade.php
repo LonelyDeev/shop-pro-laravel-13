@@ -6,7 +6,7 @@
         </a>
     </div>
     <?php
-    $sevices_sliders=App\Models\Slider::where('group', 'sevices_sliders')
+    $sevices_sliders=App\Models\Slider::where('groups', 'sevices_sliders')
         ->where('published', true)
         ->get()
     ?>
