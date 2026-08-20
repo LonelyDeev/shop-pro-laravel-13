@@ -152,7 +152,6 @@
         @endsection
         @push('scripts')
             <script>
-              window.BASE_URL = "{{ url('/') }}";
               window.pages = @json(array_keys(\App\Models\Slider::availablePages()));
             </script>
             <script src="{{ asset('back/assets/js/pages/sliders/all.js') }}?v=2"></script>

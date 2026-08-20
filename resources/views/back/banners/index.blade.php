@@ -157,7 +157,6 @@
 
 @push('scripts')
     <script>
-        window.BASE_URL = "{{ url('/') }}";
         window.pages    = @json(array_keys(\App\Models\Banner::availablePages()));
     </script>
     <script src="{{ asset('back/assets/js/pages/banners/all.js') }}?v=2"></script>
