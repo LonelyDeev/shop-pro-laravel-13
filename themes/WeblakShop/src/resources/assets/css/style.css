@@ -17042,3 +17042,6 @@ img.captcha {
         height: 300px;
     }
 }
+#story-modal{
+    z-index: 9999;
+}
