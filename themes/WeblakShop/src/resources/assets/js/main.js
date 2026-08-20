@@ -406,26 +406,6 @@ $(document).ready(function () {
         }
     });
 
-    $('#mainCarousel').carousel({
-        interval: 5000,
-        pause: 'hover',
-        wrap: true
-    });
-    // روش 2: فعال‌سازی دستی تاچ (برای اطمینان)
-    var carousel = $('#mainCarousel');
-
-    // اگر Bootstrap JS لود نشده، این کد تاچ را فعال می‌کند
-    if (typeof $.fn.carousel !== 'undefined') {
-        // تاچ در Bootstrap 4 به صورت پیش‌فرض فعال است
-        // اما برای اطمینان دوباره تنظیم می‌کنیم
-        carousel.carousel('dispose');
-        carousel.carousel({
-            interval: 5000,
-            pause: 'hover',
-            wrap: true,
-            touch: true
-        });
-    }
 
     // zoom gallery product----------------
     $('.back-to-top').click(function (e) {
@@ -783,5 +763,57 @@ document.addEventListener('DOMContentLoaded', function () {
                 btn.setAttribute('aria-expanded', 'true');
             }
         });
+    });
+});
+
+$(function () {
+    var $carousel = $('#mainCarousel');
+
+    // مقداردهی اولیه — فقط یک بار (بدون dispose)
+    $carousel.carousel({
+        interval: 5000,
+        pause: 'hover',
+        wrap: true
+    });
+
+    // ---------- پشتیبانی سوایپ (Touch) ----------
+    var startX = 0, startY = 0, deltaX = 0, swiping = false;
+    var THRESHOLD = 50; // حداقل فاصله سوایپ (پیکسل)
+
+    $carousel.on('touchstart', function (e) {
+        startX = e.originalEvent.touches[0].clientX;
+        startY = e.originalEvent.touches[0].clientY;
+        deltaX = 0;
+        swiping = false;
+    });
+
+    $carousel.on('touchmove', function (e) {
+        var moveX = e.originalEvent.touches[0].clientX;
+        var moveY = e.originalEvent.touches[0].clientY;
+
+        deltaX = moveX - startX;
+        var deltaY = Math.abs(moveY - startY);
+
+        // فقط وقتی حرکت افقی غالب است (نه اسکرول عمودی صفحه)
+        if (!swiping && Math.abs(deltaX) > deltaY && Math.abs(deltaX) > 10) {
+            swiping = true;
+        }
+        // جلوگیری از اسکرول صفحه هنگام سوایپ افقی
+        if (swiping) {
+            e.preventDefault();
+        }
+    });
+
+    $carousel.on('touchend', function () {
+        if (!swiping) return;
+
+        if (Math.abs(deltaX) >= THRESHOLD) {
+            if (deltaX < 0) {
+                $carousel.carousel('next'); // سوایپ به چپ
+            } else {
+                $carousel.carousel('prev'); // سوایپ به راست
+            }
+        }
+        swiping = false;
     });
 });
