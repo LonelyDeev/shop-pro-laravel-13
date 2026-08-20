@@ -5,41 +5,77 @@
 @endphp
 @push('styles')
     <style>
+        /* حذف padding و margin اضافی */
         .full-width-slider-wrapper {
             width: 100%;
-            max-width: 100vw;
+            max-width: 100%;
             overflow: hidden;
             position: relative;
+            background: #000;
+            padding: 0;
+            margin: 0;
         }
 
+        /* ارتفاع 300px در همه دستگاه‌ها */
         .full-width-carousel,
         .full-width-carousel-inner,
         .full-width-carousel-item {
             width: 100%;
-            height: auto;
+            height: 300px !important; /* ارتفاع ثابت 300px */
         }
 
         .full-width-image {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
-
-        /* یا با نسبت تصویر 16:9 */
-        .full-width-carousel-item {
-            position: relative;
-            padding-bottom: 56.25%; /* 16:9 */
-            height: 0;
-            overflow: hidden;
-        }
-
-        .full-width-image {
-            position: absolute;
-            top: 0;
-            left: 0;
             width: 100%;
             height: 100%;
             object-fit: cover;
+            object-position: center;
+        }
+
+        /* Indicators */
+        .custom-indicators {
+            bottom: 20px;
+            z-index: 15;
+        }
+
+        .custom-indicators li {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.5);
+            border: 2px solid rgba(255,255,255,0.8);
+            margin: 0 5px;
+            transition: all 0.3s ease;
+        }
+
+        .custom-indicators li.active {
+            background: #fff;
+            transform: scale(1.2);
+        }
+
+        /* Controls */
+        .custom-control {
+            opacity: 0.7;
+            transition: opacity 0.3s;
+            width: 5%;
+            z-index: 10;
+        }
+
+        .custom-control:hover {
+            opacity: 1;
+        }
+
+        /* Responsive - در موبایل هم 300px */
+        @media (max-width: 768px) {
+            .full-width-carousel,
+            .full-width-carousel-inner,
+            .full-width-carousel-item {
+                height: 300px !important; /* در موبایل هم 300px */
+            }
+
+            .custom-indicators li {
+                width: 8px;
+                height: 8px;
+            }
         }
     </style>
 @endpush
