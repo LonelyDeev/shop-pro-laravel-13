@@ -5,7 +5,7 @@
 @endphp
 
 <div class="full-width-slider-wrapper">
-    <div id="mainCarousel" class="carousel slide full-width-carousel" data-ride="carousel">
+    <div id="mainCarousel" class="carousel slide full-width-carousel" data-ride="carousel" data-interval="5000" data-touch="true">
         @if(count($main_sliders) > 1)
             <ol class="carousel-indicators custom-indicators">
                 @foreach($main_sliders as $key => $slider)
