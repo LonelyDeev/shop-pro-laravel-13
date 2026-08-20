@@ -5,49 +5,40 @@
 @endphp
 
 <!-- Start Main-Slider -->
-<div class="full-width-slider-wrapper">
-    <div id="mainCarousel" class="carousel slide full-width-carousel" data-ride="carousel" data-interval="5000">
-        {{-- Indicators --}}
-        @if(count($main_sliders) > 1)
-            <ol class="carousel-indicators custom-indicators">
-                @foreach($main_sliders as $key => $slider)
-                    <li data-target="#mainCarousel" data-slide-to="{{ $key }}" class="@if($loop->first) active @endif"></li>
-                @endforeach
-            </ol>
-        @endif
+<div class="col-lg-12 col-md-12 col-xs-12 pull-right mt-3 p-0">
 
-        {{-- Slides --}}
-        <div class="carousel-inner full-width-carousel-inner">
-            @foreach($main_sliders as $slider)
-                <div class="carousel-item full-width-carousel-item @if($loop->first) active @endif">
-                    <img class="d-block w-100 full-width-image"
-                         src="{{ asset($slider->image) }}"
-                         alt="{{ $slider->title ?: 'Slider Image' }}">
-
-                    @if($slider->title || $slider->description)
-                        <div class="carousel-caption d-none d-md-block custom-caption">
-                            @if($slider->title)
-                                <h2>{{ $slider->title }}</h2>
-                            @endif
-                            @if($slider->description)
-                                <p>{{ $slider->description }}</p>
-                            @endif
-                        </div>
+    <div class="col-lg-12 col-md-12 order-1 display-contents d-contents">
+        <div class="main-slider full-scrin-slider">
+            <div class="main-slider-container">
+                <div id="carouselExampleIndicators" class="carousel slide" data-ride="carousel">
+                    @if(count($main_sliders)>1)
+                    <ol class="carousel-indicators">
+                        @for($i=1;$i<= count($main_sliders);$i++)
+                        <li data-target="#carouselExampleIndicators" data-slide-to="{{$i}}" class="@if($i==0)active @endif"></li>
+                        @endfor
+                    </ol>
                     @endif
+                    <div class="carousel-inner">
+                        @foreach($main_sliders as $slider)
+                        <div class="carousel-item @if ($loop->first)active @endif">
+                            <img class="d-block w-100" src="{{asset($slider->image)}}" alt="{{$slider->title ?: $slider->image}}">
+                        </div>
+                        @endforeach
+                    </div>
+               {{--     @if(count($main_sliders)>1)
+                    <a class="carousel-control-prev" href="#carouselExampleIndicators" role="button"
+                       data-slide="prev">
+                        <span class="fa fa-angle-left" aria-hidden="true"></span>
+                        <span class="sr-only">Previous</span>
+                    </a>
+                    <a class="carousel-control-next" href="#carouselExampleIndicators" role="button"
+                       data-slide="next">
+                        <span class="fa fa-angle-right" aria-hidden="true"></span>
+                        <span class="sr-only">Next</span>
+                    </a>
+                    @endif--}}
                 </div>
-            @endforeach
+            </div>
         </div>
-
-    {{--    --}}{{-- Controls --}}{{--
-        @if(count($main_sliders) > 1)
-            <a class="carousel-control-prev custom-control" href="#mainCarousel" role="button" data-slide="prev">
-                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                <span class="sr-only">Previous</span>
-            </a>
-            <a class="carousel-control-next custom-control" href="#mainCarousel" role="button" data-slide="next">
-                <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                <span class="sr-only">Next</span>
-            </a>
-        @endif--}}
     </div>
 </div>
