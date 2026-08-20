@@ -16,14 +16,30 @@
         .full-width-carousel-inner,
         .full-width-carousel-item {
             width: 100%;
-            height: 500px; /* ارتفاع ثابت */
+            height: auto;
         }
 
         .full-width-image {
             width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* یا با نسبت تصویر 16:9 */
+        .full-width-carousel-item {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 */
+            height: 0;
+            overflow: hidden;
+        }
+
+        .full-width-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
             height: 100%;
-            object-fit: cover; /* تصویر را برش می‌زند تا عرض کامل شود */
-            object-position: center;
+            object-fit: cover;
         }
     </style>
 @endpush
