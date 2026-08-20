@@ -5,110 +5,31 @@
 @endphp
 @push('styles')
     <style>
-        /* Fullscreen Slider Styles */
-        .fullscreen-slider-wrapper {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 999;
-            overflow: hidden;
-        }
-
-        .fullscreen-carousel,
-        .fullscreen-carousel-inner,
-        .fullscreen-carousel-item {
+        .full-width-slider-wrapper {
             width: 100%;
-            height: 100vh;
-            height: 100dvh; /* برای پشتیبانی از مرورگرهای جدید */
+            max-width: 100vw;
+            overflow: hidden;
+            position: relative;
         }
 
-        .fullscreen-image {
+        .full-width-carousel,
+        .full-width-carousel-inner,
+        .full-width-carousel-item {
+            width: 100%;
+            height: 500px; /* ارتفاع ثابت */
+        }
+
+        .full-width-image {
             width: 100%;
             height: 100%;
-            object-fit: cover; /* تصویر کل صفحه را می‌پوشاند */
+            object-fit: cover; /* تصویر را برش می‌زند تا عرض کامل شود */
             object-position: center;
-        }
-
-        /* Custom Indicators */
-        .custom-indicators {
-            bottom: 30px;
-            z-index: 15;
-        }
-
-        .custom-indicators li {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background-color: rgba(255, 255, 255, 0.5);
-            border: 2px solid rgba(255, 255, 255, 0.8);
-            margin: 0 5px;
-            transition: all 0.3s ease;
-        }
-
-        .custom-indicators li.active {
-            background-color: #ffffff;
-            transform: scale(1.2);
-        }
-
-        /* Custom Controls */
-        .custom-control {
-            width: 5%;
-            opacity: 0.7;
-            transition: opacity 0.3s ease;
-        }
-
-        .custom-control:hover {
-            opacity: 1;
-        }
-
-        .custom-control .carousel-control-prev-icon,
-        .custom-control .carousel-control-next-icon {
-            width: 40px;
-            height: 40px;
-            background-size: 60% 60%;
-        }
-
-        /* Caption Styling */
-        .custom-caption {
-            bottom: 20%;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-        }
-
-        .custom-caption h2 {
-            font-size: 3rem;
-            font-weight: 700;
-            color: #ffffff;
-            margin-bottom: 20px;
-        }
-
-        .custom-caption p {
-            font-size: 1.2rem;
-            color: #ffffff;
-            opacity: 0.9;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .custom-caption h2 {
-                font-size: 1.8rem;
-            }
-
-            .custom-caption p {
-                font-size: 1rem;
-            }
-
-            .custom-indicators li {
-                width: 8px;
-                height: 8px;
-            }
         }
     </style>
 @endpush
 <!-- Start Main-Slider -->
-<div class="fullscreen-slider-wrapper">
-    <div id="mainCarousel" class="carousel slide fullscreen-carousel" data-ride="carousel" data-interval="5000">
+<div class="full-width-slider-wrapper">
+    <div id="mainCarousel" class="carousel slide full-width-carousel" data-ride="carousel" data-interval="5000">
         {{-- Indicators --}}
         @if(count($main_sliders) > 1)
             <ol class="carousel-indicators custom-indicators">
@@ -119,14 +40,13 @@
         @endif
 
         {{-- Slides --}}
-        <div class="carousel-inner fullscreen-carousel-inner">
+        <div class="carousel-inner full-width-carousel-inner">
             @foreach($main_sliders as $slider)
-                <div class="carousel-item fullscreen-carousel-item @if($loop->first) active @endif">
-                    <img class="d-block w-100 fullscreen-image"
+                <div class="carousel-item full-width-carousel-item @if($loop->first) active @endif">
+                    <img class="d-block w-100 full-width-image"
                          src="{{ asset($slider->image) }}"
                          alt="{{ $slider->title ?: 'Slider Image' }}">
 
-                    {{-- Optional: Overlay Text --}}
                     @if($slider->title || $slider->description)
                         <div class="carousel-caption d-none d-md-block custom-caption">
                             @if($slider->title)
