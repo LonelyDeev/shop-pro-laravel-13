@@ -5,9 +5,9 @@
 @endphp
 
 <!-- Start Main-Slider -->
-<div class="row index-main-slider mb-3">
+<div class="col-lg-12 col-md-12 col-xs-12 pull-right mt-3 p-0">
 
-    <div class="col-lg-12 col-md-12 order-1">
+    <div class="col-lg-12 col-md-12 order-1 display-contents d-contents">
         <div class="main-slider full-scrin-slider">
             <div class="main-slider-container">
                 <div id="carouselExampleIndicators" class="carousel slide" data-ride="carousel">
