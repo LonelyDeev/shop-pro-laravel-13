@@ -1,14 +1,8 @@
 @extends('back.layouts.master')
-
+@push('styles')
+    <link rel="stylesheet" type="text/css" href="{{asset('back/assets/css/pages/banners.css')}}">
+@endpush
 @section('content')
-
-    @include('back.banners._styles')
-
-    <script>
-        window.BASE_URL = "{{ url('/') }}";
-        window.pages    = @json(array_keys(Banner::availablePages()));
-    </script>
-
     <div class="container-fluid py-4">
 
         {{-- هدر --}}
@@ -134,3 +128,12 @@
     @include('back.banners._form_scripts')
 
 @endsection
+@include('back.partials.plugins', ['plugins' => ['jquery-ui', 'jquery.validate']])
+
+@push('scripts')
+    <script>
+        window.BASE_URL = "{{ url('/') }}";
+        window.pages    = @json(array_keys(\App\Models\Banner::availablePages()));
+    </script>
+    <script src="{{ asset('back/assets/js/pages/banners/all.js') }}?v=2"></script>
+@endpush
