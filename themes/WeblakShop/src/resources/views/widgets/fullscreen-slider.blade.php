@@ -35,7 +35,7 @@
             @endforeach
         </div>
 
-        @if(count($main_sliders) > 1)
+     {{--   @if(count($main_sliders) > 1)
             <a class="carousel-control-prev custom-control" href="#mainCarousel" role="button" data-slide="prev">
                 <span class="carousel-control-prev-icon" aria-hidden="true"></span>
                 <span class="sr-only">Previous</span>
@@ -44,6 +44,6 @@
                 <span class="carousel-control-next-icon" aria-hidden="true"></span>
                 <span class="sr-only">Next</span>
             </a>
-        @endif
+        @endif--}}
     </div>
 </div>
