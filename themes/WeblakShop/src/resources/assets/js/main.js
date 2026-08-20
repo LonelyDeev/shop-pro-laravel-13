@@ -406,6 +406,11 @@ $(document).ready(function () {
         }
     });
 
+    $('#mainCarousel').carousel({
+        pause: 'hover',
+        wrap: true
+    });
+
     // zoom gallery product----------------
     $('.back-to-top').click(function (e) {
         e.preventDefault();
