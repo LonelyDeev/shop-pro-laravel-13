@@ -411,6 +411,21 @@ $(document).ready(function () {
         pause: 'hover',
         wrap: true
     });
+    // روش 2: فعال‌سازی دستی تاچ (برای اطمینان)
+    var carousel = $('#mainCarousel');
+
+    // اگر Bootstrap JS لود نشده، این کد تاچ را فعال می‌کند
+    if (typeof $.fn.carousel !== 'undefined') {
+        // تاچ در Bootstrap 4 به صورت پیش‌فرض فعال است
+        // اما برای اطمینان دوباره تنظیم می‌کنیم
+        carousel.carousel('dispose');
+        carousel.carousel({
+            interval: 5000,
+            pause: 'hover',
+            wrap: true,
+            touch: true
+        });
+    }
 
     // zoom gallery product----------------
     $('.back-to-top').click(function (e) {
