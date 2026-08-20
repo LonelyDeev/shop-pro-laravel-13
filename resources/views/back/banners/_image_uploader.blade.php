@@ -69,7 +69,7 @@
             </div>
 
             {{-- پیش‌نمایش تصویر --}}
-            <div class="img-uploader display-hidden" @if ($hasImage) style="display:block;" @else style="display:none;" @endif>
+            <div class="img-uploader " @if ($hasImage or $currentImage) style="display:block;" @else style="display:none;" @endif>
                 <img
                     src="{{ $hasImage ? asset($currentImage) : '' }}"
                     alt="preview"
