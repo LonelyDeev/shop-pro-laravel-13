@@ -57,7 +57,7 @@
             aria-label="انتخاب تصویر از رسانه‌ها"
         >
             {{-- حالت خالی --}}
-            <div class="dz-empty dz-message" @if ($hasImage) style="display:none;" @endif>
+            <div class="dz-empty " @if ($hasImage) style="display:none;" @endif>
                 <div class="dz-icon">
                     <i class="fa fa-cloud-arrow-up"></i>
                 </div>

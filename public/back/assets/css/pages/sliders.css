@@ -355,7 +355,6 @@
 .dz-area {
     position: relative;
     width: 100%;
-    min-height: 280px;
     border: 2.5px dashed #cbd5e1;
     border-radius: 14px;
     background:
@@ -401,10 +400,10 @@
     justify-content: center;
     color: #fff;
     font-size: 2rem;
-    margin-bottom: 1.25rem;
     box-shadow: 0 16px 32px -8px rgba(99, 102, 241, .5);
     transition: all .3s ease;
     position: relative;
+    margin: 0 auto 1.25rem;
 }
 .dz-area:hover .dz-icon {
     transform: scale(1.05) rotate(-3deg);
@@ -482,7 +481,7 @@
     color: #fff;
 }
 .dz-btn--remove:hover {
-    background: #dc2626;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
     transform: translateY(-2px);
 }
 
@@ -999,4 +998,12 @@
     .sk-slider-cards {
         grid-template-columns: 1fr;
     }
+}
+.remove-img-uploader{
+    left: 1%;
+    top: 10px;
+    width: 59px;
+    height: 20px;
+    padding: unset;
+    border-radius: 5px;
 }
