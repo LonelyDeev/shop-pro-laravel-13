@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers\Back;
 
-use App\Models\Banner;
 use App\Http\Controllers\Controller;
+use App\Models\Banner;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class BannerController extends Controller
 {
@@ -16,74 +15,69 @@ class BannerController extends Controller
 
     public function index()
     {
-        $banners = Banner::detectLang()->orderBy('ordering')->get();
+        $banners = Banner::orderBy('ordering')->get();
 
         return view('back.banners.index', compact('banners'));
     }
 
     public function create()
     {
-        return view('back.banners.create');
+        $groups = Banner::availableGroups();
+        $places = Banner::availablePlaces();
+
+        return view('back.banners.create', compact('groups', 'places'));
     }
 
     public function store(Request $request)
     {
-        $this->validate($request, [
-            'image' => 'required|max:2048',
-            'group' => 'required',
-            'title' => 'nullable',
-            'description' => 'nullable',
-        ]);
+        $this->validateBanner($request);
 
         Banner::create([
-            'page' => $request->page,
-            'link' => $request->link,
-            'group' => $request->group,
-            'place' => $request->place,
-            'published' => $request->published ? true : false,
-            'image' => $request->image,
-            'title' => $request->title,
+            'title'       => $request->title,
+            'pages'       => $request->pages,
+            'groups'      => $request->groups,
+            'places'      => $request->places,
+            'link'        => $request->link,
             'description' => $request->description,
+            'published'   => $request->boolean('published'),
+            'image'       => $request->image,
         ]);
 
-        session()->put('toast-success','بنر با موفقیت ایجاد شد.');
-        return response("success");
+        session()->put('toast-success', 'بنر با موفقیت ایجاد شد.');
+
+        return response('success');
     }
 
     public function edit(Banner $banner)
     {
-        return view('back.banners.edit', compact('banner'));
+        $groups = Banner::availableGroups();
+        $places = Banner::availablePlaces();
+
+        return view('back.banners.edit', compact('banner', 'groups', 'places'));
     }
 
     public function update(Banner $banner, Request $request)
     {
-        $this->validate($request, [
-            'image' => 'required|max:2048',
-            'group' => 'required'
-        ]);
+        $this->validateBanner($request);
 
         $banner->update([
-            'page' => $request->page,
-            'link' => $request->link,
-            'group' => $request->group,
-            'place' => $request->place,
-            'published' => $request->published ? true : false,
-            'title' => $request->title,
-            'image' => $request->image,
+            'title'       => $request->title,
+            'pages'       => $request->pages,
+            'groups'      => $request->groups,
+            'places'      => $request->places,
+            'link'        => $request->link,
             'description' => $request->description,
+            'published'   => $request->boolean('published'),
+            'image'       => $request->image,
         ]);
 
+        session()->put('toast-success', 'بنر با موفقیت ویرایش شد.');
 
-        session()->put('toast-success','بنر با موفقیت ویرایش شد.');
-        return response("success");
+        return response('success');
     }
 
     public function destroy(Banner $banner)
     {
-       /* if ($banner->image) {
-            Storage::disk('public')->delete($banner->image);
-        }*/
-
         $banner->delete();
 
         return response('success');
@@ -94,7 +88,7 @@ class BannerController extends Controller
         $this->authorize('banners.update');
 
         $this->validate($request, [
-            'banners' => 'required|array'
+            'banners' => 'required|array',
         ]);
 
         $i = 1;
@@ -103,8 +97,37 @@ class BannerController extends Controller
             Banner::findOrFail($banner)->update([
                 'ordering' => $i++,
             ]);
-        };
+        }
 
         return response('success');
+    }
+
+    private function validateBanner(Request $request): array
+    {
+        return $request->validate([
+            'image'       => 'required|max:2048',
+            'pages'       => 'required|array|min:1',
+            'pages.*'     => 'required|string|in:' . implode(',', array_keys(Banner::availablePages())),
+            'groups'      => 'required|array|min:1',
+            'groups.*'    => 'required|string|in:' . implode(',', array_keys(Banner::availableGroups())),
+            'places'      => 'required|array|min:1',
+            'places.*'    => 'required|string|in:' . implode(',', array_keys(Banner::availablePlaces())),
+            'title'       => 'nullable|string|max:255',
+            'link'        => 'nullable|string|max:500',
+            'description' => 'nullable|string',
+            'published'   => 'nullable|boolean',
+        ], [
+            'image.required'  => 'انتخاب تصویر بنر الزامی است.',
+            'image.max'       => 'حجم تصویر نباید بیشتر از ۲ مگابایت باشد.',
+            'pages.required'  => 'انتخاب حداقل یک صفحه الزامی است.',
+            'pages.min'       => 'باید حداقل یک صفحه را انتخاب کنید.',
+            'pages.*.in'      => 'صفحه‌ی انتخاب شده معتبر نیست.',
+            'groups.required' => 'انتخاب حداقل یک گروه الزامی است.',
+            'groups.min'      => 'باید حداقل یک گروه را انتخاب کنید.',
+            'groups.*.in'     => 'گروه انتخاب شده معتبر نیست.',
+            'places.required' => 'انتخاب حداقل یک موقعیت الزامی است.',
+            'places.min'      => 'باید حداقل یک موقعیت را انتخاب کنید.',
+            'places.*.in'     => 'موقعیت انتخاب شده معتبر نیست.',
+        ]);
     }
 }

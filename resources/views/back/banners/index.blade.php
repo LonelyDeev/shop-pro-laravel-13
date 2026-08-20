@@ -2,125 +2,142 @@
 
 @section('content')
 
-    <div class="app-content content">
-        <div class="content-overlay"></div>
-        <div class="header-navbar-shadow"></div>
-        <div class="content-wrapper">
-            <div class="content-header row">
-                <div class="content-header-left col-md-9 col-12 mb-2">
-                    <div class="row breadcrumbs-top">
-                        <div class="col-12">
-                            <div class="breadcrumb-wrapper col-12">
-                                <ol class="breadcrumb no-border">
-                                    <li class="breadcrumb-item">مدیریت
-                                    </li>
-                                    <li class="breadcrumb-item">مدیریت بنرها
-                                    </li>
-                                    <li class="breadcrumb-item active">لیست بنرها
-                                    </li>
-                                </ol>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="content-header-right text-md-right col-md-3 col-12 d-md-block d-none">
-                    <div class="form-group breadcrum-right">
-                        <div id="save-changes" class="spinner-border text-success" role="status" style="display: none">
-                            <span class="sr-only">Loading...</span>
-                        </div>
-                    </div>
+    @include('back.banners._styles')
+
+    @php
+        // آمار کلی
+        $total     = $banners->count();
+        $published = $banners->where('published', true)->count();
+        $drafts    = $banners->where('published', false)->count();
+        $pagesCovered = $banners->flatMap(fn ($b) => $b->pages ?: [])->unique()->count();
+
+        // کاتالوگ‌ها
+        $groupCatalog = Banner::availableGroups();
+        $placeCatalog = Banner::availablePlaces();
+
+        // تعریف ۲ صفحه ثابت با اطلاعات نمایشی
+        $pageSections = [
+            'home' => [
+                'label'    => 'صفحه اصلی',
+                'icon'     => 'fa-house',
+                'subtitle' => 'بنرهای نمایش‌داده‌شده در صفحه اصلی سایت',
+                'css'      => 'home',
+            ],
+            'posts' => [
+                'label'    => 'صفحه اصلی مقالات',
+                'icon'     => 'fa-newspaper',
+                'subtitle' => 'بنرهای نمایش‌داده‌شده در صفحه مقالات',
+                'css'      => 'posts',
+            ],
+        ];
+    @endphp
+
+    <div class="container-fluid py-4">
+
+        {{-- هدر --}}
+        <div class="sk-page-header d-flex align-items-center justify-content-between">
+            <div>
+                <h3>
+                    <span class="icon-wrap"><i class="fa fa-images"></i></span>
+                    مدیریت بنرها
+                </h3>
+                <p>بنرها بر اساس صفحه نمایش، به‌صورت کارت گروه‌بندی شده‌اند.</p>
+            </div>
+            <a href="{{ route('admin.banners.create') }}" class="btn btn-primary">
+                <i class="fa fa-plus ms-1"></i> بنر جدید
+            </a>
+        </div>
+
+        {{-- آمار --}}
+        <div class="sk-stats">
+            <div class="sk-stat sk-stat--blue">
+                <div class="sk-stat-icon"><i class="fa fa-images"></i></div>
+                <div class="sk-stat-info">
+                    <div class="sk-stat-value">{{ $total }}</div>
+                    <div class="sk-stat-label">کل بنرها</div>
                 </div>
             </div>
-            <div class="content-body" id="main-card">
-                <div class="nav-vertical">
-                    <div class=" nav nav-tabs flex-column nav-left ">
-                        <ul class="nav nav-tabs flex-column nav-vertical-right" role="tablist">
-                            @if(config('front.banner_sections'))
-                                @foreach (config('front.banner_sections')  as $key => $bannerSections)
-                                    <li class="nav-item">
-                                        <a class="nav-link {{$key==0 ? 'active' : '' }}"
-                                           id="baseVerticalLeft-{{$bannerSections['key']}}" data-toggle="tab"
-                                           aria-controls="tabVerticalLeft1-{{$bannerSections['key']}}"
-                                           href="#tabVerticalLeft1-{{$bannerSections['key']}}" role="tab"
-                                           aria-selected="false"><i style="margin-left: 5px"
-                                                                    class=" fas fa-clipboard-list"></i>{{$bannerSections['name']}}
-                                        </a>
-                                    </li>
-                                @endforeach
-                            @endif
-                        </ul>
+            <div class="sk-stat sk-stat--green">
+                <div class="sk-stat-icon"><i class="fa fa-circle-check"></i></div>
+                <div class="sk-stat-info">
+                    <div class="sk-stat-value">{{ $published }}</div>
+                    <div class="sk-stat-label">منتشر شده</div>
+                </div>
+            </div>
+            <div class="sk-stat sk-stat--amber">
+                <div class="sk-stat-icon"><i class="fa fa-pen-ruler"></i></div>
+                <div class="sk-stat-info">
+                    <div class="sk-stat-value">{{ $drafts }}</div>
+                    <div class="sk-stat-label">پیش‌نویس</div>
+                </div>
+            </div>
+            <div class="sk-stat sk-stat--purple">
+                <div class="sk-stat-icon"><i class="fa fa-file-lines"></i></div>
+                <div class="sk-stat-info">
+                    <div class="sk-stat-value">{{ $pagesCovered }}</div>
+                    <div class="sk-stat-label">صفحات پوشش‌داده‌شده</div>
+                </div>
+            </div>
+        </div>
 
+        @if ($total > 0)
+            {{-- بخش‌های گروه‌بندی‌شده بر اساس صفحه --}}
+            @foreach ($pageSections as $pageKey => $pageInfo)
+                @php
+                    $pageBanners = $banners->filter(fn ($b) => in_array($pageKey, $b->pages ?: []));
+                @endphp
+                <div class="sk-page-section sk-page-section--{{ $pageInfo['css'] }}">
+                    <div class="sk-page-section-header">
+                        <span class="sk-page-section-icon">
+                            <i class="fa {{ $pageInfo['icon'] }}"></i>
+                        </span>
+                        <div class="sk-page-section-info">
+                            <h4 class="sk-page-section-title">{{ $pageInfo['label'] }}</h4>
+                            <small class="sk-page-section-subtitle">{{ $pageInfo['subtitle'] }}</small>
+                        </div>
+                        <span class="sk-page-section-count">{{ $pageBanners->count() }} بنر</span>
                     </div>
-                    <div class="tab-content">
-                        @if(config('front.banner_sections'))
-                            @foreach (config('front.banner_sections')  as $key => $bannerSections)
-                                <div class="tab-pane {{$key==0 ? 'active' : '' }}"
-                                     id="tabVerticalLeft1-{{$bannerSections['key']}}" role="tabpanel"
-                                     aria-labelledby="baseVerticalLeft-{{$bannerSections['key']}}">
-                                    @if($banners->where('page',$bannerSections['key'])->count())
-                                        @if (config('front.bannerGroups'))
-                                            @foreach (config('front.bannerGroups.'.$bannerSections['key']) as $bannerGroup)
-                                                @include('back.partials.banners', ['banners' => $banners->where('group', $bannerGroup['group'])->where('page',$bannerSections['key']), 'group' => $bannerGroup['group'], 'title' => $bannerGroup['name'] . $bannerGroup['size'] ])
-                                            @endforeach
-                                        @endif
-                                    @else
-                                        <section class="card">
-                                            <div class="card-header">
-                                                <h4 class="card-title"></h4>
-                                            </div>
-                                            <div class="card-content">
-                                                <div class="card-body">
-                                                    <div class="card-text">
-                                                        <p>چیزی برای نمایش وجود ندارد!</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </section>
-                                    @endif
+
+                    <div class="sk-page-section-body">
+                        @if ($pageBanners->count() > 0)
+                            <div class="sk-slider-cards">
+                                @foreach ($pageBanners as $banner)
+                                    @include('back.banners._banner_card', [
+                                        'banner'       => $banner,
+                                        'groupCatalog' => $groupCatalog,
+                                        'placeCatalog' => $placeCatalog,
+                                    ])
+                                @endforeach
+                            </div>
+                        @else
+                            <div class="sk-page-empty">
+                                <div class="sk-page-empty-icon">
+                                    <i class="fa {{ $pageInfo['icon'] }}"></i>
                                 </div>
-                            @endforeach
+                                <p>هیچ بنری برای این صفحه ثبت نشده است.</p>
+                            </div>
                         @endif
                     </div>
                 </div>
-
-
-            </div>
-        </div>
-    </div>
-
-    {{-- delete banner modal --}}
-    <div class="modal fade text-left" id="delete-modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel19"
-         style="display: none;" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-sm" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title" id="myModalLabel19">آیا مطمئن هستید؟</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">×</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    با حذف بنر دیگر قادر به بازیابی آن نخواهید بود
-                </div>
-                <div class="modal-footer">
-                    <form action="#" id="banner-delete-form">
-                        @csrf
-                        @method('delete')
-                        <button type="button" class="btn personal-success-btn waves-effect waves-light"
-                                data-dismiss="modal">خیر
-                        </button>
-                        <button type="submit" class="btn personal-danger-btn waves-effect waves-light">بله حذف شود
-                        </button>
-                    </form>
+            @endforeach
+        @else
+            {{-- حالت خالی کلی --}}
+            <div class="sk-page-section sk-page-section--home">
+                <div class="sk-page-section-body">
+                    <div class="sk-empty">
+                        <div class="sk-empty-icon">
+                            <i class="fa fa-image"></i>
+                        </div>
+                        <h4>هنوز بنری ثبت نشده است</h4>
+                        <p>اولین بنر خود را ایجاد کنید تا در صفحات سایت نمایش داده شود.</p>
+                        <a href="{{ route('admin.banners.create') }}" class="btn btn-primary px-4">
+                            <i class="fa fa-plus ms-1"></i> ایجاد بنر
+                        </a>
+                    </div>
                 </div>
             </div>
-        </div>
+        @endif
+
     </div>
+
 @endsection
-
-@push('scripts')
-    <script src="{{ asset('back/app-assets/plugins/jquery-ui-sortable/jquery-ui.min.js') }}"></script>
-
-    <!-- Page Js codes -->
-    <script src="{{ asset('back/assets/js/pages/banners/index.js') }}"></script>
-@endpush
