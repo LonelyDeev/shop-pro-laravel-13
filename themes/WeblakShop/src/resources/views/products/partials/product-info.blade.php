@@ -296,7 +296,7 @@
 
 
             <?php
-            $sevices_sliders = App\Models\Slider::where('group', 'sevices_sliders')
+            $sevices_sliders = App\Models\Slider::whereJsonContains('group', 'sevices_sliders')
                 ->where('published', true)
                 ->get()
             ?>
