@@ -6,7 +6,7 @@
 @endphp
 
 <div class="d-block">
-    <div class="col-lg-8 col-md-8 col-xs-12 pull-right">
+    <div class="col-lg-8 col-md-8 col-xs-12 pull-right mb-3">
         <div class="main-slider">
             <div class="main-slider-container">
                 <div id="carouselExampleIndicators" class="carousel slide" data-ride="carousel">
@@ -44,7 +44,7 @@
 <!--    End Main Slider ---------------------->
 
 <!--adplacement-------------------------------->
-<div class="col-lg-4 col-md-4 col-xs-12 pull-left">
+<div class="col-lg-4 col-md-4 col-xs-12 pull-left mb-3">
     <aside class="adplacement-container-column">
         @foreach($index_slider_banners as $banner)
         <a href="{{$banner->link}}" class="adplacement-item adplacement-item-column">
