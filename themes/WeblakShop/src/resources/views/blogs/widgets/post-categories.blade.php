@@ -164,6 +164,9 @@
             .cat-showcase__nav { display: none; }
             .cat-showcase__title { font-size: 17px; }
         }
+        .cat-card__media{
+            padding: 25px;
+        }
     </style>
 @endpush
 
@@ -175,7 +178,7 @@
             <div class="cat-showcase__header">
                 <div class="cat-showcase__title-wrap">
                     <span class="cat-showcase__accent"></span>
-                    <h2 class="cat-showcase__title">{{ $widget->option('title','دسته بندی محصولات') }}</h2>
+                    <h2 class="cat-showcase__title">{{ $widget->option('title') }}</h2>
                 </div>
                 <div class="cat-showcase__nav">
                     <button type="button" class="cat-nav-btn" data-dir="prev" aria-label="قبلی">
