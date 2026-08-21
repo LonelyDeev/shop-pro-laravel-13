@@ -249,7 +249,6 @@ class UserController extends Controller
         $this->validate($request, [
             'first_name'   => 'required|string',
             'last_name'    => 'required|string',
-            'mobile'       => 'required|string|regex:/(09)[0-9]{9}/|digits:11|unique:users,username,' . auth()->user()->id,
             'email'        => 'string|email|max:191|unique:users,email,' . auth()->user()->id,
             'national_code'=> 'string|digits:10|max:191|unique:users,national_code,' . auth()->user()->id . '|nullable',
         ]);
@@ -266,7 +265,6 @@ class UserController extends Controller
         auth()->user()->update([
             'first_name' => $request->first_name,
             'last_name'  => $request->last_name,
-            'username'   => $request->mobile,
             'email'      => $request->email,
             'national_code'      => $request->national_code,
             'birth_date'      => $birth_date,

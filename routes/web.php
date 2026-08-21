@@ -105,8 +105,17 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
     Route::get('get-labels', [MainController::class, 'getLabels'])->name('get-labels');
 
     Route::get('notifications/panel', [MainController::class, 'notifications'])->name('notifications');
-    Route::resource('notifications', NotificationController::class);
+    //Route::resource('notifications', NotificationController::class);
 
+    Route::prefix('notifications')->name('notifications.')->group(function () {
+        Route::get('/', [NotificationController::class, 'index'])->name('index');
+        Route::get('list', [NotificationController::class, 'list'])->name('list');
+        Route::get('create', [NotificationController::class, 'create'])->name('create');
+        Route::get('recipients', [NotificationController::class, 'searchRecipients'])->name('recipients'); // جستجوی گیرنده
+        Route::post('/', [NotificationController::class, 'store'])->name('store');
+        Route::patch('{batchId}', [NotificationController::class, 'update'])->name('update');
+        Route::delete('{batchId}', [NotificationController::class, 'destroy'])->name('destroy');
+    });
     Route::get('file-manager', [MainController::class, 'fileManager'])->name('file-manager');
     Route::get('file-manager-iframe', [MainController::class, 'fileManagerIframe'])->name('file-manager-iframe');
 
