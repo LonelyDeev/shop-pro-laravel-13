@@ -1,5 +1,7 @@
 @extends('back.layouts.master')
-
+@push('styles')
+    <link rel="stylesheet" type="text/css" href="{{asset('back/assets/css/pages/statistics/sms-log.css')}}">
+@endpush
 @section('content')
 
     <div class="app-content content">
@@ -192,123 +194,6 @@
             </div>
         </div>
     </div>
-
-    <style>
-        :root { --sms-p: #7c3aed; --sms-p-dark: #6d28d9; --sms-p-soft: #f5f3ff; }
-
-        /* ---------- آمار ---------- */
-        .sms-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 14px; margin-bottom: 20px; }
-        .sms-stat {
-            display: flex; align-items: center; gap: 14px;
-            background: #fff; border: 1px solid #eef0f5; border-radius: 16px;
-            padding: 16px 18px; box-shadow: 0 2px 8px rgba(15, 23, 42, .04);
-            transition: transform .25s ease, box-shadow .25s ease;
-        }
-        .sms-stat:hover { transform: translateY(-3px); box-shadow: 0 12px 24px -8px rgba(15, 23, 42, .12); }
-        .sms-stat__icon {
-            width: 50px; height: 50px; border-radius: 14px; flex-shrink: 0;
-            display: grid; place-items: center; color: #fff; font-size: 21px;
-            background: linear-gradient(135deg, var(--c1), var(--c2));
-            box-shadow: 0 8px 16px -6px var(--c2);
-        }
-        .sms-stat__value { display: block; font-size: 21px; font-weight: 800; color: #1e293b; line-height: 1.3; }
-        .sms-stat__label { font-size: 12.5px; color: #64748b; }
-
-        /* ---------- کارت اصلی ---------- */
-        .sms-card { border: 1px solid #eef0f5; border-radius: 16px; box-shadow: 0 2px 8px rgba(15, 23, 42, .04); overflow: hidden; }
-        .sms-card__header {
-            display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;
-            padding: 14px 20px; background: #fbfcfe; border-bottom: 1px solid #f0f2f7;
-        }
-        .sms-card__title { margin: 0; font-size: 16px; font-weight: 800; color: #1e293b; display: flex; align-items: center; gap: 8px; }
-        .sms-card__title i { color: var(--sms-p); }
-
-        /* ---------- فیلترها ---------- */
-        .sms-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-        .sms-filter { position: relative; }
-        .sms-filter i { position: absolute; right: 11px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 15px !important; pointer-events: none; }
-        .sms-filter input {
-            border: 1px solid #e2e8f0; border-radius: 10px; padding: 8px 34px 8px 12px;
-            font-size: 13px; min-width: 210px; outline: none; background: #fff;
-            transition: border-color .2s, box-shadow .2s;
-        }
-        .sms-filter input:focus { border-color: var(--sms-p); box-shadow: 0 0 0 3px rgba(124, 58, 237, .12); }
-        .sms-select {
-            border: 1px solid #e2e8f0; border-radius: 10px; padding: 8px 12px;
-            font-size: 13px; background: #fff; outline: none; cursor: pointer;
-        }
-        .sms-select:focus { border-color: var(--sms-p); }
-        .sms-btn {
-            background: var(--sms-p); color: #fff; border: none; border-radius: 10px;
-            padding: 8px 20px; font-size: 13px; cursor: pointer; transition: .2s;
-        }
-        .sms-btn:hover { background: var(--sms-p-dark); box-shadow: 0 6px 14px -4px rgba(124, 58, 237, .5); }
-        .sms-btn--ghost { background: #f1f5f9; color: #64748b; padding: 8px 12px; }
-        .sms-btn--ghost:hover { background: #e2e8f0; box-shadow: none; }
-
-        /* ---------- جدول ---------- */
-        .sms-table thead th {
-            background: #f8fafc; color: #64748b; font-size: 12px; font-weight: 700;
-            padding: 12px 16px; white-space: nowrap; border-bottom: 1px solid #eef0f5;
-        }
-        .sms-table tbody td { padding: 13px 16px; border-bottom: 1px solid #f4f6f9; color: #334155; font-size: 13.5px; vertical-align: middle; }
-        .sms-table tbody tr { transition: background .15s; }
-        .sms-table tbody tr:hover { background: #faf8ff; }
-        .sms-table tbody tr:last-child td { border-bottom: none; }
-        .sms-row-n { color: #94a3b8; font-size: 12px; }
-        .sms-phone { display: flex; align-items: center; gap: 10px; }
-        .sms-phone__avatar {
-            width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
-            background: var(--sms-p-soft); color: var(--sms-p);
-            display: grid; place-items: center; font-size: 14px;
-        }
-        .sms-phone__num { direction: ltr; display: inline-block; font-weight: 700; color: #1e293b; }
-        .sms-type {
-            display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
-            background: var(--sms-p-soft); color: var(--sms-p-dark);
-            padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: 600;
-        }
-        .sms-type__dot { width: 6px; height: 6px; border-radius: 50%; background: var(--sms-p); }
-        .sms-time { display: inline-flex; align-items: center; gap: 6px; color: #64748b; font-size: 12.5px; white-space: nowrap; }
-        .sms-view-btn {
-            width: 34px; height: 34px; border-radius: 10px; border: 1px solid #e2e8f0;
-            background: #fff; color: var(--sms-p); display: inline-grid; place-items: center;
-            cursor: pointer; transition: .2s;
-        }
-        .sms-view-btn:hover { background: var(--sms-p); border-color: var(--sms-p); color: #fff; box-shadow: 0 6px 14px -4px rgba(124, 58, 237, .45); }
-        .sms-view-btn i { font-size: 15px !important; }
-
-        /* ---------- حالت خالی ---------- */
-        .sms-empty { text-align: center; padding: 48px 20px; }
-        .sms-empty__icon {
-            width: 72px; height: 72px; margin: 0 auto 16px; border-radius: 50%;
-            background: var(--sms-p-soft); color: var(--sms-p);
-            display: grid; place-items: center; font-size: 30px;
-        }
-        .sms-empty h5 { font-weight: 800; color: #1e293b; margin-bottom: 6px; }
-        .sms-empty p { color: #94a3b8; font-size: 13px; margin-bottom: 14px; }
-        .sms-empty__btn {
-            display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
-            background: var(--sms-p); color: #fff; border-radius: 10px; padding: 8px 18px; font-size: 13px;
-        }
-        .sms-empty__btn:hover { color: #fff; }
-
-        /* ---------- صفحه‌بندی و مودال ---------- */
-        .sms-pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; }
-        .sms-pagination__meta { font-size: 12.5px; color: #64748b; }
-        .sms-pagination__meta b { color: #1e293b; }
-        .sms-modal__header { border-bottom: 1px solid #f0f2f7; padding: 16px 20px; }
-        .sms-modal__header .modal-title { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 800; color: #1e293b; }
-        .sms-modal__header .modal-title i { color: var(--sms-p); }
-        .sms-modal__body { padding: 20px; }
-
-        @media (max-width: 768px) {
-            .sms-card__header { flex-direction: column; align-items: stretch; }
-            .sms-filters { width: 100%; }
-            .sms-filter, .sms-filter input { flex: 1; min-width: 0; width: 100%; }
-            .sms-select { flex: 1; }
-        }
-    </style>
 
 @endsection
 
