@@ -25,6 +25,7 @@ class CreateNotificationManageUsersTable extends Migration
             $table->foreign('seller_id')->references('id')->on('sellers')->onDelete('cascade');
 
             $table->tinyInteger('read')->default('0')->nullable();
+            $table->timestamp('read_at')->nullable();
             $table->timestamps();
 
             // 1. ایندکس برای جستجوی اعلان‌های یک کاربر

@@ -8,6 +8,7 @@ use App\Models\Seller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class NotificationController extends Controller
@@ -149,7 +150,14 @@ class NotificationController extends Controller
         }
 
         $userIds   = array_values(array_unique(array_filter((array) $request->input('user_ids', []))));
+        if ($sendUsers and !count($userIds)){
+            $userIds=User::all()->pluck('id');
+        }
+
         $sellerIds = array_values(array_unique(array_filter((array) $request->input('seller_ids', []))));
+        if ($sendSellers and !count($sellerIds)){
+            $sellerIds=Seller::all()->pluck('id');
+        }
 
         $notification = NotificationManage::create([
             'admin_id'   => auth('adminPanel')->id(),

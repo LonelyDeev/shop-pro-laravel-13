@@ -26,7 +26,7 @@
                     </div>
                     <div class="notif-stat">
                         <div class="notif-stat-num">
-                            {{ $notifications->where('read_at', null)->count() }}
+                            {{ Auth::user()->unreadNotifications()->count() }}
                         </div>
                         <div class="notif-stat-label">خوانده‌نشده</div>
                     </div>
@@ -44,10 +44,9 @@
                                 @if($notifications->count())
                                     @foreach($notifications as $notification)
                                         @php
-                                            $isRead = ! is_null($notification->read_at);
+                                            $isRead = ! is_null($notification->userRecipients()->first()->read_at);
                                         @endphp
 
-                                        @if($notification->type === 'SendMessage')
                                             <div class="notif-item {{ $isRead ? 'read' : 'unread' }}">
                                                 @if(! $isRead)
                                                     <span class="notif-item-badge"></span>
@@ -56,11 +55,10 @@
                                                 <div class="notif-item-icon">
                                                     <i class="mdi mdi-comment-text-outline"></i>
                                                 </div>
-
                                                 <div class="notif-item-body">
                                                     <div class="notif-item-header">
                                                         <h5 class="notif-item-title">
-                                                            {{ $notification->data['title'] }}
+                                                            {{ $notification->title }}
                                                         </h5>
                                                         <span class="notif-item-time">
                                                             <i class="mdi mdi-clock-outline"></i>
@@ -68,11 +66,10 @@
                                                         </span>
                                                     </div>
                                                     <p class="notif-item-text">
-                                                        {{ $notification->data['message'] }}
+                                                        {{ $notification->message }}
                                                     </p>
                                                 </div>
                                             </div>
-                                        @endif
                                     @endforeach
                                 @else
                                     <div class="notif-empty-state">

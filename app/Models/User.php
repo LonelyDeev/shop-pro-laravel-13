@@ -69,7 +69,7 @@ class User extends Authenticatable
 
     public function getFullnameAttribute()
     {
-        if ($this->first_name){
+        if ($this->first_name) {
             return $this->first_name . ' ' . $this->last_name;
         }
         return null;
@@ -184,7 +184,6 @@ class User extends Authenticatable
     }
 
 
-
     public function getCart()
     {
         return $this->cart()->firstOrCreate();
@@ -195,7 +194,7 @@ class User extends Authenticatable
         return $this->wallet()->firstOrCreate(
             [],
             [
-                'balance'   => 0,
+                'balance' => 0,
                 'is_active' => true
             ]
         );
@@ -219,28 +218,32 @@ class User extends Authenticatable
 
         if ($level = $request->input('query.level')) {
             switch ($level) {
-                case "admin": {
-                        $query->where('level', 'admin');
-                        break;
-                    }
-                case "user": {
-                        $query->where('level', 'user');
-                        break;
-                    }
+                case "admin":
+                {
+                    $query->where('level', 'admin');
+                    break;
+                }
+                case "user":
+                {
+                    $query->where('level', 'user');
+                    break;
+                }
             }
         }
 
         if ($request->sort && $request->input('sort.field')) {
             switch ($request->sort['field']) {
-                case 'fullname': {
-                        $query->orderBy('first_name', $request->sort['sort'])->orderBy('last_name', $request->sort['sort']);
-                        break;
+                case 'fullname':
+                {
+                    $query->orderBy('first_name', $request->sort['sort'])->orderBy('last_name', $request->sort['sort']);
+                    break;
+                }
+                default:
+                {
+                    if ($this->getConnection()->getSchemaBuilder()->hasColumn($this->getTable(), $request->sort['field'])) {
+                        $query->orderBy($request->sort['field'], $request->sort['sort']);
                     }
-                default: {
-                        if ($this->getConnection()->getSchemaBuilder()->hasColumn($this->getTable(), $request->sort['field'])) {
-                            $query->orderBy($request->sort['field'], $request->sort['sort']);
-                        }
-                    }
+                }
             }
         }
 
@@ -276,5 +279,46 @@ class User extends Authenticatable
     public function messages()
     {
         return $this->belongsToMany(Message::class);
+    }
+
+    public function notifications()
+    {
+        return $this->belongsToMany(NotificationManage::class, 'notification_manage_users')
+            ->withPivot('read', 'read_at')
+            ->withTimestamps();
+    }
+
+    public function unreadNotifications()
+    {
+        return $this->notifications()->wherePivot('read', false);
+    }
+
+    public function readNotifications()
+    {
+        return $this->notifications()->wherePivot('read', true);
+    }
+
+    public function markAllNotificationsAsRead()
+    {
+        return $this->unreadNotifications()->update([
+            'notification_manage_users.read' => true,
+            'notification_manage_users.read_at' => now()
+        ]);
+    }
+
+    public function markNotificationAsRead($notificationId)
+    {
+        return $this->notifications()
+            ->wherePivot('read', false)
+            ->where('notification_manage_users.notification_id', $notificationId)
+            ->update([
+                'notification_manage_users.read' => true,
+                'notification_manage_users.read_at' => now()
+            ]);
+    }
+
+    public function unreadNotificationsCount()
+    {
+        return $this->unreadNotifications()->count();
     }
 }

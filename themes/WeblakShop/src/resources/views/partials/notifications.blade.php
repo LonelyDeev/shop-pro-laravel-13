@@ -32,14 +32,32 @@
 
             <li class="scrollable-container media-list notif-list">
                 @forelse($notifications->take(6) as $notification)
-                    @if($notification->type === 'SendMessage')
+                    @if(isset($notification->type))
+                        @if($notification->type === 'SendMessage')
+                            <a class="notif-card" href="{{ $notificationsRoute }}">
+                                <div class="notif-card-icon">
+                                    <i class="mdi mdi-comment-text-outline"></i>
+                                </div>
+                                <div class="notif-card-body">
+                                    <h6 class="notif-card-title">{{ $notification->data['title'] }}</h6>
+                                    <p class="notif-card-text">{{ $notification->data['message'] }}</p>
+                                    <span class="notif-card-time">
+                                    <i class="mdi mdi-clock-outline"></i>
+                                    {{ jdate($notification->created_at)->ago() }}
+                                </span>
+                                </div>
+                                <span class="notif-dot"></span>
+                            </a>
+                        @endif
+
+                    @else
                         <a class="notif-card" href="{{ $notificationsRoute }}">
                             <div class="notif-card-icon">
                                 <i class="mdi mdi-comment-text-outline"></i>
                             </div>
                             <div class="notif-card-body">
-                                <h6 class="notif-card-title">{{ $notification->data['title'] }}</h6>
-                                <p class="notif-card-text">{{ $notification->data['message'] }}</p>
+                                <h6 class="notif-card-title">{{ $notification->title }}</h6>
+                                <p class="notif-card-text">{{ $notification->message }}</p>
                                 <span class="notif-card-time">
                                     <i class="mdi mdi-clock-outline"></i>
                                     {{ jdate($notification->created_at)->ago() }}
@@ -48,6 +66,7 @@
                             <span class="notif-dot"></span>
                         </a>
                     @endif
+
                 @empty
                     <div class="notif-empty">
                         <div class="notif-empty-icon">

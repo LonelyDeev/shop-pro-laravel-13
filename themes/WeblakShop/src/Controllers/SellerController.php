@@ -94,7 +94,7 @@ class SellerController extends Controller
     {
         $this->forgetAllRegistrationSessions();
 
-        $sliders = Slider::where('page', 'sellers')
+        $sliders = Slider::whereJsonContains('pages', 'sellers')
             ->where('published', true)
             ->orderBy('ordering')
             ->get();

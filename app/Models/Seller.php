@@ -103,7 +103,43 @@ class Seller extends Authenticatable
     }
     public function notifications()
     {
-        return $this->belongsToMany(NotificationManage::class,'notification_manage_users');
+        return $this->belongsToMany(NotificationManage::class, 'notification_manage_users')
+            ->withPivot('read', 'read_at')
+            ->withTimestamps();
+    }
+
+    public function unreadNotifications()
+    {
+        return $this->notifications()->wherePivot('read', false);
+    }
+
+    public function readNotifications()
+    {
+        return $this->notifications()->wherePivot('read', true);
+    }
+
+    public function markAllNotificationsAsRead()
+    {
+        return $this->unreadNotifications()->update([
+            'notification_manage_users.read' => true,
+            'notification_manage_users.read_at' => now()
+        ]);
+    }
+
+    public function markNotificationAsRead($notificationId)
+    {
+        return $this->notifications()
+            ->wherePivot('read', false)
+            ->where('notification_manage_users.notification_id', $notificationId)
+            ->update([
+                'notification_manage_users.read' => true,
+                'notification_manage_users.read_at' => now()
+            ]);
+    }
+
+    public function unreadNotificationsCount()
+    {
+        return $this->unreadNotifications()->count();
     }
 
     public function getFullnameAttribute()

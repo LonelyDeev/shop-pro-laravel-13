@@ -4,12 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class NotificationManage extends Model
 {
     use HasFactory;
     protected $guarded = ['id'];
+    protected $casts = ['read' => 'boolean'];
     public function users()
     {
         return $this->belongsToMany(User::class,'notification_manage_users');
@@ -39,6 +41,10 @@ class NotificationManage extends Model
     public function recipients()
     {
         return $this->hasMany(NotificationManageUser::class, 'notification_manage_id');
+    }
+    public function userRecipients()
+    {
+        return $this->hasMany(NotificationManageUser::class, 'notification_manage_id')->where('user_id',Auth::id());
     }
 
     public function priorityText()
@@ -92,4 +98,5 @@ class NotificationManage extends Model
 
         return $query;
     }
+
 }

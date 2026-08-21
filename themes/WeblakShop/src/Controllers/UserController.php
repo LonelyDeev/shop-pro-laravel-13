@@ -348,9 +348,13 @@ class UserController extends Controller
     }
     public function notifications()
     {
-        $notifications = auth()->user()->notifications()->paginate(15);
+        $notifications = auth()->user()
+            ->notifications()
+            ->orderBy('notification_manage_users.created_at', 'desc')
+            ->paginate(15);
 
-        auth()->user()->unreadNotifications->markAsRead();
+        // علامت‌گذاری همه به عنوان خوانده شده
+        auth()->user()->markAllNotificationsAsRead();
         $active="profileEdit";
         return view('front::user.notifications', compact( 'notifications','active'));
     }
@@ -478,5 +482,35 @@ class UserController extends Controller
         ));
     }
 
+    public function markAsRead(Request $request)
+    {
+        $request->validate([
+            'notification_id' => 'required',
+        ]);
+
+        $user = auth()->user();
+
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'کاربر یافت نشد'
+            ], 401);
+        }
+
+        $notificationId = $request->notification_id;
+        $updated = $user->notifications()
+            ->wherePivot('notification_manage_id', $notificationId)
+            ->update([
+                'notification_manage_users.read' => true,
+                'notification_manage_users.read_at' => now()
+            ]);
+        return response()->json([
+            'success' => true,
+            'message' => 'اعلان با موفقیت خوانده شد'
+        ]);
+
+
+    }
 
 }

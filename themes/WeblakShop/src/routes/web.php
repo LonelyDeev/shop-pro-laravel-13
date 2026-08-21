@@ -209,6 +209,7 @@ Route::group(['as' => 'front.'], function () {
         Route::resource('profile/wallet', WalletController::class)->only(['index','store','show']);
 
         Route::get('profile/notifications', [UserController::class, 'notifications'])->name('notifications.index');
+        Route::post('profile/notifications/mark-as-read', [UserController::class, 'markAsRead'])->name('notifications.mark-as-read');
         Route::get('profile/messages', [UserController::class, 'messages'])->name('messages.index');
         Route::get('profile/messages/show/{message}', [UserController::class, 'messages_show'])->name('messages.show');
 
