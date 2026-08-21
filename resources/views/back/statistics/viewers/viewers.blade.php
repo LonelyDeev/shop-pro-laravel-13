@@ -112,7 +112,9 @@
 
                     {{-- نمودار روند --}}
                     @if(count($chart))
-                        @php($maxViews = max(1, collect($chart)->max('total')))
+                        @php
+                            $maxViews = max(1, collect($chart)->max('total'));
+                        @endphp
                         <div class="vw-chart">
                             <div class="vw-chart__head">
                                 <span><i class="feather icon-bar-chart-2"></i> روند بازدید</span>
@@ -151,16 +153,16 @@
                                 <tbody>
                                 @foreach($viewers as $viewer)
                                     @php
-                                        $platform    = get_option_property($viewer->options, 'platform');
+                                        $platform = get_option_property($viewer->options, 'platform');
                                         $avatarColor = $avatarColors[$viewer->user_id % count($avatarColors)];
                                     @endphp
                                     <tr>
                                         <td>
                                             @if($viewer->user)
                                                 <div class="vw-user">
-                                                    <span class="vw-user__avatar" style="background: {{ $avatarColor }}">
-                                                        {{ mb_substr($viewer->user->fullname, 0, 1) }}
-                                                    </span>
+                                                <span class="vw-user__avatar" style="background: {{ $avatarColor }}">
+                                                    {{ mb_substr($viewer->user->fullname, 0, 1) }}
+                                                </span>
                                                     <a href="{{ route('admin.users.show', ['user' => $viewer->user]) }}"
                                                        target="_blank" class="vw-user__name">
                                                         {{ $viewer->user->fullname }} <i class="feather icon-external-link"></i>
@@ -171,17 +173,17 @@
                                             @endif
                                         </td>
                                         <td>
-                                            <span class="vw-time">
-                                                <i class="feather icon-clock"></i>
-                                                {{ substr((string) jdate($viewer->created_at), 0, 16) }}
-                                            </span>
+                                        <span class="vw-time">
+                                            <i class="feather icon-clock"></i>
+                                            {{ substr((string) jdate($viewer->created_at), 0, 16) }}
+                                        </span>
                                         </td>
                                         <td class="text-center"><span class="vw-ip">{{ $viewer->ip }}</span></td>
                                         <td class="text-center">
-                                            <span class="vw-platform">
-                                                <i class="feather {{ $platformIcon($platform) }}"></i>
-                                                {{ $platform ?: 'نامشخص' }}
-                                            </span>
+                                        <span class="vw-platform">
+                                            <i class="feather {{ $platformIcon($platform) }}"></i>
+                                            {{ $platform ?: 'نامشخص' }}
+                                        </span>
                                         </td>
                                         <td>
                                             <a href="{{ url(urldecode($viewer->path)) }}" target="_blank"
@@ -215,14 +217,10 @@
         </div>
     </div>
 
-
-
 @endsection
 @push('scripts')
-
     <script>
         $(function () {
-            // نمایش/مخفی فرم بازه دلخواه
             $('#vw-custom-btn').on('click', function () {
                 var $form = $('#vw-range-form');
                 var wasHidden = $form.hasClass('vw-range--hidden');
@@ -231,9 +229,6 @@
                     $form.find('input[name="from_date"]').trigger('focus');
                 }
             });
-
-            // اگر دیت‌پیکر شمسی خودکار مقداردهی نشد، این را باز کنید:
-            // $('.persian_date_picker').persianDatepicker({ format: 'YYYY/MM/DD', autoClose: true });
         });
     </script>
 @endpush

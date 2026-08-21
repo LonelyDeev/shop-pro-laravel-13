@@ -22,38 +22,6 @@ class StatisticsController extends Controller
 {
     use OrderStatisticsTrait, UserStatisticsTrait, ViewStatisticsTrait;
 
-    public function viewsList()
-    {
-        $this->authorize('statistics.viewsList');
-
-        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
-
-        $views = Viewer::latest();
-
-        if (auth('adminPanel')->user()->level != 'creator') {
-            $views = $views->whereNull('user_id')->orWhere(function ($query) {
-                $query->whereHas('user', function ($q1) {
-                    $q1->where('level', '!=', 'creator');
-                });
-            });
-        }
-
-        $viewsCount = $views->count();
-        $views = $views->paginate(20);
-
-        activity()
-            ->causedBy(auth('adminPanel')->user())
-            ->event('view')
-            ->withProperties([
-                'action' => 'view_views_list',
-                'views_count' => $viewsCount,
-                'ip' => request()->ip()
-            ])
-            ->log("مدیر {$adminName} لیست بازدیدهای صفحه را مشاهده کرد ({$viewsCount} بازدید)");
-
-        return view('back.statistics.views.viewsList', compact('views'));
-    }
-
     public function views()
     {
         $this->authorize('statistics.views');
@@ -275,6 +243,138 @@ class StatisticsController extends Controller
         return view('back.statistics.sms.sms-log', compact('sms', 'stats', 'filters'));
     }
 
+    public function viewsList(Request $request)
+    {
+        $this->authorize('statistics.viewsList');
+
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
+
+        // ---------- بازه زمانی ----------
+        $period = $request->query('period', 'daily');
+        [$from, $to] = $this->resolvePeriod($request, $period);
+
+        // ---------- کوئری اصلی ----------
+        $query = Viewer::query()->whereBetween('created_at', [$from, $to]);
+
+        // شرط سطح دسترسی — حتماً داخل closure (مهم!)
+        if (auth('adminPanel')->user()->level != 'creator') {
+            $query->where(function ($q) {
+                $q->whereNull('user_id')->orWhere(function ($q1) {
+                    $q1->whereHas('user', fn ($q2) => $q2->where('level', '!=', 'creator'));
+                });
+            });
+        }
+
+        $views = $query->orderBy('created_at', 'desc')->paginate(20)->appends($request->except('page'));
+
+        // ---------- آمار (یک کوئری) ----------
+        $statsRow = (clone $query)->selectRaw(
+            "COUNT(*) AS total_views,
+         COUNT(DISTINCT CASE WHEN user_id IS NOT NULL THEN CONCAT('u:', user_id) ELSE CONCAT('ip:', ip) END) AS unique_visitors,
+         COUNT(DISTINCT CASE WHEN user_id IS NOT NULL THEN user_id END) AS members,
+         COUNT(DISTINCT CASE WHEN user_id IS NULL THEN ip END) AS guests"
+        )->first();
+
+        $stats = [
+            'views'  => (int) ($statsRow->total_views ?? 0),
+            'unique' => (int) ($statsRow->unique_visitors ?? 0),
+            'users'  => (int) ($statsRow->members ?? 0),
+            'guests' => (int) ($statsRow->guests ?? 0),
+        ];
+
+        // ---------- نمودار ----------
+        $chart = $this->buildViewsChart($query, $from, $to);
+
+        activity()
+            ->causedBy(auth('adminPanel')->user())
+            ->event('view')
+            ->withProperties([
+                'action' => 'view_views_list',
+                'period' => $period,
+                'range'  => [$from->toDateTimeString(), $to->toDateTimeString()],
+                'views'  => $stats['views'],
+                'ip'     => request()->ip()
+            ])
+            ->log("مدیر {$adminName} لیست بازدیدهای صفحه را مشاهده کرد (بازه: {$period} — {$stats['views']} بازدید)");
+
+        return view('back.statistics.views.viewsList', compact('views', 'stats', 'chart', 'period', 'from', 'to'));
+    }
+
+    /**
+     * نمودار: روزانه تا ۳۱ روز، بعد از آن ماهانه — گروه‌بندی سمت دیتابیس
+     */
+    private function buildViewsChart($baseQuery, Carbon $from, Carbon $to): array
+    {
+        $months = [1 => 'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',
+            'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'];
+
+        $daily  = $from->copy()->startOfDay()->diffInDays($to->copy()->startOfDay()) <= 31;
+        $format = $daily ? '%Y-%m-%d' : '%Y-%m';
+
+        // مهم: clone کردن baseQuery و حذف هرگونه ORDER BY
+        $query = clone $baseQuery;
+        $query->getQuery()->orders = []; // حذف تمام ORDER BY ها
+
+        $rows = $query
+            ->selectRaw("DATE_FORMAT(created_at, '{$format}') AS period_key, COUNT(*) AS cnt")
+            ->groupBy('period_key')
+            ->orderBy('period_key', 'asc')
+            ->pluck('cnt', 'period_key');
+
+        $chart = [];
+        $start = $daily ? $from->copy()->startOfDay()   : $from->copy()->startOfMonth();
+        $end   = $daily ? $to->copy()->startOfDay()     : $to->copy()->startOfMonth();
+        $step  = $daily ? '1 day' : '1 month';
+
+        foreach (CarbonPeriod::create($start, $step, $end) as $date) {
+            $key = $date->format($daily ? 'Y-m-d' : 'Y-m');
+            $jalaliDate = jdate($date);
+
+            if ($daily) {
+                $label = (string) $jalaliDate->getDay();
+                $title = substr((string) $jalaliDate, 0, 10);
+            } else {
+                $label = $months[(int) $jalaliDate->getMonth()] ?? '';
+                $title = $label . ' ' . $jalaliDate->getYear();
+            }
+            $chart[] = ['label' => $label, 'title' => $title, 'total' => (int) ($rows[$key] ?? 0)];
+        }
+
+        return $chart;
+    }
+
+    private function resolvePeriod(Request $request, string &$period): array
+    {
+        if (empty($period)) {
+            $period = 'daily';
+        }
+
+        $period = in_array($period, ['daily', 'weekly', 'monthly', 'yearly', 'custom']) ? $period : 'daily';
+
+        $from = match ($period) {
+            'weekly'  => now()->subDays(6)->startOfDay(),
+            'monthly' => now()->subDays(29)->startOfDay(),
+            'yearly'  => now()->subDays(364)->startOfDay(),
+            default   => now()->startOfDay(),
+        };
+        $to = now();
+
+        if ($period === 'custom') {
+            // فرض می‌کنیم متد parseJalaliDate قبلاً در کلاس وجود دارد
+            $from = $this->parseJalaliDate($request->query('from_date'));
+            $to   = $this->parseJalaliDate($request->query('to_date'));
+
+            if (! $from || ! $to || $from->gt($to)) {
+                $period = 'daily';
+                [$from, $to] = [now()->startOfDay(), now()];
+            } else {
+                $from = $from->startOfDay();
+                $to   = $to->endOfDay();
+            }
+        }
+
+        return [$from, $to];
+    }
     public function viewers(Request $request)
     {
         $this->authorize('statistics.viewers');
