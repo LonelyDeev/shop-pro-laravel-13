@@ -27,7 +27,7 @@
 
                     {{-- ================= معرفی صفحه ================= --}}
                     <div class="card sms-intro-card">
-                        <div class="card-body d-flex align-items-center flex-wrap">
+                        <div class="card-body d-flex align-items-center ">
                             <div class="sms-intro-icon">
                                 <i class="feather icon-message-square"></i>
                             </div>
