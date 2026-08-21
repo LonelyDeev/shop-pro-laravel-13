@@ -421,9 +421,10 @@ class StatisticsController extends Controller
             $grouped = $rows->groupBy(fn ($v) => $v->created_at->format('Y-m-d'));
 
             foreach (CarbonPeriod::create($from->copy()->startOfDay(), '1 day', $to->copy()->startOfDay()) as $day) {
+                $jalaliDate = jdate($day);
                 $chart[] = [
-                    'label' => (string) jdate($day)->day,
-                    'title' => substr((string) jdate($day), 0, 10),
+                    'label' => (string) $jalaliDate->getDay(), // استفاده از متد getDay()
+                    'title' => substr((string) $jalaliDate, 0, 10),
                     'total' => $grouped->get($day->format('Y-m-d'))?->count() ?? 0,
                 ];
             }
@@ -431,9 +432,10 @@ class StatisticsController extends Controller
             $grouped = $rows->groupBy(fn ($v) => $v->created_at->format('Y-m'));
 
             foreach (CarbonPeriod::create($from->copy()->startOfMonth(), '1 month', $to->copy()->startOfMonth()) as $month) {
+                $jalaliDate = jdate($month);
                 $chart[] = [
-                    'label' => $months[(int) jdate($month)->month] ?? '',
-                    'title' => $months[(int) jdate($month)->month] . ' ' . jdate($month)->year,
+                    'label' => $months[(int) $jalaliDate->getMonth()] ?? '', // استفاده از متد getMonth()
+                    'title' => $months[(int) $jalaliDate->getMonth()] . ' ' . $jalaliDate->getYear(), // استفاده از متد getYear()
                     'total' => $grouped->get($month->format('Y-m'))?->count() ?? 0,
                 ];
             }
