@@ -1062,13 +1062,6 @@
                                         class="fa-solid fa-circle"></i><span
                                         class="menu-item">مدیریت اعلان ها</span></a>
                             </li>
-                            @can('notifications.create')
-                                <li class="{{ active_class('admin.notifications.create') }}">
-                                    <a href="{{ route('admin.notifications.create') }}"><i
-                                            class="fa-solid fa-circle"></i><span
-                                            class="menu-item">افزودن اعلان جدید</span></a>
-                                </li>
-                            @endcan
                         @endcan
                     </ul>
                 </li>

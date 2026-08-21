@@ -29,7 +29,7 @@ $(document).on('click', '.btn-copy-shortcode', function() {
         $btn.html('<i class="fas fa-check"></i> کپی شد!');
 
         if (typeof toastr !== 'undefined') {
-            toastr.success('شورتکد کپی شد: ' + shortcode, 'موفقیت');
+            showCustomToast('شورتکد کپی شد: ' + shortcode, 'موفقیت','success');
         }
 
         setTimeout(function() {
@@ -231,7 +231,7 @@ $(document).on('click', '.btn-copy-shortcode', function() {
         $btn.html('<i class="fas fa-check"></i> کپی شد!');
 
         if (typeof toastr !== 'undefined') {
-            toastr.success('شورتکد کپی شد: ' + shortcode, 'موفقیت');
+            showCustomToast('شورتکد کپی شد: ' + shortcode, 'موفقیت','success');
         }
 
         setTimeout(function() {

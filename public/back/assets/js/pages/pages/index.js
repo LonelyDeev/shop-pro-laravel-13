@@ -23,8 +23,7 @@ $('#page-delete-form').submit(function (e) {
             //remove page tr
             $('#page-' + $(form).data('id') + '-tr').remove();
 
-            toastr.success('صفحه با موفقیت حذف شد.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
-
+            showCustomToast('صفحه با موفقیت حذف شد','success');
             //refresh pages list
             $(".app-content").load(url + " .app-content > *");
         },
@@ -47,5 +46,5 @@ $('#page-delete-form').submit(function (e) {
 $('.copy_btn').on('click', function () {
     let text = $(this).closest('td').find('.page_link').val();
     copyToClipboard(text);
-    toastr.success('لینک با موفقیت کپی شد', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+    showCustomToast('لینک با موفقیت کپی شد','success');
 });

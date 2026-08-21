@@ -39,6 +39,14 @@ class Order extends JsonResource
             if (class_exists(\Modules\InstallmentPayment\Models\InstallmentPlan::class)) {
                 $installmentPlan = \Modules\InstallmentPayment\Models\InstallmentPlan::where('order_id', $this->id)->first();
             }
+
+            // ======== اطلاعات اعتباری (CreditPay) ========
+            $creditOrder = null;
+            if (class_exists(\Modules\CreditPay\Models\CreditOrder::class)) {
+                $creditOrder = \Modules\CreditPay\Models\CreditOrder::where('order_id', $this->id)->first();
+            }
+
+
             if ($order_item->seller_id && $order_item->seller) {
                 // با فروشنده
                 $seller = $order_item->seller->seller_info;
@@ -90,6 +98,17 @@ class Order extends JsonResource
             'installment_down_payment' => $installmentPlan?->down_payment,
             'installment_total_payable' => $installmentPlan?->total_payable,
             'installment_progress' => $installmentPlan?->progressPercent(),
+
+            // ======== اطلاعات اعتباری (CreditPay) ========
+            'is_credit'           => (bool) $creditOrder,
+            'credit_status'       => $creditOrder?->status,
+            'credit_used'         => $creditOrder?->credit_used,
+            'credit_total_amount' => $creditOrder?->total_amount,
+            'credit_cash_paid'    => $creditOrder?->cash_paid,
+            'credit_progress'     => $creditOrder?->progressPercent(),
+            'credit_remaining'    => $creditOrder?->remainingAmount(),
+            'credit_first_installment_paid' => $creditOrder?->first_installment_paid,
+
             'links' => [
                 'view' => route('admin.orders.show', ['order' => $this]),
                 'admin_seller_view' => $admin_seller_view,

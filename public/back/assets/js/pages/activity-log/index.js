@@ -115,7 +115,7 @@ function confirmDeleteOldActivities(item) {
         },
         success: function(response) {
             if (response.success) {
-                toastr.success(response.message);
+                showCustomToast(response.message,'success');
                 $('#deleteOldActivitiesModal').modal('hide');
                 setTimeout(function() {
                     location.reload();

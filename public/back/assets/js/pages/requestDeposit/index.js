@@ -26,7 +26,7 @@ $('.show-history').on('click', function () {
                         $('#data-'+data.id).find('.status-pay').empty();
                         $('#data-'+data.id).find('.status-pay').html(data.status_pay);
                         $('.status_pay').remove();
-                        toastr.success('تغییرات با موفقیت ذخیره شد', 'پیغام',{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+                        showCustomToast('تغییرات با موفقیت ذخیره شد','success');
                     },
                     beforeSend: function (xhr) {
                         block('.modal-content');
@@ -48,7 +48,7 @@ $('.show-history').on('click', function () {
                     type: 'post',
                     data:{'trackingId':trackingId},
                     success: function (data) {
-                        toastr.success('تغییرات با موفقیت ذخیره شد', 'پیغام',{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+                        showCustomToast('تغییرات با موفقیت ذخیره شد','success');
                     },
                     beforeSend: function (xhr) {
                         block('.modal-content');

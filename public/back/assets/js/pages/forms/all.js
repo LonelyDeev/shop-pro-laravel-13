@@ -288,11 +288,8 @@ $(document).ready(function() {
 
         // بستن مودال ۲
         $('#fieldConfigModal').modal('hide');
+        showCustomToast('فیلد با موفقیت اضافه شد','success');
 
-        toastr.success('فیلد با موفقیت اضافه شد', 'پیغام', {
-            positionClass: 'toast-bottom-left',
-            containerId: 'toast-bottom-left'
-        });
     });
 
     // ===============================================

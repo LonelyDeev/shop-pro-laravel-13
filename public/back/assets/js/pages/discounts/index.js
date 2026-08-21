@@ -21,8 +21,7 @@ $('#discount-delete-form').submit(function(e) {
             //remove discount tr
             $('#discount-' + $('#discount-delete-form').data('id') + '-tr').remove();
 
-            toastr.success('کد تخفیف با موفقیت حذف شد.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
-
+            showCustomToast('کد تخفیف با موفقیت حذف شد','success');
             //refresh discounts list
             $(".app-content").load(url + " .app-content > *");
         },

@@ -82,8 +82,7 @@ $('#fild-delete-form').submit(function(e) {
             //remove post tr
             $('#fild-' + $(form).data('id') + '-tr').remove();
 
-            toastr.success('فیلد با موفقیت حذف شد.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
-
+            showCustomToast('فیلد با موفقیت حذف شد','success');
             //refresh posts list
             $(".app-content").load(url + " .app-content > *");
         },
@@ -125,8 +124,7 @@ $('#filds-multiple-delete-form').on('submit', function (e) {
             ids.forEach(function(id) {
                 $('#fild-' + id + '-tr').fadeOut(300, function() { $(this).remove(); });
             });
-
-            toastr.success('فیلدهای انتخاب شده با موفقیت حذف شدند.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+            showCustomToast('فیلدهای انتخاب شده با موفقیت حذف شدند','success');
         },
         beforeSend: function (xhr) {
             block('#main-card');

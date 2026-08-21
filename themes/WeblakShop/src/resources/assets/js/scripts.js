@@ -81,10 +81,8 @@ $.ajaxSetup({
                 // skip loop if the property is from prototype
                 if (!obj.hasOwnProperty(prop)) continue;
 
-                toastr.error(obj[prop], 'خطا', {
-                    positionClass: 'toast-bottom-left',
-                    containerId: 'toast-bottom-left'
-                });
+                showCustomToast(obj[prop],'warning')
+
             }
         }
     }

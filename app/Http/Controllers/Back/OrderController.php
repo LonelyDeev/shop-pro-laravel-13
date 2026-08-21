@@ -114,6 +114,25 @@ class OrderController extends Controller
         return response('success');
     }
 
+    public function show(Order $order)
+    {
+        $this->authorize('orders.view');
+
+        // روش صحیح برای بارگذاری روابط
+        $orderItems = $order->items()
+            ->with(['product', 'seller', 'carrier'])
+            ->latest()
+            ->get();
+
+        // طرح اقساطی در صورت وجود ماژول
+        $installmentPlan = null;
+        if (function_exists('module_is_active') && module_is_active('InstallmentPayment')) {
+            $installmentPlan = \Modules\InstallmentPayment\Models\InstallmentPlan::where('order_id', $order->id)->first();
+        }
+
+        return view('back.orders.show', compact('order', 'orderItems', 'installmentPlan'));
+    }
+
     public function destroy(Order $order)
     {
         $order->items()->delete();
@@ -493,6 +512,7 @@ class OrderController extends Controller
             ])
             ->log("مدیر {$adminName} کد رهگیری سفارش شماره {$order->id} را از «{$oldTrackingCode}» به «{$newTrackingCode}» تغییر داد");
     }
+
 
     public function showItem(OrderItem $orderItem)
     {

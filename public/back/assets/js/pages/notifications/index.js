@@ -1,5 +1,5 @@
 /**
- * مدیریت اعلان‌ها — CRUD کامل با AJAX + پیکر گیرندگان
+ * مدیریت اعلان‌ها — CRUD کامل با AJAX (جدول‌های notification_manages)
  */
 $(function () {
     'use strict';
@@ -9,14 +9,13 @@ $(function () {
 
     $.ajaxSetup({ headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') } });
 
-    var TYPES = {
-        info:    { label: 'اطلاعیه', icon: 'icon-info',           color: '#2563EB', bg: '#EFF6FF' },
-        success: { label: 'موفقیت',  icon: 'icon-check-circle',   color: '#059669', bg: '#ECFDF5' },
-        warning: { label: 'هشدار',   icon: 'icon-alert-triangle', color: '#D97706', bg: '#FFFBEB' },
-        danger:  { label: 'مهم',     icon: 'icon-alert-octagon',  color: '#DC2626', bg: '#FEF2F2' }
+    var PRIORITIES = {
+        high:   { label: 'فوری',   icon: 'icon-alert-octagon',  color: '#DC2626', bg: '#FEF2F2' },
+        medium: { label: 'متوسط',  icon: 'icon-alert-triangle', color: '#D97706', bg: '#FFFBEB' },
+        low:    { label: 'عادی',   icon: 'icon-info',           color: '#059669', bg: '#ECFDF5' }
     };
 
-    var state = { items: [], type: 'all', search: '' };
+    var state = { items: [], priority: 'all', search: '' };
 
     // ---------- helpers ----------
     function esc(str) {
@@ -26,27 +25,13 @@ $(function () {
             .replace(/'/g, '&#039;');
     }
 
-    function getItem(batchId) {
-        return state.items.filter(function (n) { return n.batch_id === batchId; })[0];
+    function getItem(id) {
+        return state.items.filter(function (n) { return String(n.id) === String(id); })[0];
     }
 
-    function toast(message, type) {
-        var icons = { success: 'icon-check-circle', error: 'icon-x-circle', info: 'icon-info' };
-        var $t = $(
-            '<div class="nt-toast nt-toast--' + (type || 'success') + '">' +
-            '<i class="feather ' + (icons[type] || 'icon-check-circle') + '"></i>' +
-            '<span>' + esc(message) + '</span></div>'
-        );
-        $('#nt-toasts').append($t);
-        requestAnimationFrame(function () { $t.addClass('nt-toast--show'); });
-        setTimeout(function () {
-            $t.removeClass('nt-toast--show');
-            setTimeout(function () { $t.remove(); }, 350);
-        }, 3200);
-    }
 
     // ================================================================
-    // پیکر گیرندگان (جستجو + چیپ) — برای هر کارت یک نمونه
+    // پیکر گیرندگان (جستجوی AJAX + چیپ‌ها)
     // ================================================================
     function initPicker($target) {
         var group    = $target.find('.nt-picker').data('group');
@@ -80,12 +65,12 @@ $(function () {
             renderChips();
         });
 
-        function renderResults(users) {
-            if (!users.length) {
-                $results.html('<div class="nt-picker__empty">کاربری یافت نشد!</div>');
+        function renderResults(rows) {
+            if (!rows.length) {
+                $results.html('<div class="nt-picker__empty">موردی یافت نشد!</div>');
                 return;
             }
-            $results.html(users.map(function (u) {
+            $results.html(rows.map(function (u) {
                 var isSel = !!selected[u.id];
                 return (
                     '<button type="button" class="nt-picker__item' + (isSel ? ' nt-picker__item--selected' : '') + '" data-id="' + u.id + '"' + (isSel ? ' disabled' : '') + '>' +
@@ -121,7 +106,11 @@ $(function () {
         $results.on('click', '.nt-picker__item:not(.nt-picker__item--selected)', function () {
             var $item = $(this);
             var id = $item.data('id');
-            selected[id] = { id: id, name: $item.find('.nt-picker__name').text(), mobile: $item.find('.nt-picker__mobile').text() };
+            selected[id] = {
+                id: id,
+                name: $item.find('.nt-picker__name').text(),
+                mobile: $item.find('.nt-picker__mobile').text()
+            };
             renderChips();
             $search.val('');
             $picker.removeClass('nt-picker--open');
@@ -147,58 +136,68 @@ $(function () {
         }
     });
 
-    // فعال/غیرفعال شدن کارت با تیک
+    // فعال/غیرفعال شدن کارت گیرنده
     $('.nt-target__head input').on('change', function () {
-        $(this).closest('.nt-target').toggleClass('nt-target--active', this.checked);
+        var $target = $(this).closest('.nt-target');
+        $target.toggleClass('nt-target--active', this.checked);
         if (!this.checked) {
-            // با برداشتن تیک، انتخاب‌ها پاک شود
-            var idx = $('.nt-target').index($(this).closest('.nt-target'));
+            var idx = $('.nt-target').index($target);
             if (pickers[idx]) pickers[idx].reset();
         }
     });
 
-    // ---------- رندر لیست ----------
+    // ---------- رندر ----------
     function renderStats() {
-        var recipients = 0, read = 0;
+        var popup = 0, broadcast = 0, high = 0;
         state.items.forEach(function (n) {
-            recipients += n.recipients;
-            read += n.read_count;
+            if (n.popup) popup++;
+            if ((n.targets.users && n.targets.users.mode === 'all') ||
+                (n.targets.sellers && n.targets.sellers.mode === 'all')) broadcast++;
+            if (n.priority === 'high') high++;
         });
         $('#nt-stat-total').text(state.items.length.toLocaleString('en-US'));
-        $('#nt-stat-recipients').text(recipients.toLocaleString('en-US'));
-        $('#nt-stat-read').text(read.toLocaleString('en-US'));
-        $('#nt-stat-unread').text((recipients - read).toLocaleString('en-US'));
+        $('#nt-stat-popup').text(popup.toLocaleString('en-US'));
+        $('#nt-stat-broadcast').text(broadcast.toLocaleString('en-US'));
+        $('#nt-stat-high').text(high.toLocaleString('en-US'));
     }
 
     function targetBadges(n) {
         var b = '';
-        if (n.targets && n.targets.users)   b += '<span class="nt-tbadge nt-tbadge--users"><i class="feather icon-users"></i> کاربران</span> ';
-        if (n.targets && n.targets.sellers) b += '<span class="nt-tbadge nt-tbadge--sellers"><i class="feather icon-shopping-bag"></i> فروشندگان</span>';
-        return b || '<span class="nt-tbadge nt-tbadge--count">—</span>';
+        if (n.targets.users) {
+            b += '<span class="nt-tbadge nt-tbadge--users"><i class="feather icon-users"></i> ' +
+                (n.targets.users.mode === 'all' ? 'همه کاربران' : 'کاربران انتخابی') +
+                ' (' + n.targets.users.count.toLocaleString('en-US') + ')</span> ';
+        }
+        if (n.targets.sellers) {
+            b += '<span class="nt-tbadge nt-tbadge--sellers"><i class="feather icon-shopping-bag"></i> ' +
+                (n.targets.sellers.mode === 'all' ? 'همه فروشندگان' : 'فروشندگان انتخابی') +
+                ' (' + n.targets.sellers.count.toLocaleString('en-US') + ')</span>';
+        }
+        return b || '<span class="nt-tbadge nt-tbadge--read">—</span>';
     }
 
     function rowTemplate(n) {
-        var t = TYPES[n.type] || TYPES.info;
-        var pct = n.recipients > 0 ? Math.round(n.read_count / n.recipients * 100) : 0;
+        var p = PRIORITIES[n.priority] || PRIORITIES.low;
 
         return (
-            '<tr data-id="' + esc(n.batch_id) + '">' +
+            '<tr data-id="' + n.id + '">' +
             '<td>' +
             '<div class="nt-title-cell">' +
-            '<span class="nt-type-icon" style="color:' + t.color + ';background:' + t.bg + '"><i class="feather ' + t.icon + '"></i></span>' +
+            '<span class="nt-pr-icon" style="color:' + p.color + ';background:' + p.bg + '"><i class="feather ' + p.icon + '"></i></span>' +
             '<span class="nt-title-text" title="' + esc(n.title) + '">' + esc(n.title) + '</span>' +
             '</div>' +
             '</td>' +
             '<td><span class="nt-msg" title="' + esc(n.message) + '">' + esc(n.message) + '</span></td>' +
-            '<td><span class="nt-type-badge" style="color:' + t.color + ';background:' + t.bg + '">' + t.label + '</span></td>' +
-            '<td>' +
-            '<div class="nt-rc">' +
-            '<span class="nt-rc__num">' + n.recipients.toLocaleString('en-US') + ' نفر</span>' +
-            '<span class="nt-rc__bar"><span style="width:' + pct + '%"></span></span>' +
-            '<span class="nt-rc__read">' + n.read_count.toLocaleString('en-US') + ' خوانده‌شده (' + pct + '%)</span>' +
-            '</div>' +
+            '<td><span class="nt-pr-badge" style="color:' + p.color + ';background:' + p.bg + '">' + p.label + '</span></td>' +
+            '<td class="text-center">' +
+            '<label class="nt-switch">' +
+            '<input type="checkbox"' + (n.popup ? ' checked' : '') + '>' +
+            '<span class="nt-switch__slider"></span>' +
+            '</label>' +
             '</td>' +
-            '<td>' + targetBadges(n) + '</td>' +
+            '<td><div class="nt-tbadges">' + targetBadges(n) +
+            (n.read_count ? '<span class="nt-tbadge nt-tbadge--read"><i class="feather icon-eye"></i> ' + n.read_count.toLocaleString('en-US') + ' خوانده</span>' : '') +
+            '</div></td>' +
             '<td><span class="nt-time" title="' + esc(n.date) + '"><i class="feather icon-clock"></i>' + esc(n.ago) + '</span></td>' +
             '<td class="text-center">' +
             '<div class="nt-actions">' +
@@ -212,13 +211,13 @@ $(function () {
 
     function renderRows() {
         var items = state.items.filter(function (n) {
-            if (state.type !== 'all' && n.type !== state.type) return false;
+            if (state.priority !== 'all' && n.priority !== state.priority) return false;
             if (state.search && (n.title + ' ' + n.message).indexOf(state.search) === -1) return false;
             return true;
         });
 
         if (!items.length) {
-            var msg = state.items.length ? 'نتیجه‌ای برای فیلترهای فعلی یافت نشد!' : 'هنوز اعلانی ارسال نشده است!';
+            var msg = state.items.length ? 'نتیجه‌ای برای فیلترهای فعلی یافت نشد!' : 'هنوز اعلانی ایجاد نشده است!';
             $('#nt-tbody').html(
                 '<tr><td colspan="7"><div class="nt-empty">' +
                 '<div class="nt-empty__icon"><i class="feather icon-inbox"></i></div>' +
@@ -237,7 +236,7 @@ $(function () {
 
         $.getJSON(R.list)
             .done(function (res) { state.items = res.data || []; render(); })
-            .fail(function () { $('#nt-tbody').empty(); toast('خطا در دریافت لیست اعلان‌ها!', 'error'); });
+            .fail(function () { $('#nt-tbody').empty(); showCustomToast('خطا در دریافت لیست اعلان‌ها!', 'error'); });
     }
 
     // ---------- مودال فرم ----------
@@ -250,25 +249,20 @@ $(function () {
             // ---- ویرایش ----
             $('#nt-modal-title').text('ویرایش اعلان');
             $('#nt-submit-btn').html('<i class="feather icon-save"></i> ذخیره تغییرات');
-            $form.find('input[name=batch_id]').val(item.batch_id);
+            $form.find('input[name=id]').val(item.id);
             $form.find('input[name=title]').val(item.title);
             $form.find('textarea[name=message]').val(item.message);
-            $form.find('select[name=type]').val(item.type);
-            $form.find('input[name=link]').val(item.link || '');
+            $form.find('select[name=priority]').val(item.priority);
+            $form.find('input[name=popup]').prop('checked', !!item.popup);
 
-            // گیرندگان قابل تغییر نیستند
             $('#nt-targets').hide();
             $('#nt-edit-targets').show();
-            $('#nt-edit-badges').html(
-                targetBadges(item) +
-                ' <span class="nt-tbadge nt-tbadge--count"><i class="feather icon-users"></i> ' +
-                item.recipients.toLocaleString('en-US') + ' دریافت‌کننده</span>'
-            );
+            $('#nt-edit-badges').html(targetBadges(item));
         } else {
-            // ---- ارسال جدید ----
-            $('#nt-modal-title').text('ارسال اعلان جدید');
-            $('#nt-submit-btn').html('<i class="feather icon-send"></i> ارسال');
-            $form.find('input[name=batch_id]').val('');
+            // ---- ایجاد ----
+            $('#nt-modal-title').text('اعلان جدید');
+            $('#nt-submit-btn').html('<i class="feather icon-send"></i> ذخیره و ارسال');
+            $form.find('input[name=id]').val('');
 
             $('#nt-targets').show();
             $('#nt-edit-targets').hide();
@@ -300,7 +294,7 @@ $(function () {
         var item = getItem($(this).closest('tr').data('id'));
         if (!item) return;
         $('#nt-delete-title').text(item.title);
-        $('#nt-delete-modal').data('id', item.batch_id).modal('show');
+        $('#nt-delete-modal').data('id', item.id).modal('show');
     });
 
     $('#nt-confirm-delete').on('click', function () {
@@ -310,14 +304,35 @@ $(function () {
         $.ajax({ url: R.destroy.replace(':id', id), method: 'DELETE' })
             .done(function (res) {
                 $('#nt-delete-modal').modal('hide');
-                state.items = state.items.filter(function (n) { return n.batch_id !== id; });
+                state.items = state.items.filter(function (n) { return String(n.id) !== String(id); });
                 render();
-                toast(res.message || 'اعلان حذف شد.', 'success');
+                showCustomToast(res.message || 'اعلان حذف شد.', 'success');
             })
             .fail(function (xhr) {
-                toast((xhr.responseJSON && xhr.responseJSON.message) || 'خطا در حذف!', 'error');
+                showCustomToast((xhr.responseJSON && xhr.responseJSON.message) || 'خطا در حذف!', 'error');
             })
             .always(function () { $btn.prop('disabled', false); });
+    });
+
+    // سوییچ پاپ‌آپ — AJAX
+    $('#nt-tbody').on('change', '.nt-switch input', function () {
+        var $input = $(this);
+        var id = $input.closest('tr').data('id');
+
+        $input.prop('disabled', true);
+
+        $.ajax({ url: R.togglePopup.replace(':id', id), method: 'PATCH' })
+            .done(function (res) {
+                var item = getItem(id);
+                if (item) item.popup = res.popup;
+                renderStats();
+                showCustomToast(res.message, 'success');
+            })
+            .fail(function () {
+                $input.prop('checked', !$input.prop('checked'));
+                showCustomToast('خطا در تغییر وضعیت پاپ‌آپ!', 'error');
+            })
+            .always(function () { $input.prop('disabled', false); });
     });
 
     // ارسال فرم
@@ -325,35 +340,32 @@ $(function () {
         e.preventDefault();
 
         var $form = $(this);
-        var batchId = $form.find('input[name=batch_id]').val();
-        var isEdit = !!batchId;
+        var id = $form.find('input[name=id]').val();
+        var isEdit = !!id;
         var $btn = $('#nt-submit-btn').prop('disabled', true);
 
-        // اعتبارسنجی سمت کلاینت برای گروه گیرنده
-        if (!isEdit && !$form.find('input[name=send_users]').prop('checked') && !$form.find('input[name=send_sellers]').prop('checked')) {
+        // اعتبارسنجی گروه گیرنده (فقط هنگام ایجاد)
+        if (!isEdit &&
+            !$form.find('input[name=send_users]').prop('checked') &&
+            !$form.find('input[name=send_sellers]').prop('checked')) {
             $btn.prop('disabled', false);
             $('#nt-error-send_users').text('حداقل یکی از گروه‌های گیرنده را فعال کنید.');
-            toast('گروه گیرنده را انتخاب کنید!', 'error');
+            showCustomToast('گروه گیرنده را انتخاب کنید!', 'warning');
             return;
         }
 
         $.ajax({
-            url: isEdit ? R.update.replace(':id', batchId) : R.store,
+            url: isEdit ? R.update.replace(':id', id) : R.store,
             method: isEdit ? 'PATCH' : 'POST',
             data: $form.serialize()
         })
             .done(function (res) {
                 $('#nt-form-modal').modal('hide');
-                load(); // دریافت مجدد لیست و آمار
-                toast(res.message || 'با موفقیت انجام شد.', 'success');
+                load();
+                showCustomToast(res.message || 'با موفقیت انجام شد.', 'success');
             })
             .fail(function (xhr) {
-                if (xhr.status === 422) {
-                    showErrors(xhr.responseJSON && xhr.responseJSON.errors);
-                    toast('خطا در اعتبارسنجی فرم!', 'error');
-                } else {
-                    toast((xhr.responseJSON && xhr.responseJSON.message) || 'خطایی رخ داد!', 'error');
-                }
+
             })
             .always(function () { $btn.prop('disabled', false); });
     });
@@ -362,11 +374,11 @@ $(function () {
         $('#nt-error-' + this.name).text('');
     });
 
-    // فیلتر نوع
+    // فیلتر اولویت
     $('.nt-pill[data-type]').on('click', function () {
         $('.nt-pill[data-type]').removeClass('nt-pill--active');
         $(this).addClass('nt-pill--active');
-        state.type = $(this).data('type');
+        state.priority = $(this).data('type');
         renderRows();
     });
 
@@ -386,4 +398,5 @@ $(function () {
     });
 
     load();
+
 });

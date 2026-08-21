@@ -24,7 +24,7 @@ $(document).ready(function() {
                     type: 'DELETE',
                     success: function(response) {
                         if (response.success) {
-                            toastr.success(response.message);
+                            showCustomToast(response.message,'success');
                             $(`#session-${sessionId}`).fadeOut(300, function() {
                                 $(this).remove();
                             });
@@ -77,7 +77,7 @@ $(document).ready(function() {
                     type: 'DELETE',
                     success: function(response) {
                         if (response.success) {
-                            toastr.success(response.message);
+                            showCustomToast(response.message,'success');
 
                             // حذف ردیف‌های مربوط به این ادمین
                             $(`tr[id^="session-"]`).each(function() {
@@ -133,7 +133,7 @@ $(document).ready(function() {
                     type: 'POST',
                     success: function(response) {
                         if (response.success) {
-                            toastr.success(response.message);
+                            showCustomToast(response.message,'success');
 
                             // حذف ردیف‌های نشست‌های دیگر (غیر از جلسه فعلی)
                             $('tr[id^="session-"]').each(function() {
@@ -187,7 +187,7 @@ $(document).ready(function() {
                     type: 'POST',
                     success: function(response) {
                         if (response.success) {
-                            toastr.success(response.message);
+                            showCustomToast(response.message,'success');
                             if (response.deleted_count > 0) {
                                 setTimeout(() => location.reload(), 1500);
                             }
@@ -253,7 +253,7 @@ $(document).ready(function() {
             },
             success: function(response) {
                 if (response.success) {
-                    toastr.success(response.message);
+                    showCustomToast(response.message,'success');
                     $('#block-form')[0].reset();
                     $('#block-modal').modal('hide');
 

@@ -21,8 +21,7 @@ $('#attribute-delete-form').submit(function(e) {
 
             //remove attribute tr
             $('#attribute-' + $(form).data('id') + '-tr').remove();
-
-            toastr.success('ویژگی با موفقیت حذف شد.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+            showCustomToast('ویژگی با موفقیت حذف شد','success');
 
             //refresh attributes list
             $(".app-content").load(url + " .app-content > *");

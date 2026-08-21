@@ -22,6 +22,10 @@ class OrderPolicy
         return $admin->can('orders.create');
     }
 
+    public function view(Admin $admin, Order $order)
+    {
+        return $admin->can('orders.view');
+    }
     public function update(Admin $admin, Order $order)
     {
         return $admin->can('orders.update');

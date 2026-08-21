@@ -22,8 +22,7 @@ $('#brand-delete-form').submit(function (e) {
             //remove brand tr
             $('#brand-' + $(form).data('id') + '-tr').remove();
 
-            toastr.success('برند با موفقیت حذف شد.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
-
+            showCustomToast('برند با موفقیت حذف شد','success');
             //refresh brands list
             $('.app-content').load(url + ' .app-content > *');
         },

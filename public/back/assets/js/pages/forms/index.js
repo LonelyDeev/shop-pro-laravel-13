@@ -1,7 +1,7 @@
 $('.copy_btn').on('click', function () {
     let text = $(this).closest('td').find('.page_link').val();
     copyToClipboard(text);
-    toastr.success('لینک با موفقیت کپی شد', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+    showCustomToast('لینک با موفقیت کپی شد','success');
 });
 
 
@@ -58,10 +58,7 @@ $('#delete-form').on('submit', function(e) {
         data: formData,
         success: function(data) {
             if (data == 'success') {
-                toastr.success('استوری با موفقیت حذف شد.', null, {
-                    positionClass: 'toast-bottom-left',
-                    containerId: 'toast-bottom-left'
-                });
+                showCustomToast('استوری با موفقیت حذف شد','success');
                 $('.datatable-actions').collapse('hide');
                 $('#datatable-selected-rows').text(0);
                 $('#row-' + $(form).data('id')).remove();
@@ -99,10 +96,8 @@ $('#multiple-delete-form').on('submit', function(e) {
         data: {ids: ids},
         success: function(data) {
             if (data == 'success') {
-                toastr.success('موارد انتخاب شده با موفقیت حذف شدند.', null, {
-                    positionClass: 'toast-bottom-left',
-                    containerId: 'toast-bottom-left'
-                });
+                showCustomToast('موارد انتخاب شده با موفقیت حذف شدند','success');
+
                 const selector = ids.map(id => '#row-' + id).join(',');
                 $(selector).remove();
                 $('.datatable-actions').collapse('hide');

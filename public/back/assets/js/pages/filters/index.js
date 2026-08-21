@@ -21,8 +21,7 @@ $('#filter-delete-form').submit(function(e) {
             //remove filter tr
             $('#filter-' + $('#filter-delete-form').data('id') + '-tr').remove();
 
-            toastr.success('فیلتر با موفقیت حذف شد.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
-
+            showCustomToast('فیلتر با موفقیت حذف شد','success');
             //refresh filters list
             $(".app-content").load(url + " .app-content > *");
         },

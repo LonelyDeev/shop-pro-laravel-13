@@ -25,7 +25,7 @@ $(document).ready(function() {
                     $('#is_active_reason').prop('checked', true);
 
                     // نمایش پیام موفقیت
-                    toastr.success(response.message);
+                    showCustomToast(response.message,'success');
                 }
             },
             error: function(xhr) {
@@ -72,7 +72,7 @@ $(document).ready(function() {
                         $btn.find('i').removeClass('fa-toggle-on').addClass('fa-toggle-off');
                     }
                     unblock($btn)
-                    toastr.success(response.message);
+                    showCustomToast(response.message,'success');
                 }
             },
             error: function() {
@@ -104,7 +104,7 @@ $(document).ready(function() {
                     $row.fadeOut(300, function() {
                         $(this).remove();
                     });
-                    toastr.success(response.message);
+                    showCustomToast(response.message,'success');
                 }
             },
             error: function() {

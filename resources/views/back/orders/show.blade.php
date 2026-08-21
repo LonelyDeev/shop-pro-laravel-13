@@ -5,12 +5,57 @@
 @endpush
 
 @section('content')
+
+    @php
+        use Illuminate\Support\Str;
+
+        // ---------- مپ‌های وضعیت ----------
+        $paymentLabels = ['paid' => 'پرداخت شده', 'unpaid' => 'پرداخت نشده', 'canceled' => 'لغو شده'];
+        $shippingLabels = [
+            'w-pending'  => 'در انتظار بررسی', 'pending' => 'در حال بررسی', 'processing' => 'در حال پردازش',
+            'waiting'    => 'منتظر ارسال', 'sent' => 'ارسال شد', 'post-sent' => 'تحویل به پست',
+            'delivered'  => 'تحویل داده شد', 'canceled' => 'لغو شد',
+        ];
+        $statusSteps = ['w-pending', 'pending', 'processing', 'waiting', 'sent', 'post-sent', 'delivered'];
+
+        // ---------- محاسبات کل سفارش (جمع همه آیتم‌ها) ----------
+        $grandTotal = 0; $grandDiscount = 0; $grandShipping = 0; $grandPayable = 0;
+
+        $orderTotals = [];
+        foreach ($orderItems as $oi) {
+            $amount = 0; $discount = 0;
+            foreach ($oi->products() as $p) {
+                $price   = $p->real_price * $p->quantity;
+                $disc    = $price * ($p->discount ?? 0) / 100;
+                $amount += $price - $disc;
+                $discount += $disc;
+            }
+            $shipping = $oi->shipping_cost ?? 0;
+            $orderTotals[$oi->id] = ['amount' => $amount, 'discount' => $discount, 'shipping' => $shipping, 'payable' => $amount + $shipping];
+            $grandTotal += $amount; $grandDiscount += $discount; $grandShipping += $shipping;
+        }
+        $grandPayable = $grandTotal + $grandShipping;
+
+        $isInstallment = (bool) $installmentPlan;
+
+        $returnStatusMeta = [
+            'pending'             => ['مرجوعی در حال بررسی', '#f59e0b', '#fffbeb'],
+            'approved'            => ['مرجوعی تایید شد', '#3b82f6', '#dbeafe'],
+            'shipped_by_customer' => ['محصول ارسال شد', '#8b5cf6', '#ede9fe'],
+            'received'            => ['محصول دریافت شد', '#06b6d4', '#cffafe'],
+            'reshipped'           => ['ارسال مجدد', '#6366f1', '#e0e7ff'],
+            'completed'           => ['مرجوعی تکمیل شد', '#10b981', '#d1fae5'],
+            'rejected'            => ['مرجوعی رد شد', '#ef4444', '#fee2e2'],
+            'cancelled'           => ['مرجوعی لغو شد', '#6b7280', '#f3f4f6'],
+            'failed'              => ['مرجوعی ناموفق', '#dc2626', '#fef2f2'],
+        ];
+    @endphp
     <div class="app-content content">
         <div class="content-overlay"></div>
         <div class="header-navbar-shadow"></div>
         <div class="content-wrapper">
             <div class="content-header row">
-                <div class="content-header-left col-md-7 col-12 mb-2">
+                <div class="content-header-left col-md-9 col-12 mb-2">
                     <div class="row breadcrumbs-top">
                         <div class="col-12">
                             <div class="breadcrumb-wrapper col-12">
@@ -19,7 +64,7 @@
                                     </li>
                                     <li class="breadcrumb-item">مدیریت سفارشات
                                     </li>
-                                    <li class="breadcrumb-item active">اطلاعات سفارش شماره {{ $order->id }}
+                                    <li class="breadcrumb-item active">لیست سفارشات
                                     </li>
                                 </ol>
                             </div>
@@ -28,395 +73,286 @@
                 </div>
 
             </div>
+
             <div class="content-body">
-                <!-- page users view start -->
-                <section class="page-users-view">
-                    <div class="row">
+    <div class="ov-app">
+        {{-- ================= هدر ================= --}}
+        <div class="ov-header">
+            <div class="ov-header__right">
+                <div class="ov-breadcrumb">
+                    <span>پنل مدیریت</span><i>›</i>
+                    <a href="{{ route('admin.orders.index') }}">سفارش‌ها</a><i>›</i>
+                    <span class="active">سفارش #{{ $order->id }}</span>
+                </div>
+                <h1 class="ov-title">
+                    سفارش <span>#{{ $order->id }}</span>
+                    @if($isInstallment)
+                        <span class="ov-tag" style="--tc:#1e40af;--tbg:#dbeafe;">💰 اقساطی</span>
+                    @endif
+                    @if($order->status == 'paid')
+                        <span class="ov-tag" style="--tc:#047857;--tbg:#d1fae5;">✓ پرداخت شده</span>
+                    @elseif($order->status == 'canceled')
+                        <span class="ov-tag" style="--tc:#b91c1c;--tbg:#fee2e2;">لغو شده</span>
+                    @else
+                        <span class="ov-tag" style="--tc:#92400e;--tbg:#fef3c7;">پرداخت نشده</span>
+                    @endif
+                </h1>
+                <div class="ov-header__meta">
+                    <span><i class="feather icon-calendar"></i> {{ jdate($order->created_at)->format('Y/m/d - H:i') }}</span>
+                    <span><i class="feather icon-user"></i> {{ $order->name ?? $order->user?->fullname ?? '—' }}</span>
+                    <span><i class="feather icon-package"></i> {{ $orderItems->count() }} مرسوله</span>
+                </div>
+            </div>
 
-                        <div class="col-12 d-print-none">
-                            <div class="card">
-                                <div class="card-header">
-                                    <div class="card-title">عملیات</div>
+            <div class="ov-header__actions">
+                <a href="{{ route('admin.orders.print', ['order' => $order, 'seller_id' => $orderItems->first()?->seller_id]) }}"
+                   target="_blank" class="ov-btn ov-btn--ghost">
+                    <i class="feather icon-printer"></i> چاپ
+                </a>
+                <a href="{{ route('admin.orders.index') }}" class="ov-btn ov-btn--ghost">
+                    <i class="feather icon-arrow-right"></i> بازگشت
+                </a>
+            </div>
+        </div>
 
-                                </div>
-                                <div class="card-body" id="main-card">
-                                    <div class="row">
+        {{-- ================= کارت‌های خلاصه ================= --}}
+        <div class="ov-stats">
+            <div class="ov-stat">
+                <div class="ov-stat__icon" style="--c1:#34D399;--c2:#059669;"><i class="feather icon-credit-card"></i></div>
+                <div>
+                    <span class="ov-stat__value">{{ number_format($isInstallment ? $installmentPlan->total_payable : $grandPayable) }} <small>تومان</small></span>
+                    <span class="ov-stat__label">{{ $isInstallment ? 'مبلغ نهایی (اقساطی)' : 'مبلغ قابل پرداخت کل' }}</span>
+                </div>
+            </div>
+            <div class="ov-stat">
+                <div class="ov-stat__icon" style="--c1:#818CF8;--c2:#4F46E5;"><i class="feather icon-box"></i></div>
+                <div>
+                    <span class="ov-stat__value">{{ number_format($orderItems->sum(function($oi) { return $oi->products()->sum('quantity'); })) }}</span>
+                    <span class="ov-stat__label">تعداد کل اقلام</span>
+                </div>
+            </div>
+            <div class="ov-stat">
+                <div class="ov-stat__icon" style="--c1:#FB7185;--c2:#E11D48;"><i class="feather icon-percent"></i></div>
+                <div>
+                    <span class="ov-stat__value">{{ number_format($grandDiscount) }} <small>تومان</small></span>
+                    <span class="ov-stat__label">جمع تخفیف‌ها</span>
+                </div>
+            </div>
+            <div class="ov-stat">
+                <div class="ov-stat__icon" style="--c1:#60A5FA;--c2:#2563EB;"><i class="feather icon-truck"></i></div>
+                <div>
+                    <span class="ov-stat__value">{{ number_format($grandShipping) }} <small>تومان</small></span>
+                    <span class="ov-stat__label">هزینه ارسال</span>
+                </div>
+            </div>
+        </div>
 
-                                        <div class="col-md-4">
-                                            <fieldset class="form-group">
-                                                <select class="custom-select" id="shipping-status" data-action="{{ route('admin.orders.shipping-status', ['order' => $order]) }}" {{ (!$order->hasPhysicalItem() || $order->status != 'paid') ? 'disabled' : '' }}>
-                                                    <option {{ ($order->shipping_status == 'w-pending') ? 'selected' : '' }} value="w-pending">در انتظار بررسی</option>
-                                                    <option {{ ($order->shipping_status == 'pending') ? 'selected' : '' }} value="pending">در حال بررسی</option>
-                                                    <option {{ ($order->shipping_status == 'waiting') ? 'selected' : '' }} value="waiting">منتظر ارسال</option>
-                                                    <option {{ ($order->shipping_status == 'sent') ? 'selected' : '' }} value="sent">ارسال شد</option>
-                                                    <option {{ ($order->shipping_status == 'post-sent') ? 'selected' : '' }} value="post-sent">تحویل به پست</option>
-                                                    <option {{ ($order->shipping_status == 'canceled') ? 'selected' : '' }} value="canceled">ارسال لغو شد</option>
-                                                </select>
-                                            </fieldset>
-                                            <div class="badge badge-danger mb-1">{{ !$order->hasPhysicalItem() ? 'سفارش محصول فیزیکی ندارد' : '' }}</div>
-                                            <div class="badge badge-danger mb-1">{{ ($order->status != 'paid') ? 'سفارش پرداخت نشده است' : '' }}</div>
-                                          @if($order->user)
-                                                @php $orderCanceled=\App\Models\WalletHistory::where(['wallet_id'=>$order->user->wallet->id,'order_id'=>$order->id,'orderCanceled'=>1])->first(); @endphp
+        <div class="ov-layout">
+            {{-- ============ ستون اصلی ============ --}}
+            <div class="ov-main">
 
-                                                @if(@$orderCanceled->orderCanceled)
-                                                    <div class="badge badge-danger">سفارش لغو شده و مبلغ سفارش به کیف پول <a style='color: #0a66c2' href='{{ route('admin.wallets.show', ['wallet' => $order->user->getWallet()]) }}'>کاربر</a> واریز شده است</div>
-                                                @endif
-                                          @endif
+                {{-- ---------- مرسوله‌ها ---------- --}}
+                @foreach($orderItems as $oi)
+                    @php
+                        $stepIndex = array_search($oi->shipping_status, $statusSteps);
+                        $scMeta = match($oi->shipping_status) {
+                            'sent', 'delivered' => ['#059669', '#ecfdf5'],
+                            'canceled'          => ['#dc2626', '#fef2f2'],
+                            default             => ['#d97706', '#fffbeb'],
+                        };
+                        $t = $orderTotals[$oi->id];
+                    @endphp
 
-                                            <input name='orderCanceled' type='hidden' value='{{@$orderCanceled->orderCanceled ?: 0}}'>
-
-
-                                        </div>
-                                        <div class="col-md-8">
-                                            <div class="float-right">
-                                                @if (!$order->reserved())
-                                                <a href="{{ route('admin.orders.shipping-form', ['order' => $order]) }}" target="_blank" class="btn btn-outline-info waves-effect waves-light"><i class="feather icon-printer"></i>چاپ برچسب پستی</a>
-                                                <a href="{{ route('admin.orders.shipping-form-min', ['order' => $order]) }}" target="_blank" class="btn btn-outline-info waves-effect waves-light"><i class="feather icon-printer"></i>چاپ لیبل پستی</a>
-                                            @endif                                                <a href="{{ route('admin.orders.print', ['order' => $order]) }}" target="_blank" class="btn btn-outline-primary waves-effect waves-light"><i class="feather icon-printer"></i> چاپ</a>
-                                                <button type="button" data-toggle="modal" data-target="#delete-modal" class="btn btn-outline-danger waves-effect waves-light"><i class="feather icon-trash-2"></i> حذف سفارش</button>
-                                            </div>
-                                        </div>
-
-                                        <div id='TrackingCode' data-action="{{ route('admin.orders.set-tracking-code', ['order' => $order]) }}" class="col-md-12 {{ ($order->shipping_status == 'post-sent') ? '' : 'd-none' }}">
-                                            <div class='row'>
-                                                <dt class="col-md-2 form-control border-0">کدرهگیری پست :</dt>
-                                                <div class="col-md-5 col-sm-12 col-12 mb-1">
-                                                    <input type="text" class="form-control" value='{{$order->tracking_code}}' name="TrackingCode" placeholder="کدرهگیری پست...">
-                                                </div>
-                                                <div class="col-md-2 col-sm-12 col-12">
-                                                    <button class="btn personal-success-btn waves-effect waves-light w-100">ثبت</button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
-                                    <div class="card-title">مشخصات کاربر</div>
-                                    <div class="heading-elements">
-                                        <ul class="list-inline mb-0">
-                                            <li>
-                                                @if($order->user)
-                                                    <a href="{{ route('admin.users.show', ['user' => $order->user]) }}" target="_blank"><i class="feather icon-external-link"></i></a>
-                                                @endif
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row">
-
-                                        @if($order->user)
-                                            <div class="col-12">
-                                                <div class="row">
-                                                    <div class="col-md-6">
-                                                        <div class="row">
-                                                            <dt class="col-md-3">نام :</dt>
-                                                            <dd class="col-md-6">{{ $order->user->first_name }}</dd>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <div class="row">
-                                                            <dt class="col-md-3">نام خانوادگی :</dt>
-                                                            <dd class="col-md-6">{{ $order->user->last_name }}
-                                                            </dd>
-                                                        </div>
-                                                    </div>
-
-                                                </div>
-                                                <div class="row">
-                                                    <div class="col-md-6">
-                                                        <div class="row">
-                                                            <dt class="col-md-3">نام کاربری :</dt>
-                                                            <dd class="col-md-6">{{ $order->user->username }}</dd>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-6">
-                                                        <div class="row">
-                                                            <dt class="col-md-3">ایمیل :</dt>
-                                                            <dd class="col-md-6">{{ $order->user->email ? $order->user->email : '-' }}</dd>
-                                                        </div>
-                                                    </div>
-
-                                                </div>
-                                            </div>
+                    <section class="ov-card ov-item-card">
+                        <header class="ov-item-head">
+                            <div class="ov-item-head__right">
+                                <span class="ov-item__icon"><i class="feather icon-package"></i></span>
+                                <div>
+                                    <h3>مرسوله #{{ $oi->id }}</h3>
+                                    <span class="ov-item__sub">
+                                    {{ $oi->products()->count() }} محصول
+                                    @if($oi->seller)
+                                            • فروشنده: {{ $oi->seller->fullname ?? $oi->seller->name ?? '' }}
                                         @endif
-
-                                    </div>
+                                </span>
                                 </div>
                             </div>
-                        </div>
-                        <!-- account end -->
-                        <!-- information start -->
-                        <div class="col-md-12 col-12 ">
-                            <div class="card">
-                                <div class="card-header">
-                                    <div class="card-title">اطلاعات سفارش</div>
-                                </div>
-                                <div class="card-body row">
-                                    <div class="col-md-6 col-12 ">
-                                        <table class="details">
-                                            <tbody>
-                                                <tr>
-                                                    <td class="font-weight-bold">نام و نام خانوادگی :</td>
-                                                    <td>{{ $order->name }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="font-weight-bold">شماره همراه :</td>
-                                                    <td>{{ $order->mobile }}</td>
-                                                </tr>
 
-                                                @if ($order->hasPhysicalProduct())
-                                                    <tr>
-                                                        <td class="font-weight-bold">استان :</td>
-                                                        <td>{{ $order->province ? $order->province->name : '' }}</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td class="font-weight-bold">شهر :</td>
-                                                        <td>{{ $order->city ? $order->city->name : '' }}</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td class="font-weight-bold">کد پستی :</td>
-                                                        <td>{{ $order->postal_code }}</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td class="font-weight-bold">آدرس کامل :</td>
-                                                        <td>{{ $order->address }}</td>
-                                                    </tr>
-                                                    @if($order->seller_id!="")
-                                                        @php $seller_ids = str_replace( array( '\'', '"', '[' , ']', ' ', ' '), ' ', $order->seller_id);
-                                                            $seller_ids=trim($seller_ids);
-                                                             $seller_ids=explode(',',$seller_ids);
-                                                             $seller_ids=array_unique($seller_ids);
-                                                             @endphp
-                                                        <tr>
-                                                            <td class="font-weight-bold">فروشندگان :</td>
-                                                            <td>
-                                                                @foreach($seller_ids as $seller_id)
-                                                                    @php $seller=get_seller_info($seller_id) @endphp
-                                                                    @if($seller)
+                            <div class="ov-item-head__left">
+                            <span class="ov-tag" style="--tc:{{ $scMeta[0] }};--tbg:{{ $scMeta[1] }};">
+                                {{ $shippingLabels[$oi->shipping_status] ?? $oi->shipping_status }}
+                            </span>
 
-                                                                        <a href="{{ route('admin.sellers.show', ['seller' => $seller]) }}" target="_blank">{{$seller->business_name}}</a> |
+                                @if($oi->refunded || $oi->return_status !== 'none')
+                                    @php
+                                        $rm = $returnStatusMeta[$oi->return_status] ?? ['مرجوع شده', '#f59e0b', '#fffbeb'];
+                                    @endphp
+                                    <span class="ov-tag" style="--tc:{{ $rm[1] }};--tbg:{{ $rm[2] }};">
+                                    <i class="feather icon-rotate-ccw"></i> {{ $rm[0] }}
+                                </span>
+                                @endif
 
-                                                                    @endif
-                                                                @endforeach
-
-                                                            </td>
-                                                        </tr>
-                                                    @endif
-
-                                                @endif
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    <div class="col-md-6 col-12 ">
-                                        <table class="details">
-                                            <tbody>
-                                                @if ($order->hasPhysicalProduct())
-                                                    <tr>
-                                                        <td class="font-weight-bold">شیوه تحویل :</td>
-                                                        <td>{{ $order->carrier ? $order->carrier->title : 'نامشخص' }}</td>
-                                                    </tr>
-                                                @endif
-                                                <tr>
-                                                    <td class="font-weight-bold">تاریخ ثبت :</td>
-                                                    <td>{{ jdate($order->created_at) }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="font-weight-bold">نحوه پرداخت :</td>
-                                                    <td>پرداخت آنلاین</td>
-                                                </tr>
-
-                                                @if ($order->hasPhysicalProduct())
-                                                    <tr>
-                                                        <td class="font-weight-bold">هزینه ارسال:</td>
-                                                        <td>{{ number_format($order->shipping_cost) }} تومان</td>
-                                                    </tr>
-                                                @endif
-
-                                                @if($order->discount_price or $order->discount_percent)
-                                                    <tr>
-                                                        <td class="font-weight-bold">تخفیف از کدتخفیف:</td>
-                                                        @if($order->discount_price)
-                                                            <td>{{ number_format($order->discount_price) }} تومان</td>
-                                                        @else
-                                                            @php
-                                                                $discount_percent=intval($order->priceWithoutDiscount() * ((100-$order->discount_percent) / 100));
-                                                                $discount_percent=$order->priceWithoutDiscount()-$discount_percent;
-                                                            @endphp
-                                                            <td>{{ number_format($discount_percent) }} تومان</td>
-                                                        @endif
-
-                                                    </tr>
-                                                    <tr>
-                                                        <td class="font-weight-bold">کدتخفیف:</td>
-                                                            <td>{{ App\Models\Discount::find($order->discount_id)->code ?: 'حذف شده' }}</td>
-                                                    </tr>
-                                                @endif
-                                                <tr>
-                                                    <td class="font-weight-bold">جمع تخفیف ها:</td>
-                                                    <td>{{ number_format($order->totalDiscount()) }} تومان</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="font-weight-bold">جمع قیمت:</td>
-                                                    <td>{{ number_format($order->priceWithoutDiscount()) }} تومان</td>
-                                                </tr>
-                                                @if($order->getAmountCommission())
-                                                    <tr>
-                                                        <td class="font-weight-bold">کمیسیون:</td>
-                                                        <td>{{number_format($order->getAmountCommission()['priceForSite']).' تومان'}} ({{$order->getAmountCommission()['commission']}}%)</td>
-                                                    </tr>
-                                                @endif
-                                                <tr>
-                                                    <td class="font-weight-bold">قیمت نهایی:</td>
-                                                    <td>{{ number_format($order->price) }} تومان</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="font-weight-bold">توضیحات سفارش :</td>
-                                                    <td>
-                                                        {{ $order->description }}
-                                                    </td>
-                                                </tr>
-
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                                <div class="col-lg-12 mt-3">
-                                    <div class="table-responsive">
-                                        <table class="table withdraw__table">
-                                            <thead>
-                                                <tr>
-                                                    <th>ردیف</th>
-                                                    <th>تصویر</th>
-                                                    <th style="width: 300px;">نام محصول</th>
-                                                    <th>تعداد</th>
-                                                    <th>قیمت واحد</th>
-                                                    <th>قیمت کل</th>
-                                                    <th>تخفیف</th>
-                                                    <th>قیمت نهایی</th>
-                                                </tr>
-                                            </thead>
-
-                                            <tbody>
-                                                @foreach($order->items as $item)
-                                                    <tr>
-                                                        <td>{{ $loop->iteration }}</td>
-                                                        <td>
-                                                            @if($item->product)
-                                                                <a href="{{ Route::has('front.products.show') ? route('front.products.show', ['product' => $item->product]) : '' }}" target="_blank"><img class="table-img" src="{{ $item->product->image ? asset($item->product->image) : asset('/empty.svg') }}"></a>
-                                                            @else
-                                                                <img class="table-img" src="{{ asset('empty.svg') }}">
-                                                            @endif
-                                                        </td>
-                                                        <td class="order-product-name">
-                                                            {{ $item->title }}
-
-                                                            @if ($item->get_price)
-                                                                @foreach ($item->get_price->get_attributes as $attribute)
-
-                                                                    @if ($attribute->group->type == 'color')
-                                                                        <span class="order-product-color d-print-none" style="background-color: {{ $attribute->value }};"></span>
-                                                                        <span>{{ $attribute->group->name }}: {{ $attribute->name }}</span>
-
-                                                                    @else
-                                                                        <span>{{ $attribute->group->name }}: {{ $attribute->name }}</span>
-                                                                    @endif
-
-                                                                @endforeach
-                                                            @endif
-
-                                                            @if($item->seller_id!="")
-                                                                @if(get_seller_info($item->seller_id))
-                                                                    <span>فروشنده :
-                                                                     <a href="{{ route('admin.sellers.show', ['seller' => $item->seller_id]) }}" target="_blank">{{get_seller_info($item->seller_id)->business_name}}</a>
-                                                                    </span>
-                                                                @endif
-
-                                                            @endif
-
-                                                        </td>
-                                                        <td>{{ $item->quantity }}</td>
-                                                        <td>{{ number_format($item->realPrice()) }} تومان</td>
-                                                        <td>{{ number_format($item->quantity * $item->realPrice()) }} تومان</td>
-                                                        <td>{{ $item->discount ? $item->discount . '%' : 0 }}</td>
-                                                        <td>
-                                                            {{ number_format($item->price * $item->quantity) }} تومان
-                                                            @if($item->commission)
-                                                                <div class="">{{$item->commission.'%'}} کمیسیون </div>
-                                                            @endif
-                                                        </td>
-                                                    </tr>
-                                                @endforeach
-
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
+                                {{-- لینک ورود به صفحه آیتم --}}
+                                <a href="{{ route('admin.orders.show-item', $oi) }}"
+                                   class="ov-btn ov-btn--sm ov-btn--primary">
+                                    <i class="feather icon-eye"></i> مشاهده مرسوله
+                                </a>
                             </div>
+                        </header>
+
+                        {{-- نوار پیشرفت وضعیت --}}
+                        @if($oi->shipping_status != 'canceled' && $stepIndex !== false)
+                            <div class="ov-steps">
+                                @foreach($statusSteps as $i => $step)
+                                    <div class="ov-step {{ $i < $stepIndex ? 'is-done' : ($i == $stepIndex ? 'is-current' : '') }}">
+                                        <span class="ov-step__dot"></span>
+                                        <span class="ov-step__label">{{ $shippingLabels[$step] }}</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @elseif($oi->shipping_status == 'canceled')
+                            <div class="ov-alert ov-alert--danger">
+                                <i class="feather icon-x-circle"></i>
+                                این مرسوله لغو شده است.
+                            </div>
+                        @endif
+
+                        {{-- محصولات مرسوله --}}
+                        <div class="ov-prods">
+                            @foreach($oi->products() as $item)
+                                @php
+                                    $price = $item->real_price * $item->quantity;
+                                    $disc  = $price * ($item->discount ?? 0) / 100;
+                                    $final = $price - $disc;
+                                @endphp
+                                <a href="{{ route('front.products.show', $item->product) }}" target="_blank" class="ov-prod">
+                                <span class="ov-prod__img">
+                                    <img src="{{ $item->product?->image ? asset($item->product->image) : asset('empty.svg') }}" alt="">
+                                </span>
+                                    <span class="ov-prod__body">
+                                    <span class="ov-prod__title">{{ $item->title }}</span>
+                                    @if($item->product?->title_fa)
+                                            <span class="ov-prod__fa">{{ $item->product->title_fa }}</span>
+                                        @endif
+                                    <span class="ov-prod__meta">
+                                        <span class="ov-qty">× {{ number_format($item->quantity) }}</span>
+                                        @if($item->discount)
+                                            <span class="ov-off">{{ $item->discount }}%</span>
+                                        @endif
+                                    </span>
+                                </span>
+                                    <span class="ov-prod__price">
+                                    {{ number_format($final) }} <small>تومان</small>
+                                    @if($item->discount)
+                                            <del>{{ number_format($price) }}</del>
+                                        @endif
+                                </span>
+                                </a>
+                            @endforeach
                         </div>
-                        <!-- information start -->
-                        <!-- social links end -->
+
+                        {{-- جمع مرسوله --}}
+                        <footer class="ov-item-foot">
+                            <span>جمع محصولات: <b>{{ number_format($t['amount']) }}</b> تومان</span>
+                            @if($t['shipping'] > 0)
+                                <span>ارسال: <b>{{ number_format($t['shipping']) }}</b> تومان</span>
+                            @endif
+                            @if($t['discount'] > 0)
+                                <span class="ov-disc">تخفیف: <b>{{ number_format($t['discount']) }}</b> تومان</span>
+                            @endif
+                            <span class="ov-item-foot__total">جمع مرسوله: <b>{{ number_format($t['payable']) }}</b> تومان</span>
+                        </footer>
+                    </section>
+                @endforeach
+
+                {{-- ---------- توضیحات ---------- --}}
+                @if($order->description)
+                    <section class="ov-card">
+                        <h2 class="ov-card__title"><i class="feather icon-edit-3"></i> توضیحات سفارش</h2>
+                        <div class="ov-desc">{{ $order->description }}</div>
+                    </section>
+                @endif
+            </div>
+
+            {{-- ============ ستون کناری ============ --}}
+            <aside class="ov-side">
+
+                {{-- جمع‌بندی مالی --}}
+                <section class="ov-card ov-summary">
+                    <h2 class="ov-card__title"><i class="feather icon-file-text"></i> صورت‌حساب</h2>
+                    <div class="ov-sum-rows">
+                        <div class="ov-sum-row"><span>جمع محصولات</span><b>{{ number_format($grandTotal) }} ت</b></div>
+                        @if($grandDiscount > 0)
+                            <div class="ov-sum-row ov-sum-row--disc"><span>تخفیف</span><b>- {{ number_format($grandDiscount) }} ت</b></div>
+                        @endif
+                        <div class="ov-sum-row"><span>هزینه ارسال</span><b>{{ number_format($grandShipping) }} ت</b></div>
+                        @if($isInstallment)
+                            <div class="ov-sum-row"><span>پیش‌پرداخت</span><b>{{ number_format($installmentPlan->down_payment) }} ت</b></div>
+                            <div class="ov-sum-row"><span>باقی‌مانده اقساط</span><b>{{ number_format($installmentPlan->remainingAmount()) }} ت</b></div>
+                        @endif
                     </div>
+                    <div class="ov-sum-total">
+                        <span>{{ $isInstallment ? 'مبلغ نهایی (اقساطی)' : 'قابل پرداخت' }}</span>
+                        <b>{{ number_format($isInstallment ? $installmentPlan->total_payable : $grandPayable) }} <small>تومان</small></b>
+                    </div>
+                    @if($isInstallment)
+                        <div class="ov-progress">
+                            <div class="ov-progress__head">
+                                <span>پیشرفت طرح</span><span>{{ $installmentPlan->progressPercent() }}٪</span>
+                            </div>
+                            <div class="ov-progress__bar"><span style="width:{{ $installmentPlan->progressPercent() }}%"></span></div>
+                        </div>
+                    @endif
                 </section>
-                <!-- page users view end -->
 
+                {{-- خریدار --}}
+                <section class="ov-card">
+                    <h2 class="ov-card__title"><i class="feather icon-user"></i> خریدار</h2>
+                    <div class="ov-kv">
+                        <div class="ov-kv__row"><span>نام و نام خانوادگی</span><b>{{ $order->name ?? '—' }}</b></div>
+                        <div class="ov-kv__row"><span>نام کاربری</span><b>{{ $order->user?->username ?? '—' }}</b></div>
+                        <div class="ov-kv__row"><span>موبایل</span><b class="ov-ltr">{{ $order->mobile ?? '—' }}</b></div>
+                        <div class="ov-kv__row"><span>ایمیل</span><b class="ov-ltr">{{ $order->user?->email ?? '—' }}</b></div>
+                        <div class="ov-kv__row"><span>نحوه پرداخت</span>
+                            <b>{{ $isInstallment ? 'اقساطی' : ($order->status == 'paid' ? ($order->gateway == 'wallet' ? 'کیف پول' : $order->gateway) : '—') }}</b>
+                        </div>
+                    </div>
+                    @if($order->user)
+                        <a href="{{ route('admin.users.show', $order->user) }}" class="ov-btn ov-btn--ghost ov-btn--block">
+                            <i class="feather icon-external-link"></i> پروفایل کاربر
+                        </a>
+                    @endif
+                </section>
+
+                {{-- آدرس --}}
+                <section class="ov-card">
+                    <h2 class="ov-card__title"><i class="feather icon-map-pin"></i> آدرس ارسال</h2>
+                    @if($order->hasPhysicalProduct())
+                        <div class="ov-kv">
+                            <div class="ov-kv__row"><span>استان / شهر</span><b>{{ $order->province?->name }} — {{ $order->city?->name }}</b></div>
+                            <div class="ov-kv__row"><span>کد پستی</span><b class="ov-ltr">{{ $order->postal_code ?? '—' }}</b></div>
+                            <div class="ov-kv__row"><span>آدرس</span><b style="line-height:1.7">{{ $order->address ?? '—' }}</b></div>
+                            <div class="ov-kv__row"><span>شیوه تحویل</span><b>{{ $order->carrier?->title ?? 'پیک' }}</b></div>
+                            <div class="ov-kv__row"><span>تاریخ تحویل</span>
+                                <b>{{ $orderItems->first()?->delivery_date ? jdate($orderItems->first()->delivery_date)->format('Y/m/d') : '—' }}</b>
+                            </div>
+                        </div>
+                        @if($order->location)
+                            <button type="button" class="ov-btn ov-btn--ghost ov-btn--block show-location-btn"
+                                    data-toggle="modal" data-target="#locationMapModal">
+                                <i class="feather icon-map"></i> نمایش روی نقشه
+                            </button>
+                        @endif
+                    @else
+                        <p class="ov-muted">این سفارش محصول فیزیکی ندارد.</p>
+                    @endif
+                </section>
+            </aside>
+        </div>
+    </div>
             </div>
         </div>
     </div>
 
-    {{-- back money modal --}}
-    <div class="modal fade text-left" id="back-money-modal" tabindex="-1" role="dialog"  aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-sm" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title" id="myModalLabel19">پیغام</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">×</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    آیا مبلغ سفارش به کیف پول کاربر واریز شود؟
-                </div>
-                <div class="modal-footer">
-                    <form id="back-money-form">
-                        <button value='no' id='back-money-no' type="button" class="btn personal-success-btn waves-effect waves-light">خیر</button>
-                        <button value='yes' id='back-money-yes' type="button" class="btn personal-danger-btn waves-effect waves-light">بله واریز شود</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-    {{-- delete order modal --}}
-    <div class="modal fade text-left" id="delete-modal" tabindex="-1" role="dialog"  aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-sm" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title" id="myModalLabel19">آیا مطمئن هستید؟</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">×</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    با حذف سفارش دیگر قادر به بازیابی آن نخواهید بود
-                </div>
-                <div class="modal-footer">
-                    <form method="POST" action="{{ route('admin.orders.destroy', ['order' => $order]) }}" id="product-delete-form">
-                        @csrf
-                        @method('delete')
-                        <button type="button" class="btn personal-success-btn waves-effect waves-light" data-dismiss="modal">خیر</button>
-                        <button type="submit" class="btn personal-danger-btn waves-effect waves-light">بله حذف شود</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
+
 @endsection
-
-@push('scripts')
-    <script src="{{ asset('back/assets/js/pages/orders/show.js') }}"></script>
-@endpush

@@ -152,6 +152,7 @@
 
 
     <script src="{{ asset('back/assets/js/helpers.js') }}?v=8"></script>
+    <script src="{{ asset('back/assets/js/customToast.js') }}?v=8"></script>
     <script src="{{ asset('back/assets/js/scripts.js') }}?v=11"></script>
 
     <!-- END: Theme JS-->
@@ -174,25 +175,20 @@
 
     @if(session('toast-success'))
         <script>
-            toastr.success('{{session('toast-success')}}', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+            showCustomToast('{{session('toast-success')}}','success')
         </script>
     @endif
     @if(session('toast-error'))
         <script>
-            toastr.error('{{session('toast-error')}}', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+            showCustomToast('{{session('toast-error')}}','error')
         </script>
     @endif
     @if(session('toast-warning'))
         <script>
-            toastr.warning('{{session('toast-warning')}}', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+            showCustomToast('{{session('toast-warning')}}','warning')
         </script>
     @endif
 
-    {{-- Toast --}}
-    <div class="custom-toast" id="custom-toast">
-        <span id="custom-toast-icon">✅</span>
-        <span id="custom-toast-msg">ذخیره شد</span>
-    </div>
 </body>
 <!-- END: Body-->
 

@@ -173,6 +173,55 @@ var order_datatable = (function () {
                 </div>
             `;
                     }
+                    // ======== ۲. سفارش اعتباری ========
+                    if (row.is_credit) {
+                        var cashPaid = row.credit_cash_paid
+                            ? Number(row.credit_cash_paid).toLocaleString('fa-IR')
+                            : '۰';
+                        var progress = row.credit_progress || 0;
+                        var remaining = row.credit_remaining
+                            ? Number(row.credit_remaining).toLocaleString('fa-IR')
+                            : '۰';
+                        var firstPaid = row.credit_first_installment_paid;
+
+                        var statusBadge = '';
+                        if (row.credit_status === 'active') {
+                            statusBadge = '<span class="badge badge-primary" style="font-size:10px;">فعال</span>';
+                        } else if (row.credit_status === 'completed') {
+                            statusBadge = '<span class="badge badge-success" style="font-size:10px;">تکمیل</span>';
+                        } else if (row.credit_status === 'refunded') {
+                            statusBadge = '<span class="badge badge-warning" style="font-size:10px;">مرجوع</span>';
+                        } else if (row.credit_status === 'cancelled') {
+                            statusBadge = '<span class="badge badge-secondary" style="font-size:10px;">لغو</span>';
+                        } else {
+                            statusBadge = '<span class="badge badge-secondary" style="font-size:10px;">' + (row.credit_status || '—') + '</span>';
+                        }
+
+                        var firstInstallmentIcon = firstPaid
+                            ? '<i class="fas fa-check-circle text-success" style="font-size:10px;" title="قسط اول پرداخت شده"></i>'
+                            : '<i class="fas fa-clock text-warning" style="font-size:10px;" title="قسط اول پرداخت نشده"></i>';
+
+                        return `
+                <div class="d-flex flex-column align-items-center gap-1">
+                    <span class="fw-bold text-primary">${cashPaid} ت</span>
+                    <span class="badge badge-primary" style="font-size:10px;">
+                        💳 اعتباری
+                    </span>
+                    <small class="text-muted" style="font-size:10px;">
+                        نقدی + قسط اول
+                    </small>
+                    <div class="d-flex align-items-center gap-1" style="font-size:10px;">
+                        ${firstInstallmentIcon}
+                        <span class="text-muted">پیشرفت: ${progress}٪</span>
+                    </div>
+                    <div class="progress" style="width:60px;height:4px;">
+                        <div class="progress-bar bg-primary" style="width:${progress}%;"></div>
+                    </div>
+                    ${statusBadge}
+                </div>
+            `;
+                    }
+
                     return row.price;
                 }
             },
@@ -185,6 +234,10 @@ var order_datatable = (function () {
                 template: function (row) {
                     var status = {
                         canceled: {
+                            title: 'لغو شده',
+                            class: ' badge-danger'
+                        },
+                        cancelled: {
                             title: 'لغو شده',
                             class: ' badge-danger'
                         },
@@ -340,7 +393,7 @@ $('#order-multiple-delete-form').on('submit', function (e) {
         type: 'POST',
         data: formData,
         success: function (data) {
-            toastr.success('سفارشات انتخاب شده با موفقیت حذف شدند.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+            showCustomToast('سفارشات انتخاب شده با موفقیت حذف شدند','success');
             datatable.reload();
         },
         beforeSend: function (xhr) {
@@ -376,7 +429,7 @@ $('#multiple-shipping-status-change').on('submit', function (e) {
         type: 'POST',
         data: formData,
         success: function (data) {
-            toastr.success('سفارشات انتخاب شده با موفقیت تغیر وضعیت  شدند.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+            showCustomToast('سفارشات انتخاب شده با موفقیت تغیر وضعیت  شدند','success');
             datatable.reload();
         },
         beforeSend: function (xhr) {

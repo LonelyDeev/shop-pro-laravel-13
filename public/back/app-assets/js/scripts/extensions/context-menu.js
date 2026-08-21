@@ -12,7 +12,7 @@ $.contextMenu({
   selector: "#basic-context-menu",
   callback: function (key, options) {
     var r = "clicked " + key;
-    window.console && toastr.success(r);
+    window.console && showCustomToast(r,'success');
   },
   items: {
     "Option 1": { name: "Option 1" },
@@ -26,7 +26,7 @@ $.contextMenu({
   trigger: "left",
   callback: function (key, options) {
     var r = "clicked " + key
-    window.console && toastr.success(r);
+    window.console && showCustomToast(r,'success');
   },
   items: {
     "Option 1": { name: "Option 1" },
@@ -41,7 +41,7 @@ $.contextMenu({
   autoHide: true,
   callback: function (key, options) {
     var r = "clicked " + key
-    window.console && toastr.success(r);
+    window.console && showCustomToast(r,'success');
   },
   items: {
     "Option 1": { name: "Option 1" },
@@ -55,7 +55,7 @@ $.contextMenu({
   selector: '#submenu-context-menu',
   callback: function (key, options) {
     var r = "clicked " + key
-    window.console && toastr.success(r);
+    window.console && showCustomToast(r,'success');
   },
   items: {
     "Option 1": { name: "Option 1" },

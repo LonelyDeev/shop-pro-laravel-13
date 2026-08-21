@@ -9,12 +9,16 @@ use Illuminate\Support\Facades\DB;
 class NotificationManage extends Model
 {
     use HasFactory;
-
+    protected $guarded = ['id'];
     public function users()
     {
         return $this->belongsToMany(User::class,'notification_manage_users');
     }
 
+    public function admin()
+    {
+        return $this->belongsTo(Admin::class);
+    }
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -31,6 +35,12 @@ class NotificationManage extends Model
     {
         return $this->belongsTo(SellerInfo::class,'seller_id');
     }
+
+    public function recipients()
+    {
+        return $this->hasMany(NotificationManageUser::class, 'notification_manage_id');
+    }
+
     public function priorityText()
     {
         switch ($this->priority) {

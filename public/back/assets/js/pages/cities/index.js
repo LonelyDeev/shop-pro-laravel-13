@@ -179,7 +179,7 @@ $('#city-multiple-delete-form').on('submit', function (e) {
         data: formData,
         success: function (data) {
             if (data == 'success') {
-                toastr.success('شهر های انتخاب شده با موفقیت حذف شدند.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+                showCustomToast('شهر های انتخاب شده با موفقیت حذف شدند','success');
                 datatable.reload();
             }
         },

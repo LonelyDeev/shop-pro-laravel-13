@@ -17,8 +17,7 @@ $('#widget-delete-form').submit(function (e) {
             if (data == 'success') {
                 //get current url
                 var url = window.location.href;
-
-                toastr.success('ابزارک با موفقیت حذف شد.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+                showCustomToast('ابزارک با موفقیت حذف شد.','success');
 
                 //refresh widgets list
                 $(".app-content").load(url + " .app-content > *", sortable);

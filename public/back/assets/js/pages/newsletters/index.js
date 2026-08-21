@@ -54,10 +54,8 @@ $(document).ready(function() {
             data: formData,
             success: function(data) {
                 if (data == 'success') {
-                    toastr.success('اشتراک با موفقیت حذف شد.', null, {
-                        positionClass: 'toast-bottom-left',
-                        containerId: 'toast-bottom-left'
-                    });
+                    showCustomToast('اشتراک با موفقیت حذف شد','success');
+
 
                     $('#row-' + $(form).data('id')).remove();
                 }
@@ -94,10 +92,7 @@ $(document).ready(function() {
             data: {ids: ids},
             success: function(data) {
                 if (data == 'success') {
-                    toastr.success('استوری های انتخاب شده با موفقیت حذف شدند.', null, {
-                        positionClass: 'toast-bottom-left',
-                        containerId: 'toast-bottom-left'
-                    });
+                    showCustomToast('استوری های انتخاب شده با موفقیت حذف شدند','success');
                     const selector = ids.map(id => '#row-' + id).join(',');
                     $(selector).remove();
                 }

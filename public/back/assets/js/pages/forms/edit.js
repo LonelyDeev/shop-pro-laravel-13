@@ -24,10 +24,7 @@ $(document).ready(function() {
             data: formData,
             success: function(data) {
                 if (data == 'success') {
-                    toastr.success('فیلد با موفقیت حذف شد.', null, {
-                        positionClass: 'toast-bottom-left',
-                        containerId: 'toast-bottom-left'
-                    });
+                    showCustomToast('فیلد با موفقیت حذف شد.','success')
                     $('#preview-field-' + $(form).data('id')).remove();
                 }
             },
@@ -87,10 +84,7 @@ $(document).ready(function() {
             type: 'POST',
             data: {order: orderIds},
             success: function(data) {
-                toastr.success('ترتیب فیلد ها بروز شد', 'پیغام', {
-                    positionClass: 'toast-bottom-left',
-                    containerId: 'toast-bottom-left'
-                });
+                showCustomToast('ترتیب فیلد ها بروز شد','success');
             },
             beforeSend: function(xhr) {
                 block('.nestable');

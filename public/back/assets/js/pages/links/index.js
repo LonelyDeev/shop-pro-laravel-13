@@ -21,8 +21,7 @@ $('#link-delete-form').submit(function(e) {
             //remove link tr
             $('#link-' + $('#link-delete-form').data('id')).remove();
 
-            toastr.success('لینک با موفقیت حذف شد.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
-
+            showCustomToast('لینک با موفقیت حذف شد','success');
             //refresh links list
             $(".app-content").load(url + " .app-content > *");
 

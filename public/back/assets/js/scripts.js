@@ -109,7 +109,7 @@ $.ajaxSetup({
             }
             return;
         } else if (!data.responseJSON?.errors) {
-            toastr.error('خطایی رخ داده است', 'خطا',{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+            showCustomToast('خطایی رخ داده است','error')
 
             if ($('#main-errors-modal').length) {
                 if (data.responseJSON) {
@@ -145,8 +145,7 @@ $.ajaxSetup({
             for (var prop in obj) {
                 // skip loop if the property is from prototype
                 if (!obj.hasOwnProperty(prop)) continue;
-
-                toastr.error(obj[prop], 'خطا',{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+                showCustomToast(obj[prop],'warning')
             }
         }
     }
@@ -378,3 +377,4 @@ $(".btn-fullscreen").on("click", function(e) {
     var toggledPanel = $(this).parents(".box-fullScreen")[0];
     screenfull.toggle(toggledPanel);
 });
+

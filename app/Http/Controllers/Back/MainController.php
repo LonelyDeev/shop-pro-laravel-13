@@ -99,15 +99,47 @@ class MainController extends Controller
         return view('back.auth.login');
     }
 
-    public function notifications()
+    public function notifications(Request $request)
     {
-        $notifications = auth('adminPanel')->user()->notifications()->paginate(15);
+        $admin  = auth('adminPanel')->user();
+        $filter = in_array($request->query('filter'), ['all', 'unread', 'read'])
+            ? $request->query('filter') : 'all';
 
-        auth('adminPanel')->user()->unreadNotifications->markAsRead();
+        $query = $admin->notifications();
+        if ($filter === 'unread') $query->whereNull('read_at');
+        if ($filter === 'read')   $query->whereNotNull('read_at');
 
-        return view('back.notifications.panel', compact('notifications'));
+        $notifications = $query->latest()->paginate(15)->appends(['filter' => $filter]);
+
+        $stats = [
+            'total'  => $admin->notifications()->count(),
+            'unread' => $admin->unreadNotifications()->count(),
+            'today'  => $admin->notifications()->whereDate('created_at', today())->count(),
+        ];
+
+        return view('back.notifications.panel', compact('notifications', 'filter', 'stats'));
     }
 
+// ---------- خواندن تکی (AJAX) ----------
+    public function markRead(string $id)
+    {
+        $notification = auth('adminPanel')->user()->notifications()->findOrFail($id);
+        $notification->markAsRead();
+
+        return response()->json(['message' => 'اعلان خوانده‌شده علامت‌گذاری شد.']);
+    }
+
+// ---------- خواندن همه (AJAX) ----------
+    public function markAllRead()
+    {
+        $count = auth('adminPanel')->user()->unreadNotifications()->count();
+        auth('adminPanel')->user()->unreadNotifications->markAsRead();
+
+        return response()->json([
+            'message' => "همه اعلان‌ها ({$count} مورد) خوانده‌شده علامت‌گذاری شدند.",
+            'count'   => $count,
+        ]);
+    }
     public function fileManager()
     {
         $this->authorize('file-manager');

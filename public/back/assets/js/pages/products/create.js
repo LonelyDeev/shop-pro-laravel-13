@@ -272,11 +272,8 @@ $("#get-product-from-site").submit(function(e){
                 }
 
             }
+            showCustomToast('محصول دریافت شد','success');
 
-            toastr.success('محصول دریافت شد', 'پیغام', {
-                positionClass: 'toast-bottom-left',
-                containerId: 'toast-bottom-left'
-            });
             $("#get-product-from-site button").text('دریافت محصول');
             unblock('#get-product-from-site');
             unblock('#main-card');

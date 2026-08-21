@@ -20,8 +20,7 @@ $('#attributeGroup-delete-form').submit(function(e) {
 
             //remove attributeGroup tr
             $('#attributeGroup-' + $('#attributeGroup-delete-form').data('id')).remove();
-
-            toastr.success('گروه ویژگی با موفقیت حذف شد.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+            showCustomToast('گروه ویژگی با موفقیت حذف شد','success');
 
             //refresh attributeGroups list
             $(".app-content").load(url + " .app-content > *");

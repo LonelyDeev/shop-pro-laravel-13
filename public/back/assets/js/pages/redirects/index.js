@@ -23,8 +23,7 @@ $('#redirects-delete-form').submit(function(e) {
 
             //remove post tr
             $('#fild-' + $(form).data('id') + '-tr').remove();
-
-            toastr.success('رکورد با موفقیت حذف شد.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+            showCustomToast('رکورد با موفقیت حذف شد','success');
 
             //refresh posts list
             $(".app-content").load(url + " .app-content > *");
@@ -67,8 +66,7 @@ $('#redirects-multiple-delete-form').on('submit', function (e) {
             ids.forEach(function(id) {
                 $('#fild-' + id + '-tr').fadeOut(300, function() { $(this).remove(); });
             });
-
-            toastr.success('رکوردهای انتخاب شده با موفقیت حذف شدند.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+            showCustomToast('رکوردهای انتخاب شده با موفقیت حذف شدند','success');
         },
         beforeSend: function (xhr) {
             block('#main-card');

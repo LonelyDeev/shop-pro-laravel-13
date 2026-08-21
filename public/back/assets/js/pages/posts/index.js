@@ -22,8 +22,7 @@ $('#post-delete-form').submit(function(e) {
 
             //remove post tr
             $('#post-' + $(form).data('id') + '-tr').remove();
-
-            toastr.success('پست با موفقیت حذف شد.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+            showCustomToast('پست با موفقیت حذف شد.','success');
 
             //refresh posts list
             $(".app-content").load(url + " .app-content > *");

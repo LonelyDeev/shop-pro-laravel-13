@@ -14,7 +14,7 @@ $(document).on('click', '.unblock-btn', function() {
                 url: button.data('action'),
                 type: 'DELETE',
                 success: function(response) {
-                    toastr.success(response.message);
+                    showCustomToast(response.message,'success');
                     $('#row-'+id).remove()
                 },
                 beforeSend: function(xhr) {

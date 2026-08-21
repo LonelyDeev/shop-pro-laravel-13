@@ -22,8 +22,7 @@ $('#backup-delete-form').submit(function(e) {
 
             //remove backup tr
             $('#backup-' + $(form).data('id') + '-tr').remove();
-
-            toastr.success('بکاپ با موفقیت حذف شد.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+            showCustomToast('بکاپ با موفقیت حذف شد','success');
 
             //refresh backups list
             $(".app-content").load(url + " .app-content > *");

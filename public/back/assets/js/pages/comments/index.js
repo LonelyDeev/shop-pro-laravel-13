@@ -20,7 +20,7 @@ $(document).ready(function() {
             data: formData,
             success: function(data) {
                 $('#comment-' + $('#comment-delete-form').data('id') + '-tr').remove();
-                toastr.success('دیدگاه با موفقیت حذف شد.', null, { positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+                showCustomToast('دیدگاه با موفقیت حذف شد','success');
                 reloadDiv('.list-comments');
             },
             beforeSend: function(xhr) {
@@ -76,7 +76,7 @@ $(document).ready(function() {
             success: function(data) {
                 reloadDiv('.list-comments');
                 $('#show-modal').modal('hide');
-                toastr.success("تغییرات با موفقیت انجام شد");
+                showCustomToast('تغییرات با موفقیت انجام شد','success');
             },
             beforeSend: function(xhr) {
                 block('.comment-show-modal');
@@ -141,7 +141,7 @@ $(document).ready(function() {
                 },
                 success: function(response) {
                     if (response.success) {
-                        toastr.success('پاسخ با موفقیت ثبت شد');
+                        showCustomToast('پاسخ با موفقیت ثبت شد','success');
                         // پاک کردن textarea
                         $('#reply-textarea').val('');
                         // بستن مودال و ریلود لیست
@@ -212,7 +212,7 @@ $(document).ready(function() {
                 },
                 success: function(response) {
                     if (response.success) {
-                        toastr.success('پاسخ با موفقیت ویرایش شد');
+                        showCustomToast('پاسخ با موفقیت ویرایش شد','success');
                         setTimeout(function() {
                             $('#show-modal').modal('hide');
                             reloadDiv('.list-comments');
@@ -271,7 +271,7 @@ $(document).ready(function() {
                         type: 'DELETE',
                         success: function(response) {
                             if (response.success) {
-                                toastr.success('پاسخ با موفقیت حذف شد');
+                                showCustomToast('پاسخ با موفقیت حذف شد','success');
                                 setTimeout(function() {
                                    $('#reply-card-'+replyId).remove()
                                     reloadDiv('.list-comments');
@@ -316,8 +316,7 @@ $(document).ready(function() {
             },
             success: function(response) {
                 if (response.success) {
-                    toastr.success('وضعیت پاسخ با موفقیت تغییر کرد');
-
+                    showCustomToast('وضعیت پاسخ با موفقیت تغییر کرد','success');
                     // بروزرسانی Badge وضعیت
                     let statusBadge = $(`#reply-card-${replyId} .badge`);
                     if (newStatus === 'pending') {

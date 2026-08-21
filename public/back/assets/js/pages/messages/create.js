@@ -85,8 +85,7 @@ $('#messages-delete-form').submit(function (e) {
                 '#review-' + $('#messages-delete-form').data('id') + '-tr'
             ).remove();
 
-            toastr.success('پیام با موفقیت حذف شد.');
-
+            showCustomToast('پیام با موفقیت حذف شد.','success');
             reloadDiv('.list-reviews');
         },
         beforeSend: function (xhr) {

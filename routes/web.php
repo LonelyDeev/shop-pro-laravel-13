@@ -105,16 +105,19 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
     Route::get('get-labels', [MainController::class, 'getLabels'])->name('get-labels');
 
     Route::get('notifications/panel', [MainController::class, 'notifications'])->name('notifications');
-    //Route::resource('notifications', NotificationController::class);
+    Route::post('notifications/read-all', [MainController::class, 'markAllRead'])->name('notifications.readAll');
+    Route::post('notifications/{id}/read', [MainController::class, 'markRead'])->name('notifications.read');
 
+    Route::get('notifications/panel', [MainController::class, 'notifications'])->name('notifications');
+    //Route::resource('notifications', NotificationController::class);
     Route::prefix('notifications')->name('notifications.')->group(function () {
         Route::get('/', [NotificationController::class, 'index'])->name('index');
         Route::get('list', [NotificationController::class, 'list'])->name('list');
-        Route::get('create', [NotificationController::class, 'create'])->name('create');
-        Route::get('recipients', [NotificationController::class, 'searchRecipients'])->name('recipients'); // جستجوی گیرنده
+        Route::get('recipients', [NotificationController::class, 'searchRecipients'])->name('recipients');
         Route::post('/', [NotificationController::class, 'store'])->name('store');
-        Route::patch('{batchId}', [NotificationController::class, 'update'])->name('update');
-        Route::delete('{batchId}', [NotificationController::class, 'destroy'])->name('destroy');
+        Route::patch('{notificationManage}', [NotificationController::class, 'update'])->name('update');
+        Route::patch('{notificationManage}/toggle-popup', [NotificationController::class, 'togglePopup'])->name('togglePopup');
+        Route::delete('{notificationManage}', [NotificationController::class, 'destroy'])->name('destroy');
     });
     Route::get('file-manager', [MainController::class, 'fileManager'])->name('file-manager');
     Route::get('file-manager-iframe', [MainController::class, 'fileManagerIframe'])->name('file-manager-iframe');

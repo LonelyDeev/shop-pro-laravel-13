@@ -49,10 +49,8 @@ $(document).ready(function() {
                 order: order,
             },
             success: function(response) {
-                toastr.success('ترتیب فیلد ها بروز شد', 'پیغام', {
-                    positionClass: 'toast-bottom-left',
-                    containerId: 'toast-bottom-left'
-                });
+                showCustomToast('ترتیب فیلد ها بروز شد','success');
+
             },
             beforeSend: function(xhr) {
                 block('.nestable');
@@ -79,10 +77,7 @@ $(document).ready(function() {
                 ...settings,
             },
             success: function(response) {
-                toastr.success('تنظیمات فرم ذخیره شد', 'پیغام', {
-                    positionClass: 'toast-bottom-left',
-                    containerId: 'toast-bottom-left'
-                });
+                showCustomToast('تنظیمات فرم ذخیره شد','success');
                 // به روز رسانی ظاهر فرم
                 updateFormAppearance();
             },
@@ -183,10 +178,7 @@ $(document).ready(function() {
                 }],
             },
             success: function() {
-                toastr.success('تنظیمات فیلد ذخیره شد', 'پیغام', {
-                    positionClass: 'toast-bottom-left',
-                    containerId: 'toast-bottom-left'
-                });
+                showCustomToast('تنظیمات فیلد ذخیره شد','success');
                 $('#fieldSettingsModal').modal('hide');
             }, beforeSend: function(xhr) {
                 xhr.setRequestHeader("X-CSRF-TOKEN", $('meta[name="csrf-token"]').attr('content'));

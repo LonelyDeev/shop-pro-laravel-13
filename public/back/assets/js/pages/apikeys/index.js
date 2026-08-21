@@ -16,9 +16,7 @@ $('#apikey-delete-form').submit(function (e) {
         success: function (data) {
             //get current url
             var url = window.location.href;
-
-            toastr.success('کلید وب سرویس با موفقیت حذف شد.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
-
+            showCustomToast('کلید وب سرویس با موفقیت حذف شد.','success');
             //refresh apikeys list
             $('.app-content').load(url + ' .app-content > *');
         },
@@ -41,5 +39,5 @@ $('#apikey-delete-form').submit(function (e) {
 $('.copy_btn').on('click', function () {
     let text = $(this).closest('td').find('.apikey_key').val();
     copyToClipboard(text);
-    toastr.success('لینک با موفقیت کپی شد', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+    showCustomToast('لینک با موفقیت کپی شد','success');
 });

@@ -24,7 +24,7 @@ $(document).ready(function() {
                 shipping_status: newStatus,
             },
             success: function(response) {
-                toastr.success('وضعیت با موفقیت تغییر کرد');
+                showCustomToast('وضعیت با موفقیت تغییر کرد','success');
                 setTimeout(function() {
                     location.reload();
                 }, 1000);
@@ -56,7 +56,7 @@ $(document).ready(function() {
                 cancel_reason: cancelReason
             },
             success: function(response) {
-                toastr.success('سفارش با موفقیت لغو شد');
+                showCustomToast('سفارش با موفقیت لغو شد','success');
                 setTimeout(function() {
                     location.reload();
                 }, 1000);
@@ -93,7 +93,7 @@ $(document).ready(function() {
                 tracking_code: trackingCode
             },
             success: function(response) {
-                toastr.success('کد رهگیری با موفقیت ثبت شد');
+                showCustomToast('کد رهگیری با موفقیت ثبت شد','success');
                 $('#update-tracking').prop('disabled', false).html('<i class="feather icon-save"></i>')
             },
             beforeSend: function(xhr) {

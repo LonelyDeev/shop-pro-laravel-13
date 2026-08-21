@@ -20,8 +20,7 @@ $('#currency-delete-form').submit(function (e) {
                 //get current url
                 var url = window.location.href;
 
-                toastr.success('پیام با موفقیت حذف شد.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
-
+                showCustomToast('پیام با موفقیت حذف شد','success');
                 //refresh currencys list
                 $('.app-content').load(url + ' .app-content > *');
             }
