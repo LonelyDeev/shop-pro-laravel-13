@@ -11,6 +11,8 @@ use App\Rules\CheckeJdate;
 use App\Traits\OrderStatisticsTrait;
 use App\Traits\UserStatisticsTrait;
 use App\Traits\ViewStatisticsTrait;
+use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -68,29 +70,6 @@ class StatisticsController extends Controller
             ->log("مدیر {$adminName} صفحه آمار بازدیدها را مشاهده کرد");
 
         return view('back.statistics.views.index');
-    }
-
-    public function viewers()
-    {
-        $this->authorize('statistics.viewers');
-
-        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
-
-        $viewers = Viewer::latest()->whereDate('created_at', now())->get()->unique('user_id');
-        $viewersCount = $viewers->count();
-
-        activity()
-            ->causedBy(auth('adminPanel')->user())
-            ->event('view')
-            ->withProperties([
-                'action' => 'view_viewers_list',
-                'viewers_count' => $viewersCount,
-                'date' => now()->format('Y-m-d'),
-                'ip' => request()->ip()
-            ])
-            ->log("مدیر {$adminName} لیست بازدیدکنندگان امروز را مشاهده کرد ({$viewersCount} بازدیدکننده)");
-
-        return view('back.statistics.viewers.viewers', compact('viewers'));
     }
 
     public function orders()
@@ -294,6 +273,173 @@ class StatisticsController extends Controller
             ->log("مدیر {$adminName} لاگ ارسال پیامک‌ها را مشاهده کرد ({$sms->total()} پیامک)");
 
         return view('back.statistics.sms.sms-log', compact('sms', 'stats', 'filters'));
+    }
+
+    public function viewers(Request $request)
+    {
+        $this->authorize('statistics.viewers');
+
+        $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
+
+        // ---------- تعیین بازه ----------
+        $period = (string) $request->query('period', 'daily');
+        [$from, $to] = $this->resolveViewersPeriod($request, $period);
+
+        // ---------- داده‌ها ----------
+        $rows = Viewer::query()
+            ->whereBetween('created_at', [$from, $to])
+            ->latest()
+            ->get();
+
+        // یکتاسازی: هر کاربر یک‌بار، مهمان‌ها بر اساس IP
+        $visitors = $rows->unique(fn ($v) => $v->user_id ?: 'ip:' . $v->ip)->values();
+
+        // ---------- آمار ----------
+        $stats = [
+            'unique' => $visitors->count(),
+            'views'  => $rows->count(),
+            'users'  => $visitors->whereNotNull('user_id')->count(),
+            'guests' => $visitors->whereNull('user_id')->count(),
+        ];
+
+        // ---------- نمودار ----------
+        $chart = $this->buildViewersChart($rows, $from, $to);
+
+        // ---------- صفحه‌بندی دستی (چون unique روی کالکشن است) ----------
+        $perPage = 20;
+        $page    = max(1, (int) $request->query('page', 1));
+        $items   = $visitors->slice(($page - 1) * $perPage, $perPage)->values();
+
+        $viewers = new LengthAwarePaginator(
+            $items,
+            $visitors->count(),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+
+        activity()
+            ->causedBy(auth('adminPanel')->user())
+            ->event('view')
+            ->withProperties([
+                'action'  => 'view_viewers_list',
+                'period'  => $period,
+                'range'   => [$from->toDateTimeString(), $to->toDateTimeString()],
+                'viewers' => $stats['unique'],
+                'ip'      => request()->ip()
+            ])
+            ->log("مدیر {$adminName} لیست بازدیدکنندگان را مشاهده کرد (بازه: {$period} — {$stats['unique']} بازدیدکننده)");
+
+        return view('back.statistics.viewers.viewers', compact('viewers', 'stats', 'chart', 'period', 'from', 'to'));
+    }
+
+    /**
+     * تبدیل بازه‌های پریود + بازه دلخواه شمسی به بازه میلادی
+     */
+    private function resolveViewersPeriod(Request $request, string &$period): array
+    {
+        $period = in_array($period, ['daily', 'weekly', 'monthly', 'yearly', 'custom']) ? $period : 'daily';
+
+        $from = match ($period) {
+            'weekly'  => now()->subDays(6)->startOfDay(),
+            'monthly' => now()->subDays(29)->startOfDay(),
+            'yearly'  => now()->subDays(364)->startOfDay(),
+            default   => now()->startOfDay(),
+        };
+        $to = now();
+
+        if ($period === 'custom') {
+            $from = $this->parseJalaliDate($request->query('from_date'));
+            $to   = $this->parseJalaliDate($request->query('to_date'));
+
+            // بازه نامعتبر → برگرد به حالت روزانه
+            if (! $from || ! $to || $from->gt($to)) {
+                $period = 'daily';
+                [$from, $to] = [now()->startOfDay(), now()];
+            } else {
+                $from = $from->startOfDay();
+                $to   = $to->endOfDay();
+            }
+        }
+
+        return [$from, $to];
+    }
+
+    /**
+     * تبدیل تاریخ شمسی (خروجی persian_date_picker) به Carbon میلادی
+     * پشتیبانی از Verta و Morilog Jalali + ارقام فارسی/عربی
+     */
+    private function parseJalaliDate(?string $value): ?Carbon
+    {
+        if (! $value || ! trim($value)) {
+            return null;
+        }
+
+        // ارقام فارسی/عربی → انگلیسی + یکسان‌سازی جداکننده
+        $value = strtr(trim($value), [
+            '۰' => '0', '۱' => '1', '۲' => '2', '۳' => '3', '۴' => '4',
+            '۵' => '5', '۶' => '6', '۷' => '7', '۸' => '8', '۹' => '9',
+            '٠' => '0', '١' => '1', '٢' => '2', '٣' => '3', '٤' => '4',
+            '٥' => '5', '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9',
+            '-' => '/',
+        ]);
+
+        // Verta
+        if (class_exists(\Verta::class)) {
+            try {
+                if (method_exists(\Verta::class, 'parseJalali')) {
+                    return \Verta::parseJalali($value)->datetime();
+                }
+                [$y, $m, $d] = array_pad(preg_split('/[\/]/', $value), 3, 1);
+
+                return \Verta::createJalali((int) $y, (int) $m, (int) $d)->datetime();
+            } catch (\Throwable $e) {
+            }
+        }
+
+        // Morilog Jalali
+        if (class_exists(\Morilog\Jalali\Jalalian::class)) {
+            try {
+                return \Morilog\Jalali\Jalalian::fromFormat('Y/m/d', $value)->toCarbon();
+            } catch (\Throwable $e) {
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * داده‌ی نمودار: روزانه (بازه تا ۳۱ روز) یا ماهانه (بازه‌های بزرگ‌تر)
+     */
+    private function buildViewersChart($rows, Carbon $from, Carbon $to): array
+    {
+        $months = [1 => 'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',
+            'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'];
+        $chart  = [];
+
+        if ($from->diffInDays($to) <= 31) {
+            $grouped = $rows->groupBy(fn ($v) => $v->created_at->format('Y-m-d'));
+
+            foreach (CarbonPeriod::create($from->copy()->startOfDay(), '1 day', $to->copy()->startOfDay()) as $day) {
+                $chart[] = [
+                    'label' => (string) jdate($day)->day,
+                    'title' => substr((string) jdate($day), 0, 10),
+                    'total' => $grouped->get($day->format('Y-m-d'))?->count() ?? 0,
+                ];
+            }
+        } else {
+            $grouped = $rows->groupBy(fn ($v) => $v->created_at->format('Y-m'));
+
+            foreach (CarbonPeriod::create($from->copy()->startOfMonth(), '1 month', $to->copy()->startOfMonth()) as $month) {
+                $chart[] = [
+                    'label' => $months[(int) jdate($month)->month] ?? '',
+                    'title' => $months[(int) jdate($month)->month] . ' ' . jdate($month)->year,
+                    'total' => $grouped->get($month->format('Y-m'))?->count() ?? 0,
+                ];
+            }
+        }
+
+        return $chart;
     }
 
 }
