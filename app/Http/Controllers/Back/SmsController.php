@@ -12,6 +12,8 @@ class SmsController extends Controller
     {
         $this->authorize('statistics.sms');
 
+        $sms->load('user');
+
         return view('back.statistics.sms.sms-show', compact('sms'));
     }
 }

@@ -243,25 +243,57 @@ class StatisticsController extends Controller
         return view('back.statistics.users.index');
     }
 
-    public function smsLog()
+    public function smsLog(Request $request)
     {
         $this->authorize('statistics.sms');
 
         $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
 
-        $sms = Sms::latest()->paginate(20);
-        $smsCount = $sms->total();
+        // ---------- فیلترها ----------
+        $filters = [
+            'mobile' => trim((string) $request->query('mobile')),
+            'period' => (string) $request->query('period', ''),
+        ];
+
+        $query = Sms::query();
+
+        if ($filters['mobile'] !== '') {
+            $query->where('mobile', 'like', '%' . $filters['mobile'] . '%');
+        }
+
+        // اگر ستون نوع دارید، این را هم اضافه کنید:
+        // if ($request->filled('type')) $query->where('type', $request->type);
+
+        switch ($filters['period']) {
+            case 'today': $query->whereDate('created_at', today()); break;
+            case 'week':  $query->where('created_at', '>=', now()->subDays(7)); break;
+            case 'month': $query->where('created_at', '>=', now()->subDays(30)); break;
+        }
+
+        $sms = $query->latest()
+            ->paginate(20)
+            ->appends(request()->except('page'));
+
+        // ---------- آمار (مستقل از فیلتر) ----------
+        $stats = [
+            'total' => Sms::count(),
+            'today' => Sms::whereDate('created_at', today())->count(),
+            'week'  => Sms::where('created_at', '>=', now()->subDays(7))->count(),
+            'month' => Sms::where('created_at', '>=', now()->subDays(30))->count(),
+        ];
 
         activity()
             ->causedBy(auth('adminPanel')->user())
             ->event('view')
             ->withProperties([
-                'action' => 'view_sms_log',
-                'sms_count' => $smsCount,
-                'ip' => request()->ip()
+                'action'    => 'view_sms_log',
+                'sms_count' => $sms->total(),
+                'filters'   => array_filter($filters),
+                'ip'        => request()->ip()
             ])
-            ->log("مدیر {$adminName} لاگ ارسال پیامک‌ها را مشاهده کرد ({$smsCount} پیامک)");
+            ->log("مدیر {$adminName} لاگ ارسال پیامک‌ها را مشاهده کرد ({$sms->total()} پیامک)");
 
-        return view('back.statistics.sms.sms-log', compact('sms'));
+        return view('back.statistics.sms.sms-log', compact('sms', 'stats', 'filters'));
     }
+
 }
