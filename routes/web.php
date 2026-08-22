@@ -687,6 +687,9 @@ Route::get('refresh-csrf', function () {
     return csrf_token();
 })->name('csrf');
 
+Route::get('/captcha/image', [CaptchaController::class, 'image'])
+    ->name('captcha.image')
+    ->middleware('throttle:120,1'); // ضد درخواست‌های انبوه
 
 /*Route::post('/bale/webhook', [BaleWebhookController::class, 'handle'])
     ->name('bale.webhook');*/

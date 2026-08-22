@@ -69,6 +69,12 @@ class AppServiceProvider extends ServiceProvider
             }
         }
 
+        Validator::extend(
+            'captcha',
+            fn ($attribute, $value) => app(\App\Services\CaptchaService::class)->verify($value),
+            'کد امنیتی وارد شده صحیح نیست یا منقضی شده است.'
+        );
+
 
         $this->observers();
 

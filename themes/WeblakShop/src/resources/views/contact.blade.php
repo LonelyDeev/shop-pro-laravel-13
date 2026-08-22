@@ -61,16 +61,7 @@
                                                               class="ui-textarea-field form-control"></textarea>
                                                 </div>
 
-                                                <div class="form-row mt-4 ">
-                                                    <div class="col-md-4">
-                                                        <div class="form-group">
-                                                            <input type="text" class="input-ui pl-2 captcha ui-input-field form-control" autocomplete="off" name="captcha" placeholder="کد امنیتی" required>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3 col-6">
-                                                        <img class="captcha" src="{{ captcha_src('flat') }}" alt="captcha">
-                                                    </div>
-                                                </div>
+                                                <x-captcha />
 
 
                                                 <div class="upload-drag-uploaded-and-submit">
