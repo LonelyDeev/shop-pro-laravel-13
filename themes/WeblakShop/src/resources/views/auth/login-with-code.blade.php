@@ -15,16 +15,7 @@
                         <label for="mobile">شماره موبایل خود را وارد کنید</label>
                         <input type="text" name="mobile" id="mobile" class="input-email-account" placeholder="">
                     </div>
-                    <div class="form-row mt-4 mt-2">
-                        <div class="col-md-8 col-6  ">
-                            <div class="form-group">
-                                <input type="text" class="input-ui pl-2 captcha" autocomplete="off" name="captcha" placeholder="کد امنیتی" required="">
-                            </div>
-                        </div>
-                        <div class="col-md-4 col-6 mt-2">
-                            <img class="captcha w-100" src="{{ captcha_src('flat') }}" alt="captcha">
-                        </div>
-                    </div>
+                    <x-captcha />
 
                     <div class="parent-btn">
                         <button class="dk-btn dk-btn-info">
