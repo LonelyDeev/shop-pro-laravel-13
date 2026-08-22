@@ -50,16 +50,7 @@
                                 <input type="password" name="password_confirmation" class="input-ui pr-2" placeholder="تکرار رمز عبور خود را وارد نمایید">
                             </div>
 
-                            <div class="form-row mt-4">
-                                <div class="col-md-8 col-6">
-                                    <div class="form-group">
-                                        <input type="text" class="input-ui pl-2 captcha" autocomplete="off" name="captcha" placeholder="کد امنیتی" required>
-                                    </div>
-                                </div>
-                                <div class="col-md-4 col-6">
-                                    <img class="captcha w-100" src="{{ captcha_src('flat') }}" alt="captcha">
-                                </div>
-                            </div>
+                            <x-captcha />
 
                             <div class="form-row mt-3">
                                 <button class="btn-primary-cm btn-with-icon mx-auto w-100">
