@@ -368,7 +368,7 @@ function copyText(element) {
         navigator.clipboard.writeText(textToCopy)
             .then(() => {
                 // نمایش پیام موفقیت (اختیاری)
-                toastr.success('متن کپی شد', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+                showCustomToast('متن کپی شد','success')
             })
             .catch(err => {
                 console.error('خطا در کپی:', err);

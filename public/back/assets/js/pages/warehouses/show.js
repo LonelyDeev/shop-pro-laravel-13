@@ -424,11 +424,11 @@ $(function() {
         }
 
         if (!targets.length) {
-            toastr.warning('حداقل یک تنوع را انتخاب کنید');
+            showCustomToast('حداقل یک تنوع را انتخاب کنید','warning');
             return;
         }
         if (isNaN(bulkValue) && operationType !== 'set') {
-            toastr.warning('لطفاً مقدار را وارد کنید');
+            showCustomToast('لطفاً مقدار را وارد کنید','warning');
             return;
         }
 
@@ -462,13 +462,13 @@ $(function() {
             if (newStock !== sys) bsmChanges[pid] = {priceId: pid, currentStock: sys, newStock};
             else delete bsmChanges[pid];
         });
-        toastr.success('تغییرات اعمال شد');
+        showCustomToast('تغییرات اعمال شد','success');
     }
 
     function bsmSubmit() {
         bsmSaveCurrentPage();
         if (!Object.keys(bsmChanges).length) {
-            toastr.warning('هیچ تغییری ایجاد نشده است');
+            showCustomToast('هیچ تغییری ایجاد نشده است','warning');
             return;
         }
         const btn = el('submit-bulk-update');
@@ -487,17 +487,17 @@ $(function() {
             .then(r => r.json())
             .then(res => {
                 if (res.success) {
-                    toastr.success(res.message);
+                    showCustomToast(res.message,'success');
                     $('#bulkStockModal').modal('hide');
                     setTimeout(() => location.reload(), 1500);
                 } else {
-                    toastr.error(res.message || 'خطا در بروزرسانی');
+                    showCustomToast(res.message || 'خطا در بروزرسانی','error');
                     btn.disabled = false;
                     btn.innerHTML = '<i class="feather icon-save" style="font-size:.8rem;"></i> ذخیره تغییرات';
                 }
             })
             .catch(() => {
-                toastr.error('خطا در ارتباط با سرور');
+                showCustomToast('خطا در ارتباط با سرور','error');
                 btn.disabled = false;
                 btn.innerHTML = '<i class="feather icon-save" style="font-size:.8rem;"></i> ذخیره تغییرات';
             });
@@ -981,17 +981,17 @@ $(function() {
             .then(r => r.json())
             .then(res => {
                 if (res.success) {
-                    toastr.success(res.message);
+                    showCustomToast(res.message,'success');
                     $('#stockTakeModal').modal('hide');
                     setTimeout(() => location.reload(), 1500);
                 } else {
-                    toastr.error(res.message || 'خطا در ثبت');
+                    showCustomToast(res.message || 'خطا در ثبت','error');
                     btn.disabled = false;
                     btn.innerHTML = '<i class="feather icon-clipboard" style="font-size:.8rem;"></i> ثبت سرشماری';
                 }
             })
             .catch(() => {
-                toastr.error('خطا در ارتباط با سرور');
+                showCustomToast('خطا در ارتباط با سرور','error');
                 btn.disabled = false;
                 btn.innerHTML = '<i class="feather icon-clipboard" style="font-size:.8rem;"></i> ثبت سرشماری';
             });

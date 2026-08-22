@@ -17,8 +17,7 @@ $('#theme-delete-form').submit(function(e) {
             //get current url
             var url = window.location.href;
 
-            toastr.success('قالب با موفقیت حذف شد.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
-
+            showCustomToast('قالب با موفقیت حذف شد','success')
             //refresh themes list
             $(".app-content").load(url + " .app-content > *");
         },
@@ -47,8 +46,7 @@ $(document).on('click', '.set-as-theme', function(e) {
             //get current url
             var url = window.location.href;
 
-            toastr.success('قالب با موفقیت انتخاب شد.');
-
+            showCustomToast('قالب با موفقیت انتخاب شد','success')
             //refresh themes list
             $(".app-content").load(url + " .app-content > *");
         },

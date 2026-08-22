@@ -89,18 +89,12 @@ $(document).ready(function() {
                 success: function(response) {
                     $form.data('disabled', true);
                     if (response.success) {
-                        toastr.success(response.message, 'انبار با موفقیت ویرایش شد', {
-                            positionClass: 'toast-bottom-left',
-                            containerId: 'toast-bottom-left'
-                        });
+                        showCustomToast(response.message+' انبار با موفقیت ویرایش شد ','success')
                         setTimeout(function() {
                             window.location.href = redirectUrl;
                         }, 1000);
                     } else {
-                        toastr.error(response.message, 'خطا', {
-                            positionClass: 'toast-bottom-left',
-                            containerId: 'toast-bottom-left'
-                        });
+                        showCustomToast(response.message,'error');
                         $form.data('disabled', false);
                     }
                 },
@@ -108,16 +102,10 @@ $(document).ready(function() {
                     var errors = xhr.responseJSON?.errors;
                     if (errors) {
                         $.each(errors, function(key, value) {
-                            toastr.error(value[0], 'خطای اعتبارسنجی', {
-                                positionClass: 'toast-bottom-left',
-                                containerId: 'toast-bottom-left'
-                            });
+                            showCustomToast(value[0]+ ' خطای اعتبارسنجی','error');
                         });
                     } else {
-                        toastr.error('خطا در ویرایش انبار', 'خطا', {
-                            positionClass: 'toast-bottom-left',
-                            containerId: 'toast-bottom-left'
-                        });
+                        showCustomToast('خطا در ویرایش انبار','error');
                     }
                     $form.data('disabled', false);
                 },
@@ -147,18 +135,12 @@ $(document).ready(function() {
             data: formData,
             success: function(response) {
                 if (response.success) {
-                    toastr.success(response.message, 'انبار حذف شد', {
-                        positionClass: 'toast-bottom-left',
-                        containerId: 'toast-bottom-left'
-                    });
+                    showCustomToast('انبار حذف شد','success')
                     setTimeout(function() {
                         window.location.href = form.data('redirect');
                     }, 1000);
                 } else {
-                    toastr.error(response.message, 'خطا', {
-                        positionClass: 'toast-bottom-left',
-                        containerId: 'toast-bottom-left'
-                    });
+                    showCustomToast(response.message,'error');
                     unblock(form)
                     unblock('.content-body');
                 }
@@ -166,10 +148,7 @@ $(document).ready(function() {
             },
             error: function(xhr) {
                 var errorMsg = xhr.responseJSON?.message || 'خطا در حذف انبار';
-                toastr.error(errorMsg, 'خطا', {
-                    positionClass: 'toast-bottom-left',
-                    containerId: 'toast-bottom-left'
-                });
+                showCustomToast(errorMsg,'error');
                 unblock(form)
                 unblock('.content-body');
                 $('#deleteModal').modal('hide');

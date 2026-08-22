@@ -188,7 +188,7 @@ $('#seller-register-business-details').submit(function (e) {
                 if (data.status=="success"){
                     window.location.href = data.redirect;
                 }else{
-                    toastr.error(data.message, 'خطا');
+                    showCustomToast(data.message,'error');
                     setTimeout(function () {
                         window.location.href = data.redirect;
                     },1000)

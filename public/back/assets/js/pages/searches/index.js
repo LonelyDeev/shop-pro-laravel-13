@@ -101,11 +101,7 @@ $(document).ready(function() {
             data: formData,
             success: function(data) {
                 if (data == 'success') {
-                    toastr.success('استوری با موفقیت حذف شد.', null, {
-                        positionClass: 'toast-bottom-left',
-                        containerId: 'toast-bottom-left'
-                    });
-
+                    showCustomToast('استوری با موفقیت حذف شد','success')
                     $('#post-' + $(form).data('id') + '-tr').remove();
                 }
             },
@@ -140,10 +136,7 @@ $(document).ready(function() {
             data: {ids: ids},
             success: function(data) {
                 if (data == 'success') {
-                    toastr.success('موردهای انتخاب شده با موفقیت حذف شدند', null, {
-                        positionClass: 'toast-bottom-left',
-                        containerId: 'toast-bottom-left'
-                    });
+                    showCustomToast('موردهای انتخاب شده با موفقیت حذف شدند','success')
                     const selector = ids.map(id => '#row-' + id).join(',');
                     console.log(selector)
                     $(selector).remove();

@@ -23,8 +23,7 @@ $('#role-delete-form').submit(function(e) {
             //remove role tr
             $('#role-' + $(form).data('id') + '-tr').remove();
 
-            toastr.success('مقام با موفقیت حذف شد.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
-
+            showCustomToast('مقام با موفقیت حذف شد','success')
             //refresh roles list
             $(".app-content").load(url + " .app-content > *");
         },

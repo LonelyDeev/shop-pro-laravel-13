@@ -56,10 +56,7 @@ $('#product-create-form').submit(function (e) {
 
     if ($(this).valid() && !$(this).data('disabled')) {
         if (physicalDropzone.getUploadingFiles().length) {
-            toastr.error('لطفا تا اتمام آپلود تصاویر منتظر بمانید', 'خطا', {
-                positionClass: 'toast-bottom-left',
-                containerId: 'toast-bottom-left'
-            });
+            showCustomToast('لطفا تا اتمام آپلود تصاویر منتظر بمانید','error');
             return;
         }
 
@@ -194,10 +191,7 @@ $("#get-product-from-site").submit(function(e){
             if(typeG == "digikala"){
 
                 if (data.error){
-                    toastr.error(data.error, 'خطا', {
-                        positionClass: 'toast-bottom-left',
-                        containerId: 'toast-bottom-left'
-                    });
+                    showCustomToast(data.error,'error');
                     unblock('#get-product-from-site');
                     unblock('#main-card');
                     return
@@ -284,10 +278,7 @@ $("#get-product-from-site").submit(function(e){
                 $('meta[name="csrf-token"]').attr('content')
             );
         }, error: function (xhr) {
-            toastr.error('محصول یافت نشد', 'خطا', {
-                positionClass: 'toast-bottom-left',
-                containerId: 'toast-bottom-left'
-            });
+            showCustomToast('محصول یافت نشد','error');
             $("#get-product-from-site button").text('دریافت محصول');
             unblock('#get-product-from-site');
             unblock('#main-card');

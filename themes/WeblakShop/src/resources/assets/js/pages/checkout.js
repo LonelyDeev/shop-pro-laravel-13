@@ -283,10 +283,7 @@ jQuery('#checkout-form').validate({
 
             if (!$checkedRadio.length) {
                 allGroupsHaveCarrier = false;
-                toastr.error('', 'لطفاً روش ارسال را برای همه مرسوله‌ها انتخاب کنید!', {
-                    positionClass: 'toast-bottom-left',
-                    containerId: 'toast-bottom-left'
-                });
+                showCustomToast('لطفاً روش ارسال را برای همه مرسوله‌ها انتخاب کنید!','error');
                 return false;
             }
         });
@@ -309,10 +306,7 @@ jQuery('#checkout-form').on('submit', function(e) {
 
     var city_id = $('#address-section .user-address-item.active-address').data('city');
     if (!city_id) {
-        toastr.error('', 'آدرس خود را وارد کنید!', {
-            positionClass: 'toast-bottom-left',
-            containerId: 'toast-bottom-left'
-        });
+        showCustomToast('آدرس خود را وارد کنید!','error');
         e.preventDefault();
         return false;
     }
@@ -340,10 +334,7 @@ $('#discount-create-form').submit(function (e) {
             type: 'POST',
             data: formData,
             success: function (data) {
-                toastr.success('', 'کد تخفیف با موفقیت ثبت شد', {
-                    positionClass: 'toast-bottom-left',
-                    containerId: 'toast-bottom-left'
-                });
+                showCustomToast('کد تخفیف با موفقیت ثبت شد','success')
                 setTimeout(function () {
                     location.reload();
                 }, 1000);

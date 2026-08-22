@@ -114,7 +114,7 @@ $('#ticket-update-form').submit(function(e) {
     if ($(this).valid() && !$(this).data('disabled')) {
 
         if (filesDropzone.getUploadingFiles().length) {
-            toastr.error('لطفا تا اتمام آپلود تصاویر منتظر بمانید', 'خطا', { positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+            showCustomToast('لطفا تا اتمام آپلود تصاویر منتظر بمانید','error');
             return;
         }
 
@@ -168,7 +168,7 @@ $("#tickets-type").on("change", function(xhr) {
         type: 'post',
         data: { status: value },
         success: function () {
-            toastr.success('با موفقیت انجام شد!', 'پیغام', { positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+            showCustomToast('با موفقیت انجام شد!','success')
         },
         beforeSend: function (xhr) {
             xhr.setRequestHeader("X-CSRF-TOKEN", $('meta[name="csrf-token"]').attr('content'));

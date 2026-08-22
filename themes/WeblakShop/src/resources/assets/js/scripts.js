@@ -37,38 +37,19 @@ $.ajaxSetup({
         reloadCaptcha();
 
         if (data.status == 403) {
-            toastr.error('اجازه ی دسترسی ندارید', 'خطا', {
-                positionClass: 'toast-bottom-left',
-                containerId: 'toast-bottom-left'
-            });
+            showCustomToast('اجازه ی دسترسی ندارید','error');
             return;
         } else if (data.status == 429) {
-            toastr.error(
-                'تعداد درخواست ها بیش از حد مجاز است لطفا پس از دقایقی مجدد تلاش کنید',
-                'خطا',
-                {
-                    positionClass: 'toast-bottom-left',
-                    containerId: 'toast-bottom-left'
-                }
-            );
+            showCustomToast('تعداد درخواست ها بیش از حد مجاز است لطفا پس از دقایقی مجدد تلاش کنید','error');
             return;
         } else if (data.status == 401) {
-            toastr.error('لطفا وارد حساب کاربری خود شوید', {
-                positionClass: 'toast-bottom-left',
-                containerId: 'toast-bottom-left'
-            });
+            showCustomToast('لطفا وارد حساب کاربری خود شوید','error');
             return;
         } else if (data.status == 500) {
-            toastr.error('خطایی در سرور رخ داده است', 'خطا', {
-                positionClass: 'toast-bottom-left',
-                containerId: 'toast-bottom-left'
-            });
+            showCustomToast('خطایی در سرور رخ داده است','error');
             return;
         } else if (!data.responseJSON.errors) {
-            toastr.error('خطایی رخ داده است', 'خطا', {
-                positionClass: 'toast-bottom-left',
-                containerId: 'toast-bottom-left'
-            });
+            showCustomToast('خطایی رخ داده است','error');
             return;
         }
 

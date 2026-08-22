@@ -21,8 +21,7 @@ $('#stock_notify-delete-form').submit(function(e) {
             //remove stock_notify tr
             $('#stock_notify-' + $('#stock_notify-delete-form').data('id') + '-tr').remove();
 
-            toastr.success('با موفقیت حذف شد.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
-
+            showCustomToast('با موفقیت حذف شد.','success')
             //refresh stocknotifies list
             $(".app-content").load(url + " .app-content > *");
         },

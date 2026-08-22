@@ -244,7 +244,7 @@ $('#product-delete-form').on('submit', function (e) {
         type: 'POST',
         data: formData,
         success: function (data) {
-            toastr.success('محصول با موفقیت حذف شد.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+            showCustomToast('محصول با موفقیت حذف شد.','success')
             datatable.reload();
         },
         beforeSend: function (xhr) {
@@ -280,7 +280,7 @@ $('#product-multiple-delete-form').on('submit', function (e) {
         type: 'POST',
         data: formData,
         success: function (data) {
-            toastr.success('محصولات انتخاب شده با موفقیت حذف شدند.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+            showCustomToast('محصولات انتخاب شده با موفقیت حذف شدند.','success')
             datatable.reload();
         },
         beforeSend: function (xhr) {

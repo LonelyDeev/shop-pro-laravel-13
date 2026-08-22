@@ -91,18 +91,12 @@ $(document).ready(function() {
                 success: function(response) {
                     $form.data('disabled', true);
                     if (response.success) {
-                        toastr.success(response.message, 'انبار با موفقیت ایجاد شد', {
-                            positionClass: 'toast-bottom-left',
-                            containerId: 'toast-bottom-left'
-                        });
+                        showCustomToast(response.message ?? 'انبار با موفقیت ایجاد شد','success')
                         setTimeout(function() {
                             window.location.href = redirectUrl;
                         }, 1000);
                     } else {
-                        toastr.error(response.message, 'خطا', {
-                            positionClass: 'toast-bottom-left',
-                            containerId: 'toast-bottom-left'
-                        });
+                        showCustomToast(response.message,'error');
                         $form.data('disabled', false);
                     }
                 },
@@ -110,16 +104,10 @@ $(document).ready(function() {
                     var errors = xhr.responseJSON?.errors;
                     if (errors) {
                         $.each(errors, function(key, value) {
-                            toastr.error(value[0], 'خطای اعتبارسنجی', {
-                                positionClass: 'toast-bottom-left',
-                                containerId: 'toast-bottom-left'
-                            });
+                            showCustomToast(value[0]+ ' خطای اعتبارسنجی','error');
                         });
                     } else {
-                        toastr.error('خطا در ایجاد انبار', 'خطا', {
-                            positionClass: 'toast-bottom-left',
-                            containerId: 'toast-bottom-left'
-                        });
+                        showCustomToast('خطا در ایجاد انبار','error');
                     }
                     $form.data('disabled', false);
                 },

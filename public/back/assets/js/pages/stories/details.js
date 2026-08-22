@@ -52,11 +52,7 @@ $(document).ready(function() {
             data: formData,
             success: function(data) {
                 if (data.success) {
-                    toastr.success('دیدگاه با موفقیت حذف شد.', null, {
-                        positionClass: 'toast-bottom-left',
-                        containerId: 'toast-bottom-left'
-                    });
-
+                    showCustomToast('دیدگاه با موفقیت حذف شد.','success')
                     $('#comment-' + $(form).data('id')).remove();
                 }
             },
@@ -93,11 +89,7 @@ $(document).ready(function() {
             data: {ids: ids,comment_status:comment_status},
             success: function(response) {
                 if (response.success) {
-                    toastr.success(response.message, null, {
-                        positionClass: 'toast-bottom-left',
-                        containerId: 'toast-bottom-left'
-                    });
-
+                    showCustomToast(response.message,'success')
                     const selector = ids.map(id => '#comment-' + id).join(',');
 
                     if (response.status === "deleted") {
@@ -166,11 +158,7 @@ $(document).ready(function() {
             data: {status:status},
             success: function(response) {
                 if (response.success) {
-                    toastr.success(response.message, null, {
-                        positionClass: 'toast-bottom-left',
-                        containerId: 'toast-bottom-left'
-                    });
-
+                    showCustomToast(response.message,'success')
                     const rowId = btn.data('id');
                     const $row = $('#comment-' + rowId);
 

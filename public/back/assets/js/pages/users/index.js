@@ -145,7 +145,7 @@ var user_datatable = (function () {
             type: 'POST',
             data: formData,
             success: function (data) {
-                toastr.success('کاربر با موفقیت حذف شد.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+                showCustomToast('کاربر با موفقیت حذف شد','success')
                 datatable.reload();
             },
             beforeSend: function (xhr) {
@@ -228,7 +228,7 @@ $('#user-multiple-delete-form').on('submit', function (e) {
         type: 'POST',
         data: formData,
         success: function (data) {
-            toastr.success('کاربران انتخاب شده با موفقیت حذف شدند.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+            showCustomToast('کاربران انتخاب شده با موفقیت حذف شدند','success')
             datatable.reload();
         },
         beforeSend: function (xhr) {

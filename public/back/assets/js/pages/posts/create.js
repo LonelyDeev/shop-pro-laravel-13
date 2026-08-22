@@ -41,23 +41,23 @@ $('#post-create-form').submit(function (e) {
                     window.location.href = form.data('redirect');
                 }
                 if (data[0]=='Repetition-slug'){
-                    toastr.error('url از قبل وجود دارد.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+                    showCustomToast('url از قبل وجود دارد.','error');
                     $('input[name=slug]').val(data[1]);
                 }
                 if (data=='enterAiToken'){
-                    toastr.warning('توکن را وارد کنید', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+                    showCustomToast('توکن را وارد کنید','error');
                 }
                 if (data=='expiredplan'){
-                    toastr.error('پلن شما منقضی شده است.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+                    showCustomToast('پلن شما منقضی شده است.','error');
                 }
                 if (data=='uniqueSlug'){
-                    toastr.error('توشته ای با این url قبلا ثبت شده است.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+                    showCustomToast('توشته ای با این url قبلا ثبت شده است.','error');
                 }
                 if (data=='InactiveTools'){
-                    toastr.error('این ابزار غیرفعال می باشد.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+                    showCustomToast('این ابزار غیرفعال می باشد.','error');
                 }
                 if (data=='error'){
-                    toastr.error('مشکلی پیش آمده است.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+                    showCustomToast('مشکلی پیش آمده است.','error');
                 }
             },
             beforeSend: function (xhr) {

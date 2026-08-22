@@ -69,7 +69,7 @@ $.ajaxSetup({
     retryLimit: 3,
     error: async function (data, textStatus, errorThrown) {
         if (data.status == 403) {
-            toastr.error('اجازه ی دسترسی ندارید', 'خطا');
+            showCustomToast('اجازه ی دسترسی ندارید','error');
             return;
         } else if (data.status == 419) {
             this.tryCount++;
@@ -96,16 +96,13 @@ $.ajaxSetup({
             }
             return;
         } else if (data.status == 429) {
-            toastr.error(
-                'تعداد درخواست ها بیش از حد مجاز است لطفا پس از دقایقی مجدد تلاش کنید',
-                'خطا'
-            );
+            showCustomToast('تعداد درخواست ها بیش از حد مجاز است لطفا پس از دقایقی مجدد تلاش کنید','error');
         } else if (data.status == 423) {
             if ($('#password-confirm-modal').length) {
                 $('#password-confirm-modal').modal('show');
                 $('#password-confirm-modal').data('ajax', this);
             } else {
-                toastr.error('لطفا رمز عبور خود را وارد کنید');
+                showCustomToast('لطفا رمز عبور خود را وارد کنید','error');
             }
             return;
         } else if (!data.responseJSON?.errors) {

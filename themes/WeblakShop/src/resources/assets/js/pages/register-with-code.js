@@ -34,10 +34,7 @@ $(document).ready(function () {
                 type: 'POST',
                 data: formData,
                 success: function (data) {
-                    toastr.error(data.message, 'خطا', {
-                        positionClass: 'toast-bottom-left',
-                        containerId: 'toast-bottom-left'
-                    });
+                    showCustomToast(data.message,'error');
                 },
 
                 beforeSend: function (xhr) {

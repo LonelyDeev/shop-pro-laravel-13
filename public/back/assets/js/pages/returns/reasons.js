@@ -35,7 +35,7 @@ $(document).ready(function() {
                         $titleError.text(errors.title[0]);
                     }
                 } else {
-                    toastr.error('خطا در ثبت اطلاعات');
+                    showCustomToast('خطا در ثبت اطلاعات','error');
                 }
             },
             complete: function() {
@@ -76,7 +76,7 @@ $(document).ready(function() {
                 }
             },
             error: function() {
-                toastr.error('خطا در تغییر وضعیت');
+                showCustomToast('خطا در تغییر وضعیت','error');
             }
         });
     });
@@ -108,7 +108,7 @@ $(document).ready(function() {
                 }
             },
             error: function() {
-                toastr.error('خطا در حذف دلیل');
+                showCustomToast('خطا در حذف دلیل','error');
             }
         });
     });

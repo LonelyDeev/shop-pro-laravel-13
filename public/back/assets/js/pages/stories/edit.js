@@ -93,10 +93,7 @@ $(document).ready(function() {
             }
 
         }else {
-            toastr.error('همه مغادیر ستاره دارد باید پر شوند', 'پیغام', {
-                positionClass: 'toast-bottom-left',
-                containerId: 'toast-bottom-left'
-            });
+            showCustomToast('همه مغادیر ستاره دارد باید پر شوند','error');
         }
     })
 

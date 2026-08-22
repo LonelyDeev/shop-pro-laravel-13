@@ -266,7 +266,7 @@
 
     @if(session('toast-success'))
         <script>
-            toastr.success('{{session('toast-success')}}', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+            showCustomToast('{{session('toast-success')}}','success')
         </script>
     @endif
     @if(session('toast-error'))
@@ -276,7 +276,7 @@
     @endif
     @if(session('toast-warning'))
         <script>
-            toastr.warning('{{session('toast-warning')}}', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+            showCustomToast('{{session('toast-warning')}}','warning');
         </script>
     @endif
 </body>

@@ -51,11 +51,7 @@ $('#story-delete-form').on('submit', function(e) {
         data: formData,
         success: function(data) {
             if (data == 'success') {
-                toastr.success('استوری با موفقیت حذف شد.', null, {
-                    positionClass: 'toast-bottom-left',
-                    containerId: 'toast-bottom-left'
-                });
-
+                showCustomToast('استوری با موفقیت حذف شد.','success')
                 $('#post-' + $(form).data('id') + '-tr').remove();
             }
         },
@@ -91,10 +87,7 @@ $('#story-multiple-delete-form').on('submit', function(e) {
         data: {ids: ids},
         success: function(data) {
             if (data == 'success') {
-                toastr.success('استوری های انتخاب شده با موفقیت حذف شدند.', null, {
-                    positionClass: 'toast-bottom-left',
-                    containerId: 'toast-bottom-left'
-                });
+                showCustomToast('استوری های انتخاب شده با موفقیت حذف شدند.','success')
                 const selector = ids.map(id => '#post-' + id + '-tr').join(',');
                 $(selector).remove();
             }

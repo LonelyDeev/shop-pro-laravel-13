@@ -24,7 +24,7 @@ $('#messages-create-form').submit(function(e) {
             data: formData,
             success: function(data) {
                 if (data.status=="error"){
-                    toastr.error(data.message);
+                    showCustomToast(data.message,'error');
                 }
                 if (data=="success"){
                     window.location.href = BASE_URL + "/messages";

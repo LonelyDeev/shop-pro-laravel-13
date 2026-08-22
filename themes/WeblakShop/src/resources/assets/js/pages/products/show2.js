@@ -173,14 +173,7 @@ function sendStockNotify() {
         url: BASE_URL + '/stock-notify',
         data: data,
         success: function (data) {
-            toastr.success(
-                'نام شما در لیست اطلاع از موجودی این محصول قرار گرفت.',
-                '',
-                {
-                    positionClass: 'toast-bottom-left',
-                    containerId: 'toast-bottom-left'
-                }
-            );
+            showCustomToast('نام شما در لیست اطلاع از موجودی این محصول قرار گرفت.','success')
         },
         beforeSend: function (xhr) {
             xhr.setRequestHeader(
@@ -210,11 +203,7 @@ $(document).on('click', '#add-to-favorites', function () {
             product_id: $(btn).data('product')
         },
         success: function (data) {
-            toastr.success('با موفقیت انجام شد', '', {
-                positionClass: 'toast-bottom-left',
-                containerId: 'toast-bottom-left'
-            });
-
+            showCustomToast('با موفقیت انجام شد','success')
             if (data.action == 'create') {
                 $(btn).addClass('favorites');
                 $(btn).parent().find('span').text('حذف از علاقمندی ها');

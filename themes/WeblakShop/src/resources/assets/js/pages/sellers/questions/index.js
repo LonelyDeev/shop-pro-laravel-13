@@ -40,8 +40,7 @@ $(document).on('submit', '#comment-edit-form', function(e) {
             reloadDiv('.list-comments');
 
             $('#show-modal').modal('hide');
-
-            toastr.success("تغییرات با موفقیت انجام شد");
+            showCustomToast('تغییرات با موفقیت انجام شد','success')
         },
         beforeSend: function(xhr) {
             block('.comment-show-modal');

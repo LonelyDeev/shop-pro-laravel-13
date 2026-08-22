@@ -154,10 +154,7 @@ $('#seller-register-documents').submit(function (e) {
             data: formData,
             success: function (data) {
                 if (data.status=='error'){
-                    toastr.error(data.message, 'خطا', {
-                        positionClass: 'toast-bottom-left',
-                        containerId: 'toast-bottom-left'
-                    });
+                    showCustomToast(data.message,'error');
                 }else if(data.status=="success"){
                     window.location.href = data.redirect;
                 }

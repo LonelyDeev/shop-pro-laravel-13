@@ -22,8 +22,7 @@ $('#question-delete-form').submit(function (e) {
             //remove brand tr
             $('#brand-' + $(form).data('id') + '-tr').remove();
 
-            toastr.success(' با موفقیت حذف شد.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
-
+            showCustomToast('با موفقیت حذف شد.','success')
             //refresh brands list
             $('.app-content').load(url + ' .app-content > *');
         },

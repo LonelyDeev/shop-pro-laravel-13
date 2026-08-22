@@ -561,7 +561,7 @@ $(document).ready(function() {
 
                     // نمایش پیام خطا (اختیاری)
                     if (response.message) {
-                        toastr.error(response.message);
+                        showCustomToast(response.message,'error');
                     }
                 }
             },
@@ -580,7 +580,7 @@ $(document).ready(function() {
                 }
 
                 // نمایش پیام خطا
-                toastr.error('مشکلی در ارتباط با سرور وجود دارد. لطفاً مجدداً تلاش کنید.');
+                showCustomToast('مشکلی در ارتباط با سرور وجود دارد. لطفاً مجدداً تلاش کنید.','error');
             },
             complete: function() {
                 $this.removeClass('loading');

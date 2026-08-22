@@ -18,8 +18,7 @@ $('#tariff-delete-form').submit(function (e) {
                 //get current url
                 var url = window.location.href;
 
-                toastr.success('تعرفه با موفقیت حذف شد.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
-
+                showCustomToast('تعرفه با موفقیت حذف شد.','success')
                 //refresh tariffs list
                 $('.app-content').load(url + ' .app-content > *');
             }

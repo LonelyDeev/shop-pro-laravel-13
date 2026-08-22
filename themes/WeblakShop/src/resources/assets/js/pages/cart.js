@@ -7,9 +7,7 @@ $('.counter-box .inc').click(function () {
         parseInt($(this).parents('.quantity').find('.cart_quantity').val()) >=
         parseInt($(this).parents('.quantity').find('.cart_quantity').attr('max'))
     ) {
-        toastr.error(
-            'شما بیشترین تعداد ممکن برای این محصول را انتخاب کرده اید.'
-        );
+        showCustomToast('شما بیشترین تعداد ممکن برای این محصول را انتخاب کرده اید','error');
         e.preventDefault();
     }
 

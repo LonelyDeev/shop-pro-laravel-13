@@ -259,7 +259,7 @@ $('#order-multiple-delete-form').on('submit', function (e) {
         type: 'POST',
         data: formData,
         success: function (data) {
-            toastr.success('سفارشات انتخاب شده با موفقیت حذف شدند.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+            showCustomToast('سفارشات انتخاب شده با موفقیت حذف شدند.','success');
             datatable.reload();
         },
         beforeSend: function (xhr) {
@@ -295,7 +295,7 @@ $('#multiple-shipping-status-change').on('submit', function (e) {
         type: 'POST',
         data: formData,
         success: function (data) {
-            toastr.success('سفارشات انتخاب شده با موفقیت تغیر وضعیت  شدند.');
+            showCustomToast('سفارشات انتخاب شده با موفقیت تغیر وضعیت  شدند.','success');
             datatable.reload();
         },
         beforeSend: function (xhr) {

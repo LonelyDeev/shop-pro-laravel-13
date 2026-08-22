@@ -182,7 +182,7 @@ $('#transaction-delete-form').on('submit', function(e) {
         type: 'POST',
         data: formData,
         success: function(data) {
-            toastr.success('تراکنش با موفقیت حذف شد.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+            showCustomToast('تراکنش با موفقیت حذف شد.','success')
             datatable.reload();
         },
         beforeSend: function(xhr) {
@@ -215,7 +215,7 @@ $('#transaction-multiple-delete-form').on('submit', function(e) {
         type: 'POST',
         data: formData,
         success: function(data) {
-            toastr.success('تراکنش های انتخاب شده با موفقیت حذف شدند.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+            showCustomToast('تراکنش های انتخاب شده با موفقیت حذف شدند.','success')
             datatable.reload();
         },
         beforeSend: function(xhr) {

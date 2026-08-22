@@ -41,10 +41,7 @@ $('.comment-replay').click(function(e) {
     e.preventDefault();
     var Auth=$('meta[name="Auth"]').attr('content');
     if (Auth=='No'){
-        toastr.error('لطفا وارد حساب کاربری خود شوید', {
-            positionClass: 'toast-bottom-left',
-            containerId: 'toast-bottom-left'
-        });
+        showCustomToast('لطفا وارد حساب کاربری خود شوید','error');
     }else{
         var a = $(this);
         var userName=$(a).parent('.article').find('.question-body').text();
@@ -146,10 +143,7 @@ $(document).ready(function () {
                     e.preventDefault();
                     var Auth=$('meta[name="Auth"]').attr('content');
                     if (Auth=='No'){
-                        toastr.error('لطفا وارد حساب کاربری خود شوید', {
-                            positionClass: 'toast-bottom-left',
-                            containerId: 'toast-bottom-left'
-                        });
+                        showCustomToast('لطفا وارد حساب کاربری خود شوید','error');
                     }else{
                         var a = $(this);
                         var userName=$(a).parent('.article').find('.question-body').text();

@@ -24,8 +24,7 @@ $('#sizetype-delete-form').submit(function (e) {
                 '#sizetype-' + $('#sizetype-delete-form').data('id') + '-tr'
             ).remove();
 
-            toastr.success('راهنمای سایز با موفقیت حذف شد.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
-
+            showCustomToast('راهنمای سایز با موفقیت حذف شد.','success')
             //refresh sizetypes list
             $('.app-content').load(url + ' .app-content > *');
         },

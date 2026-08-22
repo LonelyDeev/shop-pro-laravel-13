@@ -20,8 +20,7 @@ $('#review-delete-form').submit(function (e) {
                 '#review-' + $('#review-delete-form').data('id') + '-tr'
             ).remove();
 
-            toastr.success('نظر با موفقیت حذف شد.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
-
+            showCustomToast('نظر با موفقیت حذف شد','success')
             reloadDiv('.list-reviews');
         },
         beforeSend: function (xhr) {
@@ -78,8 +77,7 @@ $(document).on('submit', '#review-edit-form', function (e) {
             reloadDiv('.list-reviews');
 
             $('#show-modal').modal('hide');
-
-            toastr.success('تغییرات با موفقیت انجام شد', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+            showCustomToast('تغییرات با موفقیت انجام شد','success')
         },
         beforeSend: function (xhr) {
             block('.review-show-modal');

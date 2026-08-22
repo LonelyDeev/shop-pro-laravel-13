@@ -148,10 +148,7 @@ $('.set-econtract').click(function () {
                     $('#seller-econtracts-modal').modal('toggle');
                 }
                 else if(data.status=="documents"){
-                    toastr.error('اطلاعات فروشنده تاییده نشده است.', 'خطا', {
-                        positionClass: 'toast-bottom-left',
-                        containerId: 'toast-bottom-left'
-                    });
+                    showCustomToast('اطلاعات فروشنده تاییده نشده است','error');
                 }
             },
             beforeSend: function (xhr) {
@@ -172,7 +169,7 @@ $('.set-econtract').click(function () {
     }else if(econtract==0){
         $('#seller-econtracts-modal').modal('toggle')
     }else {
-        toastr.error('یک گزینه را انتخاب کنید', 'خطا');
+        showCustomToast('یک گزینه را انتخاب کنید','error');
     }
 
 

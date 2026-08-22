@@ -42,12 +42,7 @@ $(document).ready(function() {
         let content = form.find('textarea[name="content"]').val();
 
         if (content.length<=1){
-            toastr.error('متن دیدگاه نمیتواند خالی باشد', '',
-                {
-                    positionClass: 'toast-bottom-left',
-                    containerId: 'toast-bottom-left'
-                }
-            );
+            showCustomToast('متن دیدگاه نمیتواند خالی باشد','error');
             return
         }
 
@@ -106,12 +101,7 @@ $(document).ready(function() {
                     $('#comment-form')[0].reset();
 
                     // نمایش پیام
-                    toastr.success(response.message, '',
-                        {
-                            positionClass: 'toast-bottom-left',
-                            containerId: 'toast-bottom-left'
-                        }
-                    );
+                    showCustomToast(response.message,'success');
                     // اسکرول به کامنت جدید
                     setTimeout(function() {
                         $('html, body').animate({
@@ -124,12 +114,7 @@ $(document).ready(function() {
                 xhr.setRequestHeader("X-CSRF-TOKEN", $('meta[name="csrf-token"]').attr('content'));
             },
             error: function(xhr) {
-                toastr.error('خطا در ارسال دیدگاه.', '',
-                    {
-                        positionClass: 'toast-bottom-left',
-                        containerId: 'toast-bottom-left'
-                    }
-                );
+                showCustomToast('خطا در ارسال دیدگاه.','error');
             },
             complete: function(xhr) {
                 unblock('#comment-form')
@@ -167,12 +152,7 @@ $(document).ready(function() {
         let content = form.find('textarea[name="content"]').val();
 
         if (content.length<=1){
-            toastr.error('متن پاسخ نمیتواند خالی باشد', '',
-                {
-                    positionClass: 'toast-bottom-left',
-                    containerId: 'toast-bottom-left'
-                }
-            );
+            showCustomToast('متن پاسخ نمیتواند خالی باشد','error');
             return
         }
 
@@ -233,13 +213,7 @@ $(document).ready(function() {
                         $('#send-answer-form')[0].reset();
 
                         // نمایش پیام
-                        toastr.success(response.message, '',
-                            {
-                                positionClass: 'toast-bottom-left',
-                                containerId: 'toast-bottom-left'
-                            }
-                        );
-
+                        showCustomToast(response.message,'success');
                         $('#send-answer-model').modal('hide')
 
                     }
@@ -248,12 +222,7 @@ $(document).ready(function() {
                     xhr.setRequestHeader("X-CSRF-TOKEN", $('meta[name="csrf-token"]').attr('content'));
                 },
                 error: function(xhr) {
-                    toastr.error('خطا در ارسال پاسخ.', '',
-                        {
-                            positionClass: 'toast-bottom-left',
-                            containerId: 'toast-bottom-left'
-                        }
-                    );
+                    showCustomToast('خطا در ارسال پاسخ.','error');
                 },
                 complete: function(xhr) {
                     unblock('#send-answer-model')
@@ -316,7 +285,7 @@ $(document).ready(function() {
             },
             error: function(xhr) {
                 console.error('Error:', xhr);
-                toastr.error('خطا در ثبت لایک');
+                showCustomToast('خطا در ثبت لایک','error');
             },
             complete: function() {
                 button.prop('disabled', false);
@@ -378,7 +347,7 @@ $(document).ready(function() {
             },
             error: function(xhr) {
                 console.error('Error:', xhr);
-                toastr.error('خطا در ثبت دیسلایک');
+                showCustomToast('خطا در ثبت دیسلایک','error');
             },
             complete: function() {
                 button.prop('disabled', false);

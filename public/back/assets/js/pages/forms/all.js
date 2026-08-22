@@ -205,10 +205,7 @@ $(document).ready(function() {
                 if ($(this).val()) hasOption = true;
             });
             if (!hasOption) {
-                toastr.error('حداقل یک گزینه وارد کنید', 'پیغام', {
-                    positionClass: 'toast-bottom-left',
-                    containerId: 'toast-bottom-left'
-                });
+                showCustomToast('حداقل یک گزینه وارد کنید','error');
                 isValid = false;
             }
         }
@@ -335,10 +332,7 @@ $(document).ready(function() {
         var exist_fields = $('#exist-fields .preview-field');
 
         if (fields.length === 0 && exist_fields.length === 0) {
-            toastr.error('حداقل یک فیلد به فرم اضافه کنید', 'پیغام', {
-                positionClass: 'toast-bottom-left',
-                containerId: 'toast-bottom-left'
-            });
+            showCustomToast('حداقل یک فیلد به فرم اضافه کنید','error');
             return;
         }
 

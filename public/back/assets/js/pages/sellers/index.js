@@ -273,7 +273,7 @@ $('#product-delete-form').on('submit', function (e) {
         type: 'POST',
         data: formData,
         success: function (data) {
-            toastr.success('فروشنده با موفقیت حذف شد.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+            showCustomToast('فروشنده با موفقیت حذف شد.','success')
             datatable.reload();
         },
         beforeSend: function (xhr) {
@@ -309,7 +309,7 @@ $('#product-multiple-delete-form').on('submit', function (e) {
         type: 'POST',
         data: formData,
         success: function (data) {
-            toastr.success('فروشنده های انتخاب شده با موفقیت حذف شدند.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+            showCustomToast('فروشنده های انتخاب شده با موفقیت حذف شدند.','success')
             datatable.reload();
         },
         beforeSend: function (xhr) {

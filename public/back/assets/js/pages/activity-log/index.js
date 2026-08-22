@@ -98,7 +98,7 @@ function confirmDeleteOldActivities(item) {
 
     // اعتبارسنجی
     if (!days || days < 1) {
-        toastr.error('لطفاً تعداد روز معتبر وارد کنید');
+        showCustomToast('لطفاً تعداد روز معتبر وارد کنید','error');
         $('#delete_days').focus();
         return;
     }
@@ -121,7 +121,7 @@ function confirmDeleteOldActivities(item) {
                     location.reload();
                 }, 1500);
             } else {
-                toastr.error(response.message || 'خطا در حذف فعالیت‌ها');
+                showCustomToast(response.message || 'خطا در حذف فعالیت‌ها','error');
                 $btn.prop('disabled', false).html('<i class="fas fa-trash"></i> حذف');
             }
         },
@@ -139,7 +139,7 @@ function confirmDeleteOldActivities(item) {
             } else if (xhr.status === 404) {
                 message = 'Route پیدا نشد';
             }
-            toastr.error(message);
+            showCustomToast(message,'error');
             $btn.prop('disabled', false).html('<i class="fas fa-trash"></i> حذف');
         }
     });

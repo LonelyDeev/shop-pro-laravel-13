@@ -39,8 +39,7 @@ $('#register-form').submit(function (e) {
             data: formData,
             success: function (data) {
                 if (data == 'success') {
-                    toastr.success('ثبت نام شما با موفقیت انجام شد.', '', { positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
-
+                    showCustomToast('ثبت نام شما با موفقیت انجام شد.','success')
                     setTimeout(() => {
                         window.location.href = redirect_url;
                     }, 2000);

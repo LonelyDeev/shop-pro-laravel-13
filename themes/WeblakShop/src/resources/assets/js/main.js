@@ -683,16 +683,10 @@ $('#newsletter-form').on('submit', function(e) {
         data: form.serialize(),
         success: function(response) {
             if (response.success){
-                toastr.success(response.message, 'موفق', {
-                    positionClass: 'toast-bottom-left',
-                    containerId: 'toast-bottom-left'
-                });
+                showCustomToast(response.message,'success');
                 form[0].reset();
             }else {
-                toastr.error(response.message, 'خطا', {
-                    positionClass: 'toast-bottom-left',
-                    containerId: 'toast-bottom-left'
-                });
+                showCustomToast(response.message,'error');
 
             }
 
@@ -715,11 +709,7 @@ $('#newsletter-form').on('submit', function(e) {
             } else if (xhr.responseJSON && xhr.responseJSON.error) {
                 errorMessage = xhr.responseJSON.error;
             }
-
-            toastr.error(errorMessage, 'خطا', {
-                positionClass: 'toast-bottom-left',
-                containerId: 'toast-bottom-left'
-            });
+            showCustomToast(errorMessage,'error');
             unblock('#newsletter-form');
         },
         complete: function() {

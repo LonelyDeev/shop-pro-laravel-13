@@ -21,14 +21,7 @@ $(document).ready(function () {
                 type: 'POST',
                 data: formData,
                 success: function (data) {
-                    toastr.success(
-                        'شما با موفقیت وارد حساب کاربری خود شدید.',
-                        '',
-                        {
-                            positionClass: 'toast-bottom-left',
-                            containerId: 'toast-bottom-left'
-                        }
-                    );
+                    showCustomToast('شما با موفقیت وارد حساب کاربری خود شدید','success');
 
                     setTimeout(() => {
                         window.location.href = redirect_url;

@@ -29,15 +29,9 @@ $('#seller-register-level1-form').submit(function (e) {
             data: formData,
             success: function (data) {
                 if (data.status=='error'){
-                    toastr.error(data.message, 'خطا', {
-                        positionClass: 'toast-bottom-left',
-                        containerId: 'toast-bottom-left'
-                    });
+                    showCustomToast(data.message,'error');
                 }else if(data.status=="success"){
-                    toastr.success(data.message, '', {
-                        positionClass: 'toast-bottom-left',
-                        containerId: 'toast-bottom-left'
-                    });
+                    showCustomToast(data.message,'success')
                     setTimeout(function(){
                         window.location.href = data.redirect;
                     }, 800);

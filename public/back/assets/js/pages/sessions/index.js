@@ -32,7 +32,7 @@ $(document).ready(function() {
                             // بروزرسانی تعداد
                             updateSessionCount();
                         } else {
-                            toastr.error(response.message);
+                            showCustomToast(response.message,'error');
                         }
                     },
                     beforeSend: function(xhr) {
@@ -43,7 +43,7 @@ $(document).ready(function() {
                         if (xhr.responseJSON && xhr.responseJSON.message) {
                             errorMsg = xhr.responseJSON.message;
                         }
-                        toastr.error(errorMsg);
+                        showCustomToast(errorMsg,'error');
                     },
                     complete: function() {
                         unblock('#main-card');
@@ -100,7 +100,7 @@ $(document).ready(function() {
                         xhr.setRequestHeader( 'X-CSRF-TOKEN', $('meta[name="csrf-token"]').attr('content'));
                     },
                     error: function(xhr) {
-                        toastr.error('خطا در حذف نشست‌ها');
+                        showCustomToast('خطا در حذف نشست‌ها','error');
                     },
                     complete: function() {
                         unblock('#main-card');
@@ -153,7 +153,7 @@ $(document).ready(function() {
                         xhr.setRequestHeader( 'X-CSRF-TOKEN', $('meta[name="csrf-token"]').attr('content'));
                     },
                     error: function(xhr) {
-                        toastr.error('خطا در خروج از دستگاه‌ها');
+                        showCustomToast('خطا در خروج از دستگاه‌ها','error');
                     },
                     complete: function() {
                         button.prop('disabled', false).html('<i class="feather icon-log-out"></i> خروج از سایر دستگاه‌ها');
@@ -197,7 +197,7 @@ $(document).ready(function() {
                         xhr.setRequestHeader( 'X-CSRF-TOKEN', $('meta[name="csrf-token"]').attr('content'));
                     },
                     error: function(xhr) {
-                        toastr.error('خطا در پاکسازی نشست‌ها');
+                        showCustomToast('خطا در پاکسازی نشست‌ها','error');
                     },
                     complete: function() {
                         button.prop('disabled', false).html('<i class="feather icon-trash-2"></i> پاکسازی غیرفعال');
@@ -273,7 +273,7 @@ $(document).ready(function() {
                 if (xhr.responseJSON && xhr.responseJSON.message) {
                     errorMsg = xhr.responseJSON.message;
                 }
-                toastr.error(errorMsg);
+                showCustomToast(errorMsg,'error');
             },
             complete: function() {
                 button.prop('disabled', false).html('بلاک شود');

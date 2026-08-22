@@ -21,8 +21,7 @@ $('#spectype-delete-form').submit(function(e) {
             //remove spectype tr
             $('#spectype-' + $('#spectype-delete-form').data('id') + '-tr').remove();
 
-            toastr.success('نوع مشخصات با موفقیت حذف شد.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
-
+            showCustomToast('نوع مشخصات با موفقیت حذف شد.','success')
             //refresh spectypes list
             $(".app-content").load(url + " .app-content > *");
         },

@@ -17,8 +17,7 @@ $('#ticket-delete-form').submit(function(e) {
             //get current url
             var url = window.location.href;
 
-            toastr.success('اعلان با موفقیت حذف شد.', null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
-
+            showCustomToast('اعلان با موفقیت حذف شد.','success')
             //refresh tickets list
             $(".app-content").load(url + " .app-content > *");
         },

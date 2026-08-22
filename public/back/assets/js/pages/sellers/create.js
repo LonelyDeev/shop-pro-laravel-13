@@ -56,10 +56,7 @@ $('#product-create-form').submit(function (e) {
 
     if ($(this).valid() && !$(this).data('disabled')) {
         if (physicalDropzone.getUploadingFiles().length) {
-            toastr.error('لطفا تا اتمام آپلود تصاویر منتظر بمانید', 'خطا', {
-                positionClass: 'toast-bottom-left',
-                containerId: 'toast-bottom-left'
-            });
+            showCustomToast('لطفا تا اتمام آپلود تصاویر منتظر بمانید','error');
             return;
         }
 

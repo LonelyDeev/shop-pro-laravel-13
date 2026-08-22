@@ -316,10 +316,7 @@ $(document).ready(function() {
     $('#searchProductId').click(function() {
         const productId=$('#productId').val();
         if (productId==""){
-            toastr.warning('شناسه محصول را وارد کنید', 'پیغام', {
-                positionClass: 'toast-bottom-left',
-                containerId: 'toast-bottom-left'
-            });
+            showCustomToast('شناسه محصول را وارد کنید','warning');
             return
         }else {
             $('.story-product').addClass('hidden')
@@ -332,10 +329,7 @@ $(document).ready(function() {
                 data: {productId:productId},
                 success: function (response) {
                     if (!response.success){
-                        toastr.error(response.message, 'پیغام', {
-                            positionClass: 'toast-bottom-left',
-                            containerId: 'toast-bottom-left'
-                        });
+                        showCustomToast(response.message,'error');
                     }else if (response.success){
                         const product=response.product;
                         $('.story-product .image img').attr('src',product.image)
@@ -345,10 +339,7 @@ $(document).ready(function() {
                         $('.story-product .discount-percent').text(product.discount)
                         $('.story-product .product-colors li').css('background-color',product.color.value)
                         $('.story-product .product-colors li').attr('title',product.color.name)
-                        toastr.success(response.message, 'پیغام', {
-                            positionClass: 'toast-bottom-left',
-                            containerId: 'toast-bottom-left'
-                        });
+                        showCustomToast(response.message,'success')
                         $('.story-product').removeClass('hidden')
                         if (product.discount!=""){
                             $('.story-product .discount-percent').removeClass('hidden')

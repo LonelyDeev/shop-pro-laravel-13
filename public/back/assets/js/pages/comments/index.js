@@ -120,7 +120,7 @@ $(document).ready(function() {
             let reply = $('#reply-textarea').val();
 
             if (!reply || !reply.trim()) {
-                toastr.error('لطفا متن پاسخ را وارد کنید');
+                showCustomToast('لطفا متن پاسخ را وارد کنید','error');
                 return false;
             }
 
@@ -156,7 +156,7 @@ $(document).ready(function() {
                     if (xhr.responseJSON && xhr.responseJSON.message) {
                         errorMsg = xhr.responseJSON.message;
                     }
-                    toastr.error(errorMsg);
+                    showCustomToast(errorMsg,'error');
                 },
                 complete: function() {
                     button.data('processing', false);
@@ -192,7 +192,7 @@ $(document).ready(function() {
             let newBody = $(`#reply-edit-textarea-${replyId}`).val();
 
             if (!newBody || !newBody.trim()) {
-                toastr.error('لطفا متن پاسخ را وارد کنید');
+                showCustomToast('لطفا متن پاسخ را وارد کنید','error');
                 return false;
             }
 
@@ -224,7 +224,7 @@ $(document).ready(function() {
                     if (xhr.responseJSON && xhr.responseJSON.message) {
                         errorMsg = xhr.responseJSON.message;
                     }
-                    toastr.error(errorMsg);
+                    showCustomToast(errorMsg,'error');
                 },
                 complete: function() {
                     button.data('processing', false);
@@ -287,7 +287,7 @@ $(document).ready(function() {
                             if (xhr.responseJSON && xhr.responseJSON.message) {
                                 errorMsg = xhr.responseJSON.message;
                             }
-                            toastr.error(errorMsg);
+                            showCustomToast(errorMsg,'error');
                         },
                         complete: function(xhr) {
                             unblock('#comment-detail')
@@ -339,7 +339,7 @@ $(document).ready(function() {
                 if (xhr.responseJSON && xhr.responseJSON.message) {
                     errorMsg = xhr.responseJSON.message;
                 }
-                toastr.error(errorMsg);
+                showCustomToast(errorMsg,'error');
 
                 // برگرداندن مقدار قبلی
                 select.val(oldStatus);

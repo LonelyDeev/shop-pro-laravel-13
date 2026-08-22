@@ -121,7 +121,7 @@ $(document).ready(function () {
             success: function (response) {
                 if (response.success) {
                     // نمایش پیام موفق
-                    toastr.success(response.message ?? 'تنوع با موفقیت ویرایش شد.');
+                    showCustomToast(response.message ?? 'تنوع با موفقیت ویرایش شد.','success')
                     $('#editVariationModal').modal('hide');
                     $('#variation-stats').html(response.stats_html)
                     // به‌روزرسانی ردیف جدول بدون reload
@@ -161,7 +161,7 @@ $(document).ready(function () {
             data: $(this).serialize(),
             success: function (response) {
                 if (response.success) {
-                    toastr.success(response.message ?? 'تنوع جدید با موفقیت اضافه شد.');
+                    showCustomToast(response.message ?? 'تنوع جدید با موفقیت اضافه شد.','success')
                     $('#addVariationModal').modal('hide');
                     $('#addVariationForm')[0].reset();
                     $('#variation-stats').html(response.stats_html)
@@ -214,7 +214,7 @@ $(document).ready(function () {
                     },
                     success: function (response) {
                         if (response.success) {
-                            toastr.success('تنوع با موفقیت حذف شد.');
+                            showCustomToast('تنوع با موفقیت حذف شد.','success')
                             $('#variation-stats').html(response.stats_html)
                             $('#variation-row-' + priceId).fadeOut(400, function () {
                                 $(this).remove();
@@ -225,7 +225,7 @@ $(document).ready(function () {
                         xhr.setRequestHeader("X-CSRF-TOKEN", $('meta[name="csrf-token"]').attr('content'));
                     },
                     error: function () {
-                        toastr.error('خطا در حذف تنوع.');
+                        showCustomToast('خطا در حذف تنوع.','error');
                     }
                 });
             }

@@ -33,7 +33,7 @@ $(document).ready(function() {
                 xhr.setRequestHeader("X-CSRF-TOKEN", $('meta[name="csrf-token"]').attr('content'));
             },
             error: function(xhr) {
-                toastr.error('خطا در تغییر وضعیت: ' + (xhr.responseJSON?.message || 'خطای ناشناخته'));
+                showCustomToast('خطا در تغییر وضعیت: ' + (xhr.responseJSON?.message || 'خطای ناشناخته'),'error');
             }
         });
     });
@@ -62,7 +62,7 @@ $(document).ready(function() {
                 }, 1000);
             },
             error: function(xhr) {
-                toastr.error('خطا در لغو سفارش: ' + (xhr.responseJSON?.message || 'خطای ناشناخته'));
+                showCustomToast('خطا در لغو سفارش: ' + (xhr.responseJSON?.message || 'خطای ناشناخته'),'error');
                 $('#confirm-cancel').prop('disabled', false).html('تأیید و لغو سفارش');
             },
             beforeSend: function(xhr) {
@@ -80,7 +80,7 @@ $(document).ready(function() {
     $('#update-tracking').click(function() {
         var trackingCode = $('#tracking-code').val();
         if (!trackingCode) {
-            toastr.warning('لطفا کد رهگیری را وارد کنید');
+            showCustomToast('لطفا کد رهگیری را وارد کنید','warning');
             return;
         }
         // غیرفعال کردن دکمه تأیید برای جلوگیری از کلیک مجدد
@@ -100,7 +100,7 @@ $(document).ready(function() {
                 xhr.setRequestHeader("X-CSRF-TOKEN", $('meta[name="csrf-token"]').attr('content'));
             },
             error: function(xhr) {
-                toastr.error('خطا در ثبت کدرهگیری : ' + (xhr.responseJSON?.message || 'خطای ناشناخته'));
+                showCustomToast('خطا در ثبت کدرهگیری : ' + (xhr.responseJSON?.message || 'خطای ناشناخته'),'error');
             }
         });
     });

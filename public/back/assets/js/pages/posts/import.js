@@ -11,7 +11,7 @@ $('#excel-create-form').submit(function(e) {
             success: function(data) {
                 $('#excel-create-form').data('disabled', true);
                 if (data.error){
-                    toastr.error(data.error, null,{ positionClass: 'toast-bottom-left', containerId: 'toast-bottom-left' });
+                    showCustomToast(data.error,'error');
                 }else if (data.success){
                     Swal.fire({
                             title: data.success,
