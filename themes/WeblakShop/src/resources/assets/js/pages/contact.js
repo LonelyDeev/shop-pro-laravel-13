@@ -110,6 +110,7 @@ $('#contact-form').submit(function(e) {
 
                 $('#contact-form').trigger('reset');
                 unblock('#contact-form')
+                unblock('.form-ui');
             },
 
             beforeSend: function(xhr) {
@@ -118,6 +119,7 @@ $('#contact-form').submit(function(e) {
             },
             complete: function() {
                 unblock('.form-ui');
+                unblock('#contact-form')
             },
 
             cache: false,

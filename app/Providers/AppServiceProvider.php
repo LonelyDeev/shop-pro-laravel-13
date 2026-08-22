@@ -2,7 +2,6 @@
 
 namespace App\Providers;
 
-use App\Helpers\MyCaptcha;
 use App\Models\Banner;
 use App\Models\Category;
 use App\Models\Filter;

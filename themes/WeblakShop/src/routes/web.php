@@ -48,7 +48,6 @@ Route::group(['as' => 'front.'], function () {
     Route::get('/', [MainController::class, 'index'])->name('index');
 
 
-    Route::get('/get-new-captcha', [MainController::class, 'captcha']);
     Route::get('/stores', [MainController::class, 'showStore'])->name('showStore');
     Route::get('/store/{seller}', [MainController::class, 'showSellerStore'])->name('showSellerStore');
     // ------------------ blogs

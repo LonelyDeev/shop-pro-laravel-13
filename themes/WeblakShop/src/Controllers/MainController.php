@@ -569,11 +569,6 @@ class  MainController extends Controller
         ];
     }
 
-    public function captcha()
-    {
-        return response(['captcha' => captcha_src('flat')]);
-    }
-
     public function orderResultInfo(Order $order)
     {
         if ($order->user_id != auth()->user()->id) {

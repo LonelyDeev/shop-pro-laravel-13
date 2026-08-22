@@ -1,12 +1,23 @@
-function reloadCaptcha() {
-    $.ajax({
-        url: BASE_URL + '/get-new-captcha',
-        type: 'GET',
-        data: {},
-        success: function (data) {
-            $('img.captcha').attr('src', data.captcha);
-        }
-    });
+function reloadCaptcha(selector) {
+    var field  = selector ? document.querySelector(selector) : document.querySelector('[data-captcha]');
+    if (!field) return;
+
+    var img    = field.querySelector('.cap-image__img');
+    var input  = field.querySelector('.cap-input__field');
+    var loading = field.querySelector('.cap-image__loading');
+
+    if (!img) return;
+
+    if (loading) loading.classList.add('is-visible');
+
+    // cache-bust: پارامتر تصادفی ⇒ مرورگر مجبور به درخواست جدید می‌شود
+    img.src = img.src.split('?')[0] + '?_=' + Date.now() + Math.random().toString(36).slice(2, 6);
+
+    img.onload = function () {
+        if (loading) loading.classList.remove('is-visible');
+        input.value = '';   // پاک‌کردن کد اشتباه قبلی
+        input.focus();
+    };
 }
 
 function block(el) {

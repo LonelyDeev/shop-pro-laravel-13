@@ -64,7 +64,7 @@
                                                 <x-captcha />
 
 
-                                                <div class="upload-drag-uploaded-and-submit">
+                                                <div class="upload-drag-uploaded-and-submit mt-4">
                                                     <button class="contact-us-form-submit">ثبت و ارسال</button>
                                                 </div>
                                             </div>
