@@ -34,6 +34,10 @@
 @once
     @push('styles')
         <style>
+            .cap-field{
+                display: flex;
+                flex-direction: column;
+            }
             .cap-label { display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 8px; }
             .cap-req { color: #ef4444; }
 

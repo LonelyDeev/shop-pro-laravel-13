@@ -15,7 +15,9 @@
                         <label for="mobile">شماره موبایل خود را وارد کنید</label>
                         <input type="text" name="mobile" id="mobile" class="input-email-account" placeholder="">
                     </div>
-                    <x-captcha />
+                    <div class="row pr-4">
+                        <x-captcha />
+                    </div>
 
                     <div class="parent-btn">
                         <button class="dk-btn dk-btn-info">
