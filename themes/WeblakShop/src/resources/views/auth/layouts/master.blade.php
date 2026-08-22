@@ -57,6 +57,7 @@
     <script src="{{ theme_asset('js/plugins/toastr/toastr.min.js') }}"></script>
     <script src="{{ theme_asset('js/plugins/jquery-validation/jquery.validate.min.js') }}"></script>
     <script src="{{ theme_asset('js/plugins/jquery-validation/localization/messages_fa.min.js') }}?v=2"></script>
+    <script src="{{ asset('back/assets/js/customToast.js') }}?v=8"></script>
     <script src="{{ theme_asset("js/scripts.js") }}?v=11"></script>
     <script src="{{theme_asset('js/main.js')}}"></script>
 
@@ -66,7 +67,16 @@
 
     {!! option('info_scripts') !!}
     @stack('scripts')
-
+    @if(session('toast-success'))
+        <script>
+            showCustomToast('{{session('toast-success')}}','success');
+        </script>
+    @endif
+    @if(session('toast-error'))
+        <script>
+            showCustomToast('{{session('toast-error')}}','error');
+        </script>
+    @endif
 </body>
 
 </html>

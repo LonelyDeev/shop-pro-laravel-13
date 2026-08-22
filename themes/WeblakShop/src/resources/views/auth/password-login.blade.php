@@ -1,7 +1,7 @@
 @extends('front::auth.layouts.master', ['title' => 'ورود به سایت'])
 
 @php
-    $redirect_url = request("redirect") ?: Redirect::intended()->getTargetUrl();
+    $redirect_url = request("redirect") ?: \Illuminate\Support\Facades\Redirect::intended()->getTargetUrl();
 @endphp
 
 @section('style')

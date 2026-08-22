@@ -111,14 +111,14 @@ $(document).on('click', '.add-to-cart', function () {
         },
         success: function (data) {
             if (data.status == 'success') {
-                Swal.fire({
+              /*  Swal.fire({
                     type: 'success',
                     title: 'با موفقیت اضافه شد',
                     text: 'محصول مورد نظر با موفقیت به سبد خرید شما اضافه شد برای رزرو محصول سفارش خود را نهایی کنید.',
                     confirmButtonText: 'باشه',
                     footer: '<h5><a href="/cart">مشاهده سبد خرید</a></h5>'
-                });
-
+                });*/
+                showCustomToast('با موفقیت به سبد اضافه شد','success');
                 $('#cart-list-item').replaceWith(data.cart);
             } else {
                 Swal.fire({

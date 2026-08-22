@@ -45,6 +45,10 @@ Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])
     ->middleware(['guest', 'throttle:10,1'])
     ->name('password.send');
 
+Route::post('/forgot-password-change-password', [PasswordResetLinkController::class, 'changePassword'])
+    ->middleware(['guest', 'throttle:10,1'])
+    ->name('password.change-password');
+
 Route::get('/login-with-code', [LoginWithCodeController::class, 'create'])
     ->middleware('guest')
     ->name('login-with-code.request');

@@ -19,9 +19,7 @@ class OneTimeLoginController extends Controller
             'mobile' => 'required|exists:users,username'
         ]);
 
-        $view = config('front.pages.one-time-login');
-
-        if (!$view || $validator->fails()) {
+        if ($validator->fails()) {
             abort(404);
         }
 
@@ -33,6 +31,12 @@ class OneTimeLoginController extends Controller
         }
 
         $resend_time = $verify_code->created_at->addSeconds(120)->timestamp;
+
+        if (session()->has('forget_password_link') and session('forget_password_link') == $request->mobile) {
+            $view = config('front.pages.change-password', 'front::auth.change-password');
+        } else {
+            $view = config('front.pages.one-time-login', 'front.pages.one-time-login');
+        }
 
         return view($view, compact('resend_time', 'user'));
     }

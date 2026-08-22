@@ -18,7 +18,7 @@ class AuthenticatedSessionController extends Controller
     public function create()
     {
         $view = config('front.pages.login') ?: 'back.auth.login';
-
+        session()->forget('forget_password_link');
         return view($view);
     }
 
@@ -47,7 +47,7 @@ class AuthenticatedSessionController extends Controller
     public function destroy(Request $request)
     {
         Auth::guard('web')->logout();
-
+        session()->forget('forget_password_link');
         $request->session()->invalidate();
 
         $request->session()->regenerateToken();
