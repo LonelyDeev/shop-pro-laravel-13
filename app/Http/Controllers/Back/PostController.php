@@ -40,7 +40,7 @@ class PostController extends Controller
     {
         $categories = Category::detectLang()->where('type', 'postcat')->orderBy('ordering')->get();
         $copy_product = $request->product ? Post::where('slug', $request->product)->first() : null;
-        $filds = Fild::where('belongs_to', 'products')->orderBy('created_at', 'desc')->get();
+        $filds = Fild::where('belongs_to', 'posts')->orderBy('created_at', 'desc')->get();
         return view('back.posts.create', compact('categories', 'copy_product','filds'));
     }
 
