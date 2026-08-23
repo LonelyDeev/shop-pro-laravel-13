@@ -63,44 +63,11 @@ class PostController extends Controller
             $data['is_editor_pick'] = $request->has('is_editor_pick');
             $data['allow_comments'] = $request->has('allow_comments');
             $data['status'] = 'end';
-            if ($request->created_by == "ai" or $request->created_by == "ai-pro") {
-                $token = option('AI_TOKEN_KEY');
-                if (!$token or $token == null) {
-                    return response("enterAiToken");
-                }
-                $check_token = checkAiToken($token, $request->created_by);
-                if ($check_token->status == 0) {
-                    return response($check_token->message);
-                }
-                sleep(1);
-                $response = Http::post('https://ai.webtpro.ir/api/create-post', [
-                    'slug' => sluggable_helper_function($data['slug'] ?: $data['title']),
-                    'token_key' => $token,
-                    'title' => $data['title'],
-                    'created_by' => $request->created_by,
-                    'language' => $request->language,
-                    'description' => null
-                ]);
-                if ($response->getStatusCode() != 200) {
-                    if (@json_decode($response->body())->message == "unique-slug") {
-                        return response("uniqueSlug");
-                    }
-                    return response('error');
-                }
-                $data['status'] = 'waiting';
-                if ($request->created_by == "ai") {
-                    $content = json_decode($response->body());
-                    $data['content'] = $content->data;
-                    $data['status'] = 'end';
-                }
 
-                $data['published'] = "0";
-                $data['created_by'] = $request->created_by;
-            }
             if ($data['publish_date']) {
                 $data['publish_date'] = Jalalian::fromFormat('Y-m-d H:i:s', $request->publish_date)->toCarbon();
             }
-
+            $data['created_by']=    $request->created_by;
             $data['slug']      = sluggable_helper_function($data['slug'] ?: $data['title']);
             $data['admin_id']   = auth('adminPanel')->user()->id;
             $data['lang']      = app()->getLocale();
