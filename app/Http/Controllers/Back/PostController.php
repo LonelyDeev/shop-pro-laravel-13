@@ -82,8 +82,10 @@ class PostController extends Controller
             $post->Categories()->attach($request->categories);
 
             // store Filds
-            if (isset($request->filds) and count($request->filds)) {
-                saveFieldValues($request->filds, 'posts', $post->id);
+            if (Fild::where('belongs_to', 'posts')->count() > 0) {
+                if (isset($request->filds) and count($request->filds)) {
+                    saveFieldValues($request->filds, 'posts', $post->id);
+                }
             }
 
             session()->put('toast-success', 'نوشته با موفقیت ایجاد شد.');
