@@ -44,21 +44,7 @@ $('#post-create-form').submit(function (e) {
                     showCustomToast('url از قبل وجود دارد.','error');
                     $('input[name=slug]').val(data[1]);
                 }
-                if (data=='enterAiToken'){
-                    showCustomToast('توکن را وارد کنید','error');
-                }
-                if (data=='expiredplan'){
-                    showCustomToast('پلن شما منقضی شده است.','error');
-                }
-                if (data=='uniqueSlug'){
-                    showCustomToast('توشته ای با این url قبلا ثبت شده است.','error');
-                }
-                if (data=='InactiveTools'){
-                    showCustomToast('این ابزار غیرفعال می باشد.','error');
-                }
-                if (data=='error'){
-                    showCustomToast('مشکلی پیش آمده است.','error');
-                }
+
             },
             beforeSend: function (xhr) {
                 block('#main-card');
