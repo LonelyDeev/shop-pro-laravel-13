@@ -33,7 +33,7 @@
     @else
         <meta property="og:image" content="{{ theme_asset('demo/demo-link.png') }}">
     @endif
-
+    <meta name="enamad" content="62448699" />
     {{-- Twitter Card --}}
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="@isset($title){{ $title }} | @endisset{{ option('info_site_title', 'او پی شاپ') }}">
