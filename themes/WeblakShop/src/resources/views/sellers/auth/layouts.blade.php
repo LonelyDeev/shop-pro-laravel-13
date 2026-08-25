@@ -29,6 +29,7 @@
     <link rel="stylesheet" href="{{theme_asset('css/materialdesignicons.css')}}">
     <link rel="stylesheet" href="{{theme_asset('css/materialdesignicons.css.map')}}">
     <!--    font-->
+    <script src="{{ asset('back/assets/js/customToast.js') }}?v=8"></script>
     <link rel="stylesheet" href="{{ theme_asset('js/plugins/toastr/toastr.css') }}">
     <link rel="stylesheet" href="{{theme_asset('css/bootstrap.css')}}">
     <link rel="stylesheet" href="{{theme_asset('css/owl.carousel.min.css')}}">
