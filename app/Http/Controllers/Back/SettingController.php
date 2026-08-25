@@ -53,16 +53,17 @@ class SettingController extends Controller
         $adminName = auth('adminPanel')->user()->full_name ?? auth('adminPanel')->user()->name ?? 'مدیر';
 
         // ========== 1. بررسی تغییرات فایل‌ها (آپلود) ==========
-        $fileInputs = [
+        /*$fileInputs = [
             'info_icon' => 'آیکون سایت',
             'info_logo' => 'لوگوی شرکت',
             'info_logo_seller' => 'لوگوی شرکت فروشندگان',
             'info_logo_panel_seller' => 'لوگوی پنل فروشندگان',
             'info_og_image' => 'تصویر OG (اشتراک‌گذاری)',
-        ];
-
+        ];*/
+        $fileInputs=[];
         $fileChanges = [];
-        foreach ($fileInputs as $key => $title) {
+        /*foreach ($fileInputs as $key => $title) {
+            dd($fileInputs,$request->all());
             if ($request->hasFile($key)) {
                 $oldFile = option($key);
 
@@ -87,7 +88,7 @@ class SettingController extends Controller
 
         if (!empty($fileChanges)) {
             $allChanges['file_uploads'] = $fileChanges;
-        }
+        }*/
 
         // ========== 2. بررسی تغییرات env (پیشوند ادمین) ==========
         $admin_route_prefix_changed = false;
