@@ -44,7 +44,7 @@
     @stack('meta')
 
     {{-- Title --}}
-    <title>@isset($title){{ $title }} | @endisset {{ option('info_site_title', 'او پی شاپ') }}</title>
+    <title>{{ isset($title) ? $title . ' | ' : '' }}{{ option('info_site_title', 'او پی شاپ') }}</title>
 
     {{-- Styles --}}
     @stack('befor-styles')
