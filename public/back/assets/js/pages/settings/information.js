@@ -40,10 +40,7 @@ $(document).ready(function() {
                         confirmButtonText: 'باشه',
                         buttonsStyling: false
                     });
-
-                    if (data.admin_route_prefix_changed) {
-                        window.location.reload()
-                    }
+                    $('#information-form-btn').prop('disabled', false).html('<span class="fa fa-check"></span>ذخیره تغییرات');
                 },
                 beforeSend: function(xhr) {
                     block('#main-card');
