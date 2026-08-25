@@ -42,16 +42,7 @@ $(document).ready(function() {
                     });
 
                     if (data.admin_route_prefix_changed) {
-                        if (data.admin_route_prefix) {
-                            window.location.href =
-                                FRONT_URL +
-                                '/admin/' +
-                                data.admin_route_prefix +
-                                '/settings/information';
-                        } else {
-                            window.location.href =
-                                FRONT_URL + '/admin/settings/information';
-                        }
+                        window.location.reload()
                     }
                 },
                 beforeSend: function(xhr) {
