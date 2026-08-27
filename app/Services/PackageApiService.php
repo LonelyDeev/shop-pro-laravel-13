@@ -98,11 +98,13 @@ class PackageApiService
     private function request(string $method, string $endpoint, array $data = []): array
     {
         try {
+            $projectUrl = request()->root();
             $http = Http::timeout($this->timeout)
                 ->withToken($this->token)
                 ->withHeaders([
                     'Accept'       => 'application/json',
                     'X-Project-Key' => $this->projectKey,
+                    'X-Project-Url' => $projectUrl,
                 ]);
 
             $response = $method === 'GET'
