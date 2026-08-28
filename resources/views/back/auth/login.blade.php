@@ -23,7 +23,7 @@
                                 <div class="card mb-0 px-2">
                                     <div class="logo-wrap text-center mt-2">
                                         <a href="{{ route('front.index') }}">
-                                            <img src="{{ option('info_logo', theme_asset('img/logo.png')) }}" alt="{{ option('info_site_title', 'او پی شاپ') }}">
+                                            <img src="{{ option('info_logo', theme_asset('img/logo.png')) }}" alt="{{ option('info_site_title', 'او پی شاپ') }}" style="max-width: 300px">
                                         </a>
                                     </div>
                                     <div class="card-header pb-1">
