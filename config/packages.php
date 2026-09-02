@@ -8,7 +8,7 @@ return [
     |--------------------------------------------------------------------------
     */
     'api' => [
-        'base_url'        => env('PACKAGES_API_URL', 'https://update.webtpro.ir'),
+        'base_url'        => env('PACKAGES_API_URL', 'https://update.weblak.ir'),
         // ✅ حذف option() و استفاده مستقیم از env()
         'token'           => env('SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN', env('PACKAGES_API_TOKEN')),
         'project_key'     => env('SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN', env('PACKAGES_API_PROJECT_KEY')),

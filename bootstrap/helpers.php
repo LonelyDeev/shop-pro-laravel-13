@@ -58,7 +58,7 @@ function update_url()
         return '';
     }*/
 
-    $url = 'https://update.webtpro.ir/api/v1/check-update?token=' . env('SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN',config('self-update.updater_token'));
+    $url = 'https://update.weblak.ir/api/v1/check-update?token=' . env('SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN',config('self-update.updater_token'));
     $headers_url = @get_headers($url);
     if ($headers_url && strpos($headers_url[0], '200')) {
         /*return $url . '/';*/
