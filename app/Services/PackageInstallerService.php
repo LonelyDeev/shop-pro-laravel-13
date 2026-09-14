@@ -250,10 +250,13 @@ class PackageInstallerService
         $disk = Storage::disk(config('packages.download.disk'));
         $relPath = config('packages.download.temp_path') . '/' . Str::uuid() . '.zip';
 
+        $projectUrl = env('APP_URL');
         $response = Http::timeout(config('packages.download.timeout', 600))
             ->withToken(config('packages.api.token'))
-            ->withHeaders(['X-Project-Key' => config('packages.api.project_key')])
-            ->get($url);
+            ->withHeaders([
+                'X-Project-Key' => config('packages.api.project_key'),
+                'X-Project-Url' => $projectUrl,
+            ])->get($url);
 
         if (!$response->successful()) {
             throw new RuntimeException('دانلود فایل پکیج ناموفق بود (کد: ' . $response->status() . ')');
