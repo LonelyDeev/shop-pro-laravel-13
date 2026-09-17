@@ -629,6 +629,7 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
         Route::post('developer/upApplication', [DeveloperController::class, 'upApplication'])->name('developer.upApplication');
 
         Route::post('developer/webpushNotification', [DeveloperController::class, 'webpushNotification'])->name('developer.webpushNotification');
+        Route::post('developer/clear-cache', [DeveloperController::class, 'clearCache'])->name('developer.clearCache');
 
         // ------------------ updater
         Route::get('developer/updater', [DeveloperController::class, 'showUpdater'])->name('developer.showUpdater');

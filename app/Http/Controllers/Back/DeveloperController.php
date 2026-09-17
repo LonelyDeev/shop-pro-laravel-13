@@ -28,9 +28,10 @@ class DeveloperController extends Controller
     }
     public function showSettings()
     {
+        // Get last schedule run time
         $schedule_last_work = option('schedule_run');
-        $schedule_run       = false;
-        $random_str         = str_random(15);
+        $schedule_run = false;
+        $random_str = str_random(15);
 
         if ($schedule_last_work) {
             if (!is_object($schedule_last_work)) {
@@ -41,35 +42,51 @@ class DeveloperController extends Controller
             $schedule_run = ($diff <= 2);
         }
 
-        return view('back.developer.settings', compact('schedule_run', 'random_str'));
-    }
+        $shared_hosting_cron_enabled = option('shared_hosting_cron_enabled', 'off') === 'on';
 
+        return view('back.developer.settings', compact(
+            'schedule_run',
+            'random_str',
+            'shared_hosting_cron_enabled'
+        ));
+    }
     public function updateSettings(Request $request)
     {
-        $developer_options = $request->all();
+        $scope = $request->input('settings_scope');
 
-        foreach ($developer_options as $option => $value) {
-            option_update($option, $value);
+        if ($scope === 'shared_hosting') {
+            // Process only shared hosting configurations
+            $cronEnabled = $request->input('shared_hosting_cron_enabled') === 'on' ? 'on' : 'off';
+            option_update('shared_hosting_cron_enabled', $cronEnabled);
+
+            return response('success');
         }
 
-        if ($request->app_debug_mode) {
-            change_env('APP_DEBUG', 'true');
-        } else {
-            change_env('APP_DEBUG', 'false');
+        if ($scope === 'general') {
+            // Update APP_DEBUG in env
+            $appDebug = $request->input('app_debug_mode') === 'true' ? 'true' : 'false';
+            change_env('APP_DEBUG', $appDebug);
+
+            // Update enable_help_videos option
+            $helpVideos = $request->input('enable_help_videos') === 'true' ? 'true' : 'false';
+            option_update('enable_help_videos', $helpVideos);
+
+            // Update updater token in env
+            change_env('SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN', $request->input('SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN'));
+
+            // Update DEBUGBAR_ENABLED in env
+            $debugbar = $request->input('debugbar_enabled') === 'true' ? 'true' : 'false';
+            change_env('DEBUGBAR_ENABLED', $debugbar);
+
+            // Update enable_old_updates option
+            $oldUpdates = $request->input('enable_old_updates') === 'true' ? 'true' : 'false';
+            option_update('enable_old_updates', $oldUpdates);
+            Artisan::call('config:clear');
+            return response('success');
         }
 
-        change_env('SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN', $request->SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN);
-
-        if ($request->debugbar_enabled) {
-            change_env('DEBUGBAR_ENABLED', 'true');
-        } else {
-            change_env('DEBUGBAR_ENABLED', 'false');
-        }
-        Artisan::call('config:clear');
-
-        return response('success');
+        return response('Invalid Settings Scope', 400);
     }
-
     public function downApplication(Request $request)
     {
         $request->validate([
@@ -449,5 +466,16 @@ class DeveloperController extends Controller
         ]);
     }
 
+    public function clearCache()
+    {
+        try {
+            Artisan::call('optimize:clear');
 
+            return response('success');
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return response('Cache Clear Failed', 500);
+        }
+    }
 }

@@ -2,12 +2,13 @@
 
 namespace App\Console;
 
+use App\Console\Commands\GenerateSitemap;
 use App\Jobs\CalculateViewers;
 use App\Jobs\HappyBirthday;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Database\Console\Migrations\InstallCommand;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
-
+use Illuminate\Support\Facades\File;
 class Kernel extends ConsoleKernel
 {
     /**
@@ -32,26 +33,103 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // run the queue worker "without overlapping"
-        // this will only start a new worker if the previous one has died
-        $schedule->command($this->getQueueCommand())
-            ->everyMinute()
-            ->withoutOverlapping();
+        $isSharedHosting = option('shared_hosting_cron_enabled', 'off') === 'on';
 
-        // restart the queue worker periodically to prevent memory issues
-        $schedule->command('queue:restart')
-            ->hourly();
+        /*
+         * On non-shared hosting, the queue worker is started
+         * from inside Laravel scheduler.
+         */
+        if (!$isSharedHosting) {
+            $schedule->command($this->getQueueCommand())
+                ->everyMinute()
+                ->withoutOverlapping();
 
-        $schedule->command('clean:import-logs')->daily();
+            // Restart the queue worker periodically to prevent memory issues.
+            $schedule->command('queue:restart')
+                ->hourly();
+        }
 
+        /*
+         * Clear extra files in tmp folder.
+         *
+         * On shared hosting, run directly in current PHP process
+         * to avoid Symfony Process / proc_open.
+         */
+        if ($isSharedHosting) {
+            $schedule->call(function () {
+                $folderPath = public_path('uploads/tmp');
+
+                // Ensure directory exists before reading files.
+                if (!File::exists($folderPath)) {
+                    return;
+                }
+
+                $oneHourAgo = now()->subHour()->timestamp;
+
+                foreach (File::files($folderPath) as $file) {
+                    // Delete files older than one hour.
+                    if (File::lastModified($file) < $oneHourAgo) {
+                        File::delete($file);
+                    }
+                }
+            })->dailyAt('22:00');
+        } else {
+            $schedule->command('clear:tmp')
+                ->dailyAt('22:00');
+        }
+
+        /*
+         * Update schedule heartbeat.
+         */
         $schedule->call(function () {
             option_update('schedule_run', now());
         })->everyMinute();
 
-        $schedule->job(new CalculateViewers)->dailyAt('00:00');
-        $schedule->job(new HappyBirthday)->dailyAt('01:00');
-    }
+        /*
+         * Generate sitemap files.
+         *
+         * On shared hosting, run directly in current PHP process
+         * to avoid Symfony Process / proc_open.
+         */
+        if ($isSharedHosting) {
+            $schedule->call(function () {
+                app(GenerateSitemap::class)->handle();
+            })->dailyAt('00:00');
+        } else {
+            $schedule->command('sitemap:generate')
+                ->dailyAt('00:00');
+        }
 
+        /*
+         * Dispatch CalculateViewers job.
+         *
+         * On shared hosting, run directly in current PHP process
+         * to avoid Symfony Process / proc_open.
+         */
+        if ($isSharedHosting) {
+            $schedule->call(function () {
+                (new CalculateViewers)->handle();
+            })->dailyAt('00:00');
+        } else {
+            $schedule->job(new CalculateViewers)
+                ->dailyAt('00:00');
+        }
+
+        /*
+         * Dispatch HappyBirthday job.
+         *
+         * On shared hosting, run directly in current PHP process
+         * to avoid Symfony Process / proc_open.
+         */
+        if ($isSharedHosting) {
+            $schedule->call(function () {
+                (new HappyBirthday)->handle();
+            })->dailyAt('01:00');
+        } else {
+            $schedule->job(new HappyBirthday)
+                ->dailyAt('01:00');
+        }
+    }
     /**
      * Register the commands for the application.
      *
