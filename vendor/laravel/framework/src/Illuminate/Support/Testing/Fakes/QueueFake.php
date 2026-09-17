@@ -9,9 +9,12 @@ use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Contracts\Queue\Queue;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Events\CallQueuedListener;
+use Illuminate\Queue\Attributes\Delay;
+use Illuminate\Queue\Attributes\ReadsQueueAttributes;
 use Illuminate\Queue\CallQueuedClosure;
 use Illuminate\Queue\Jobs\InspectedJob;
 use Illuminate\Queue\QueueManager;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Support\Traits\ReflectsClosures;
@@ -24,7 +27,7 @@ use function Illuminate\Support\enum_value;
  */
 class QueueFake extends QueueManager implements Fake, Queue
 {
-    use ReflectsClosures;
+    use ReadsQueueAttributes, ReflectsClosures;
 
     /**
      * The original queue manager.
@@ -90,6 +93,20 @@ class QueueFake extends QueueManager implements Fake, Queue
     protected bool $serializeAndRestore = false;
 
     /**
+     * The callbacks that should be invoked before pushing a job.
+     *
+     * @var array<int, callable>
+     */
+    protected $beforePushingCallbacks = [];
+
+    /**
+     * The callbacks that should be invoked after pushing a job.
+     *
+     * @var array<int, callable>
+     */
+    protected $afterPushingCallbacks = [];
+
+    /**
      * Create a new fake queue instance.
      *
      * @param  \Illuminate\Contracts\Foundation\Application  $app
@@ -136,7 +153,7 @@ class QueueFake extends QueueManager implements Fake, Queue
         }
 
         PHPUnit::assertTrue(
-            $this->pushed($job, $callback)->count() > 0,
+            $this->pushed($job, $callback)->isNotEmpty(),
             "The expected [{$job}] job was not pushed."
         );
     }
@@ -253,7 +270,7 @@ class QueueFake extends QueueManager implements Fake, Queue
         $chain = (new Collection($expectedChain))->map(fn ($job) => serialize($job))->all();
 
         PHPUnit::assertTrue(
-            $this->pushed($job, $callback)->filter(fn ($job) => $job->chained == $chain)->isNotEmpty(),
+            $this->pushed($job, $callback)->contains(fn ($job) => $job->chained == $chain),
             'The expected chain was not pushed.'
         );
     }
@@ -268,16 +285,14 @@ class QueueFake extends QueueManager implements Fake, Queue
      */
     protected function assertPushedWithChainOfClasses($job, $expectedChain, $callback)
     {
-        $matching = $this->pushed($job, $callback)->map->chained->map(function ($chain) {
-            return (new Collection($chain))->map(function ($job) {
+        $matching = $this->pushed($job, $callback)->contains(function ($pushedJob) use ($expectedChain) {
+            return (new Collection($pushedJob->chained))->map(function ($job) {
                 return get_class(unserialize($job));
-            });
-        })->filter(function ($chain) use ($expectedChain) {
-            return $chain->all() === $expectedChain;
+            })->all() === $expectedChain;
         });
 
         PHPUnit::assertTrue(
-            $matching->isNotEmpty(), 'The expected chain was not pushed.'
+            $matching, 'The expected chain was not pushed.'
         );
     }
 
@@ -311,7 +326,7 @@ class QueueFake extends QueueManager implements Fake, Queue
      */
     protected function isChainOfObjects($chain)
     {
-        return ! (new Collection($chain))->contains(fn ($job) => ! is_object($job));
+        return (new Collection($chain))->doesntContain(fn ($job) => ! is_object($job));
     }
 
     /**
@@ -489,6 +504,46 @@ class QueueFake extends QueueManager implements Fake, Queue
     }
 
     /**
+     * Get the number of jobs across every queue.
+     *
+     * @return int
+     */
+    public function totalSize()
+    {
+        return $this->allPendingJobs()->count() + $this->allReservedJobs()->count();
+    }
+
+    /**
+     * Get the number of pending jobs across every queue.
+     *
+     * @return int
+     */
+    public function totalPendingSize()
+    {
+        return $this->allPendingJobs()->count();
+    }
+
+    /**
+     * Get the number of delayed jobs across every queue.
+     *
+     * @return int
+     */
+    public function totalDelayedSize()
+    {
+        return $this->allDelayedJobs()->count();
+    }
+
+    /**
+     * Get the number of reserved jobs across every queue.
+     *
+     * @return int
+     */
+    public function totalReservedSize()
+    {
+        return $this->allReservedJobs()->count();
+    }
+
+    /**
      * Get the pending jobs for the given queue.
      *
      * @param  \UnitEnum|string|null  $queue
@@ -552,14 +607,14 @@ class QueueFake extends QueueManager implements Fake, Queue
         return (new Collection($jobs))
             ->flatten(1)
             ->map(fn ($data) => new InspectedJob(
-                uuid: null,
+                uuid: $data['uuid'] ?? null,
                 queue: $data['queue'],
                 name: is_object($data['job'])
                     ? (method_exists($data['job'], 'displayName') ? $data['job']->displayName() : get_class($data['job']))
                     : $data['job'],
                 attempts: 0,
                 payload: [],
-                createdAt: null,
+                createdAt: isset($data['createdAt']) ? Carbon::createFromTimestamp($data['createdAt']) : null,
             ));
     }
 
@@ -581,7 +636,10 @@ class QueueFake extends QueueManager implements Fake, Queue
      */
     public function creationTimeOfOldestPendingJob($queue = null)
     {
-        return null;
+        return (new Collection($this->jobs))
+            ->flatten(1)
+            ->whereStrict('queue', enum_value($queue))
+            ->min('createdAt');
     }
 
     /**
@@ -596,15 +654,21 @@ class QueueFake extends QueueManager implements Fake, Queue
     {
         $queue = enum_value($queue);
 
+        foreach ($this->beforePushingCallbacks as $callback) {
+            call_user_func($callback, $job, $data, $queue);
+        }
+
         if ($this->shouldFakeJob($job)) {
             if ($job instanceof Closure) {
                 $job = CallQueuedClosure::create($job);
             }
 
             $this->jobs[is_object($job) ? get_class($job) : $job][] = [
+                'uuid' => (string) Str::uuid(),
                 'job' => $this->serializeAndRestore ? $this->serializeAndRestoreJob($job) : $job,
                 'queue' => $queue,
                 'data' => $data,
+                'createdAt' => Carbon::now()->getTimestamp(),
             ];
 
             if ($job instanceof ShouldBeUnique) {
@@ -614,6 +678,10 @@ class QueueFake extends QueueManager implements Fake, Queue
             is_object($job) && isset($job->connection)
                 ? $this->queue->connection($job->connection)->push($job, $data, $queue)
                 : $this->queue->push($job, $data, $queue);
+        }
+
+        foreach ($this->afterPushingCallbacks as $callback) {
+            call_user_func($callback, $job, $data, $queue);
         }
     }
 
@@ -687,8 +755,10 @@ class QueueFake extends QueueManager implements Fake, Queue
     {
         if ($this->shouldFakeJob($job)) {
             $this->delayed[is_object($job) ? get_class($job) : $job][] = [
+                'uuid' => (string) Str::uuid(),
                 'job' => $job,
                 'queue' => enum_value($queue),
+                'createdAt' => Carbon::now()->getTimestamp(),
             ];
         }
 
@@ -738,8 +808,10 @@ class QueueFake extends QueueManager implements Fake, Queue
         }
 
         $this->reserved[is_object($job) ? get_class($job) : $job][] = [
+            'uuid' => (string) Str::uuid(),
             'job' => $this->serializeAndRestore ? $this->serializeAndRestoreJob($job) : $job,
             'queue' => $queue,
+            'createdAt' => Carbon::now()->getTimestamp(),
         ];
     }
 
@@ -765,7 +837,13 @@ class QueueFake extends QueueManager implements Fake, Queue
     public function bulk($jobs, $data = '', $queue = null)
     {
         foreach ($jobs as $job) {
-            $this->push($job, $data, $queue);
+            $delay = is_object($job) ? $this->getAttributeValue($job, Delay::class, 'delay') : null;
+
+            if (isset($delay)) {
+                $this->later($delay, $job, $data, $queue);
+            } else {
+                $this->push($job, $data, $queue);
+            }
         }
     }
 
@@ -837,6 +915,32 @@ class QueueFake extends QueueManager implements Fake, Queue
     public function clearReserved()
     {
         $this->reserved = [];
+    }
+
+    /**
+     * Register a callback to be invoked before pushing a job.
+     *
+     * @param  callable  $callback
+     * @return $this
+     */
+    public function beforePushing(callable $callback)
+    {
+        $this->beforePushingCallbacks[] = $callback;
+
+        return $this;
+    }
+
+    /**
+     * Register a callback to be invoked after pushing a job.
+     *
+     * @param  callable  $callback
+     * @return $this
+     */
+    public function afterPushing(callable $callback)
+    {
+        $this->afterPushingCallbacks[] = $callback;
+
+        return $this;
     }
 
     /**

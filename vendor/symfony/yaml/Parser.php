@@ -200,6 +200,8 @@ class Parser
                         $subTag,
                         $this->parseBlock($this->getRealCurrentLineNb() + 1, $this->getNextEmbedBlock(null, true), $flags)
                     );
+                } elseif (self::preg_match('/^'.self::TAG_PATTERN.' +'.self::BLOCK_SCALAR_HEADER_PATTERN.'$/', $values['value'])) {
+                    $data[] = $this->parseValue($values['value'], $flags, $context);
                 } else {
                     if (
                         isset($values['leadspaces'])
@@ -254,6 +256,12 @@ class Parser
                     $allowOverwrite = true;
                     if (isset($values['value'][0]) && '*' === $values['value'][0]) {
                         $refName = substr(rtrim($values['value']), 1);
+
+                        // remove comments
+                        if (self::preg_match('/[ \t]+#/', $refName, $match, \PREG_OFFSET_CAPTURE)) {
+                            $refName = substr($refName, 0, $match[0][1]);
+                        }
+
                         if (!\array_key_exists($refName, $this->refs)) {
                             if (false !== $pos = array_search($refName, $this->refsBeingParsed, true)) {
                                 throw new ParseException(\sprintf('Circular reference [%s] detected for reference "%s".', implode(', ', array_merge(\array_slice($this->refsBeingParsed, $pos), [$refName])), $refName), $this->currentLineNb + 1, $this->currentLine, $this->filename);
@@ -329,7 +337,7 @@ class Parser
                         // But overwriting is allowed when a merge node is used in current block.
                         if ($allowOverwrite || !isset($data[$key])) {
                             if (!$allowOverwrite && \array_key_exists($key, $data)) {
-                                trigger_deprecation('symfony/yaml', '7.2', 'Duplicate key "%s" detected on line %d whilst parsing YAML. Silent handling of duplicate mapping keys in YAML is deprecated and will throw a ParseException in 8.0.', $key, $this->getRealCurrentLineNb() + 1);
+                                throw new ParseException(\sprintf('Duplicate key "%s" detected.', $key), $this->getRealCurrentLineNb() + 1, $this->currentLine);
                             }
 
                             if (null !== $subTag) {
@@ -354,7 +362,7 @@ class Parser
                             $data += $value;
                         } elseif ($allowOverwrite || !isset($data[$key])) {
                             if (!$allowOverwrite && \array_key_exists($key, $data)) {
-                                trigger_deprecation('symfony/yaml', '7.2', 'Duplicate key "%s" detected on line %d whilst parsing YAML. Silent handling of duplicate mapping keys in YAML is deprecated and will throw a ParseException in 8.0.', $key, $this->getRealCurrentLineNb() + 1);
+                                throw new ParseException(\sprintf('Duplicate key "%s" detected.', $key), $this->getRealCurrentLineNb() + 1, $this->currentLine);
                             }
 
                             // Spec: Keys MUST be unique; first one wins.
@@ -374,7 +382,7 @@ class Parser
                     // But overwriting is allowed when a merge node is used in current block.
                     if ($allowOverwrite || !isset($data[$key])) {
                         if (!$allowOverwrite && \array_key_exists($key, $data)) {
-                            trigger_deprecation('symfony/yaml', '7.2', 'Duplicate key "%s" detected on line %d whilst parsing YAML. Silent handling of duplicate mapping keys in YAML is deprecated and will throw a ParseException in 8.0.', $key, $this->getRealCurrentLineNb() + 1);
+                            throw new ParseException(\sprintf('Duplicate key "%s" detected.', $key), $this->getRealCurrentLineNb() + 1, $this->currentLine);
                         }
 
                         $data[$key] = $value;
@@ -745,10 +753,11 @@ class Parser
     private function parseValue(string $value, int $flags, string $context): mixed
     {
         if (str_starts_with($value, '*')) {
-            if (false !== $pos = strpos($value, '#')) {
-                $value = substr($value, 1, $pos - 2);
-            } else {
-                $value = substr($value, 1);
+            $value = substr($value, 1);
+
+            // remove comments
+            if (self::preg_match('/[ \t]+#/', $value, $match, \PREG_OFFSET_CAPTURE)) {
+                $value = substr($value, 0, $match[0][1]);
             }
 
             if (!\array_key_exists($value, $this->refs)) {
@@ -1032,7 +1041,7 @@ class Parser
         $this->offset += $count;
 
         // remove leading comments
-        $trimmedValue = preg_replace('#^(?:\#[^\n]*+\n)++#', '', $value, -1, $count);
+        $trimmedValue = preg_replace('#^(?>(\#.*?\n))+#s', '', $value, -1, $count);
         if (1 === $count) {
             // items have been removed, update the offset
             $this->offset += substr_count($value, "\n") - substr_count($trimmedValue, "\n");
@@ -1191,7 +1200,7 @@ class Parser
             if ($this->isCurrentLineBlank()) {
                 $previousLineWasNewline = true;
                 $previousLineWasTerminatedWithBackslash = false;
-            } elseif ('\\' === $this->currentLine[-1]) {
+            } elseif ('"' === $quotation && 1 === (\strlen($this->currentLine) - \strlen(rtrim($this->currentLine, '\\'))) % 2) {
                 $previousLineWasNewline = false;
                 $previousLineWasTerminatedWithBackslash = true;
             } else {
@@ -1253,6 +1262,18 @@ class Parser
     }
 
     private function lexInlineStructure(int &$cursor, string $closingTag, bool $consumeUntilEol = true): string
+    {
+        $state = $this->getState();
+        $state->enterNestingLevel($this->getRealCurrentLineNb() + 1, $this->currentLine, $this->filename);
+
+        try {
+            return $this->doLexInlineStructure($cursor, $closingTag, $consumeUntilEol);
+        } finally {
+            $state->leaveNestingLevel();
+        }
+    }
+
+    private function doLexInlineStructure(int &$cursor, string $closingTag, bool $consumeUntilEol = true): string
     {
         $value = $this->currentLine[$cursor];
         ++$cursor;

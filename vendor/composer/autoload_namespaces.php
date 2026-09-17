@@ -9,6 +9,5 @@ return array(
     'stringEncode' => array($vendorDir . '/paquettg/string-encode/src'),
     'Rap2hpoutre\\LaravelLogViewer\\' => array($vendorDir . '/rap2hpoutre/laravel-log-viewer/src'),
     'Milon\\Barcode' => array($vendorDir . '/milon/barcode/src'),
-    'HTMLPurifier' => array($vendorDir . '/ezyang/htmlpurifier/library'),
     'Detection' => array($vendorDir . '/mobiledetect/mobiledetectlib/namespaced'),
 );

@@ -516,36 +516,6 @@
                                                     {{-- Send "false" when the checkbox is unchecked --}}
                                                     <input
                                                         type="hidden"
-                                                        name="enable_help_videos"
-                                                        value="false"
-                                                    >
-
-                                                    <input
-                                                        type="checkbox"
-                                                        name="enable_help_videos"
-                                                        value="true"
-                                                        {{ option('enable_help_videos', 'true') == 'true' ? 'checked' : '' }}
-                                                    >
-
-                                                    <span class="vs-checkbox">
-                                                        <span class="vs-checkbox--check">
-                                                            <i class="vs-icon feather icon-check"></i>
-                                                        </span>
-                                                    </span>
-
-                                                    <span>
-                                                        فعال کردن آموزش تصویری صفحات
-                                                    </span>
-                                                </div>
-                                            </fieldset>
-                                        </div>
-
-                                        <div class="col-md-3">
-                                            <fieldset class="checkbox">
-                                                <div class="vs-checkbox-con vs-checkbox-primary">
-                                                    {{-- Send "false" when the checkbox is unchecked --}}
-                                                    <input
-                                                        type="hidden"
                                                         name="enable_old_updates"
                                                         value="false"
                                                     >

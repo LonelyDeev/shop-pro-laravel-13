@@ -47,7 +47,7 @@ class Form implements Arrayable
             return $this->parentValidateOnly($field, $rules, $messages, $attributes, $dataOverrides);
         } catch (ValidationException $e) {
             invade($e->validator)->messages = $this->prefixErrorBag(invade($e->validator)->messages)->merge(
-                $this->getComponent()->getErrorBag()
+                $this->getComponent()->errorBagExcept($this->getPropertyName() . '.' . $field)
             );
 
             invade($e->validator)->failedRules = $this->prefixArray(invade($e->validator)->failedRules);
@@ -108,6 +108,17 @@ class Form implements Arrayable
         $freshInstance = new static($this->getComponent(), $this->getPropertyName());
 
         foreach ($properties as $property) {
+            $property = str($property);
+
+            if (! $property->contains('.') && property_exists($freshInstance, (string) $property)) {
+                $isInitialized = (new \ReflectionProperty($freshInstance, (string) $property))->isInitialized($freshInstance);
+
+                if (! $isInitialized) {
+                    data_forget($this, (string) $property);
+                    continue;
+                }
+            }
+
             data_set($this, $property, data_get($freshInstance, $property));
         }
     }
