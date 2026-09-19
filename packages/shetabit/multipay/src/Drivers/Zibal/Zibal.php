@@ -3,10 +3,12 @@
 namespace Shetabit\Multipay\Drivers\Zibal;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\RequestOptions;
 use Shetabit\Multipay\Abstracts\Driver;
-use Shetabit\Multipay\Exceptions\InvalidPaymentException;
-use Shetabit\Multipay\Exceptions\PurchaseFailedException;
 use Shetabit\Multipay\Contracts\ReceiptInterface;
+use Shetabit\Multipay\Exceptions\InvalidPaymentException;
+use Shetabit\Multipay\Exceptions\PreviouslyVerifiedException;
+use Shetabit\Multipay\Exceptions\PurchaseFailedException;
 use Shetabit\Multipay\Invoice;
 use Shetabit\Multipay\Receipt;
 use Shetabit\Multipay\RedirectionForm;
@@ -15,12 +17,9 @@ use Shetabit\Multipay\Request;
 class Zibal extends Driver
 {
     /**
-     * Zibal Client.
-     *
-     * @var object
+     * @var \GuzzleHttp\Client
      */
-    protected $client;
-
+    public $client;
     /**
      * Invoice
      *
@@ -39,7 +38,6 @@ class Zibal extends Driver
      * Zibal constructor.
      * Construct the class with the relevant settings.
      *
-     * @param Invoice $invoice
      * @param $settings
      */
     public function __construct(Invoice $invoice, $settings)
@@ -58,89 +56,85 @@ class Zibal extends Driver
      */
     public function purchase()
     {
-        $details = $this->invoice->getDetails();
+        $mobile = $this->invoice->getDetail('phone')
+            ?? $this->invoice->getDetail('cellphone')
+            ?? $this->invoice->getDetail('mobile');
 
-        // convert to toman
-        $toman = $this->invoice->getAmount() * 10;
+        $orderId = $this->invoice->getDetail('orderId')
+            ?? $this->invoice->getDetail('order_id')
+            ?? $this->invoice->getUuid();
 
-        $orderId = crc32($this->invoice->getUuid()).time();
-        if (!empty($details['orderId'])) {
-            $orderId = $details['orderId'];
-        } elseif (!empty($details['order_id'])) {
-            $orderId = $details['order_id'];
+        $data = [
+            'callbackUrl' => $this->settings->callbackUrl,
+            'merchant' => $this->settings->merchantId,
+            'amount' => $this->invoice->getAmount() * ($this->settings->currency == 'T' ? 10 : 1),
+            'description' => $this->invoice->getDetail('description') ?? $this->settings->description,
+            'mobile' => $mobile,
+            'orderId' => $orderId
+        ];
+
+        /**
+         * can pass optionalField in the invoice's details,
+         * and it will be merged with the data
+         *
+         * supported optionalFields:
+         * - allowedCards
+         * - ledgerId
+         * - nationalCode
+         * - checkMobileWithCard
+         * - percentMode
+         * - feeMode
+         * - multiplexingInfos
+         *
+         * @see https://help.zibal.ir/IPG/API/#request
+         */
+        if (!is_null($optionalField = $this->invoice->getDetail('optionalField')) && is_array($optionalField)) {
+            $data = array_merge($data, $optionalField);
         }
 
-        $mobile = null;
-        if (!empty($details['mobile'])) {
-            $mobile = $details['mobile'];
-        } elseif (!empty($details['phone'])) {
-            $mobile = $details['phone'];
-        }
-
-        $description = null;
-        if (!empty($details['description'])) {
-            $description = $details['description'];
-        } else {
-            $description = $this->settings->description;
-        }
-
-        $data = array(
-            "merchant"=> $this->settings->merchantId, //required
-            "callbackUrl"=> $this->settings->callbackUrl, //required
-            "amount"=> $toman, //required
-            "orderId"=> $orderId, //optional
-            'mobile' => $mobile, //optional for mpg
-            "description" => $description, //optional
-        );
-
-        //checking if optional allowedCards parameter exists
-        $allowedCards = null;
-        if (!empty($details['allowedCards'])) {
-            $allowedCards = $details['allowedCards'];
-        } elseif (!empty($this->settings->allowedCards)) {
-            $allowedCards = $this->settings->allowedCards;
-        }
-
-        if ($allowedCards != null) {
-            $allowedCards = array(
-                'allowedCards' => $allowedCards,
+        $response = $this
+            ->client
+            ->request(
+                'POST',
+                $this->settings->apiPurchaseUrl,
+                [
+                    RequestOptions::BODY => json_encode($data),
+                    RequestOptions::HEADERS => [
+                        'Content-Type' => 'application/json',
+                    ],
+                    RequestOptions::HTTP_ERRORS => false,
+                ]
             );
-            $data = array_merge($data, $allowedCards);
+
+
+        $body = json_decode($response->getBody()->getContents(), true);
+
+        if ($response->getStatusCode() != 200) {
+            // connection error
+            $message = $body['message'] ?? 'خطا در هنگام درخواست برای پرداخت رخ داده است.';
+            throw new PurchaseFailedException($message, (int) $response->getStatusCode());
+        } elseif ($body['result'] != 100) {
+            // gateway errors
+            throw new PurchaseFailedException($this->translateStatus($body['result']) ?? $body['message'], $body['result']);
         }
 
-        $response = $this->client->request(
-            'POST',
-            $this->settings->apiPurchaseUrl,
-            ["json" => $data, "http_errors" => false]
-        );
-
-        $body = json_decode($response->getBody()->getContents(), false);
-
-        if ($body->result != 100) {
-            // some error has happened
-            throw new PurchaseFailedException($body->message);
-        }
-
-        $this->invoice->transactionId($body->trackId);
-
+        $this->invoice->transactionId($body['trackId']);
         // return the transaction's id
         return $this->invoice->getTransactionId();
     }
 
     /**
      * Pay the Invoice
-     *
-     * @return RedirectionForm
      */
-    public function pay() : RedirectionForm
+    public function pay(): RedirectionForm
     {
         $payUrl = $this->settings->apiPaymentUrl.$this->invoice->getTransactionId();
 
-        if (strtolower($this->settings->mode) == 'direct') {
+        if (strtolower($this->settings->mode) === 'direct') {
             $payUrl .= '/direct';
         }
 
-        return $this->redirectWithForm($payUrl);
+        return $this->redirectWithForm($payUrl, [], 'GET');
     }
 
     /**
@@ -151,68 +145,84 @@ class Zibal extends Driver
      * @throws InvalidPaymentException
      * @throws \GuzzleHttp\Exception\GuzzleException
      */
-    public function verify() : ReceiptInterface
+    public function verify(): ReceiptInterface
     {
-        $successFlag = Request::input('success');
-        $orderId = Request::input('orderId');
-        $transactionId = $this->invoice->getTransactionId() ?? Request::input('trackId');
+        if (!is_null($successFlag = Request::input('success')) && !in_array($successFlag, [1, 2])) {
+            $status = Request::input('status');
 
-        if ($successFlag != 1) {
-            $this->notVerified('پرداخت با شکست مواجه شد');
+            throw new InvalidPaymentException($this->translateStatus($status), $status);
         }
 
-        //start verfication
-        $data = array(
-            "merchant" => $this->settings->merchantId, //required
-            "trackId" => $transactionId, //required
-        );
+        //start verification
+        $data = [
+            'merchant' => $this->settings->merchantId,
+            'trackId' => (int) ($this->invoice->getTransactionId() ?? Request::input('trackId')),
+        ];
 
         $response = $this->client->request(
             'POST',
             $this->settings->apiVerificationUrl,
-            ["json" => $data, "http_errors" => false]
+            [
+                RequestOptions::BODY => json_encode($data),
+                RequestOptions::HEADERS => [
+                    'Accept' => 'application/json',
+                    'Content-Type' => 'application/json',
+                ],
+                RequestOptions::HTTP_ERRORS => false,
+            ]
         );
 
-        $body = json_decode($response->getBody()->getContents(), false);
+        $body = json_decode($response->getBody()->getContents(), true);
 
-        if ($body->result != 100) {
-            $this->notVerified($body->message);
+        if ($response->getStatusCode() != 200) {
+            // connection error
+            $message = $body['message'] ?? 'خطا در هنگام وریفای تراکنش رخ داده است.';
+            throw new PurchaseFailedException($message, (int) $response->getStatusCode());
+        } elseif ($body['result'] == 201) {
+            // transaction has been verified before
+
+            throw new PreviouslyVerifiedException($this->translateStatus($body['result']) ?? $body['message'], $body['result']);
+        } elseif ($body['result'] != 100) {
+            // gateway errors
+            throw new PurchaseFailedException($this->translateStatus($body['result']) ?? $body['message'], $body['result']);
         }
 
-        /*
-            for more info:
-            var_dump($body);
-        */
-
-        return $this->createReceipt($orderId);
+        return (new Receipt('Zibal', $body['refNumber']))->detail($body);
     }
 
-    /**
-     * Generate the payment's receipt
-     *
-     * @param $referenceId
-     *
-     * @return Receipt
-     */
-    protected function createReceipt($referenceId)
+    private function translateStatus($status): string
     {
-        $receipt = new Receipt('Zibal', $referenceId);
+        $translations = [
+            -2 => 'خطای داخلی',
+            -1 => 'در انتظار پردخت',
+            2 => 'پرداخت شده - تاییدنشده',
+            3 => 'تراکنش توسط کاربر لغو شد.',
+            4 => 'شماره کارت نامعتبر می‌باشد.',
+            5 => 'موجودی حساب کافی نمی‌باشد.',
+            6 => 'رمز واردشده اشتباه می‌باشد.',
+            7 => 'تعداد درخواست‌ها بیش از حد مجاز می‌باشد.',
+            8 => 'تعداد پرداخت اینترنتی روزانه بیش از حد مجاز می‌باشد.',
+            9 => 'مبلغ پرداخت اینترنتی روزانه بیش از حد مجاز می‌باشد.',
+            10 => 'صادرکننده‌ی کارت نامعتبر می‌باشد.',
+            11 => '‌خطای سوییچ',
+            12 => 'کارت قابل دسترسی نمی‌باشد.',
+            15 => 'تراکنش استرداد شده',
+            16 => 'تراکنش در حال استرداد',
+            18 => 'تراکنش ریورس شده',
+            102 => 'merchantیافت نشد.',
+            103 => 'merchantغیرفعال',
+            104 => 'merchantنامعتبر',
+            105 => 'amountبایستی بزرگتر از 1,000 ریال باشد.',
+            106 => 'callbackUrlنامعتبر می‌باشد. (شروع با http و یا https)',
+            113 => 'amountمبلغ تراکنش از سقف میزان تراکنش بیشتر است.',
+            114 => 'کدملی ارسالی نامعتبر است.',
+            201 => 'قبلا تایید شده',
+            202 => 'سفارش پرداخت نشده یا ناموفق بوده است.',
+            203 => 'trackId نامعتبر می‌باشد.',
+        ];
 
-        return $receipt;
-    }
+        $unknownError = 'خطای ناشناخته ای رخ داده است.';
 
-    /**
-     * Trigger an exception
-     *
-     * @param $message
-     * @throws InvalidPaymentException
-     */
-    private function notVerified($message)
-    {
-        if (empty($message)) {
-            throw new InvalidPaymentException('خطای ناشناخته ای رخ داده است.');
-        } else {
-            throw new InvalidPaymentException($message);
-        }
+        return array_key_exists($status, $translations) ? $translations[$status] : $unknownError;
     }
 }

@@ -19,7 +19,7 @@ class Vandar extends Driver
      *
      * @var object
      */
-    protected $client;
+    protected \GuzzleHttp\Client $client;
 
     /**
      * Invoice
@@ -46,16 +46,37 @@ class Vandar extends Driver
     }
 
     /**
+     * Retrieve data from details using its name.
+     *
+     * @return string
+     */
+    private function extractDetails(string $name)
+    {
+        return empty($this->invoice->getDetails()[$name]) ? null : $this->invoice->getDetails()[$name];
+    }
+
+    /**
      * @return string
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Shetabit\Multipay\Exceptions\PurchaseFailedException
      */
     public function purchase()
     {
+        $mobile = $this->extractDetails('mobile');
+        $description = $this->extractDetails('description');
+        $nationalCode = $this->extractDetails('national_code');
+        $validCard = $this->extractDetails('valid_card_number');
+        $factorNumber = $this->extractDetails('factorNumber');
+
         $data = [
             'api_key' => $this->settings->merchantId,
-            'amount' => $this->invoice->getAmount(),
-            'callback_url' => $this->settings->callbackUrl
+            'amount' => $this->invoice->getAmount() / ($this->settings->currency == 'T' ? 1 : 10), // convert to toman
+            'callback_url' => $this->settings->callbackUrl,
+            'description' => $description,
+            'mobile_number' => $mobile,
+            'national_code' => $nationalCode,
+            'valid_card_number' => $validCard,
+            'factorNumber' => $factorNumber,
         ];
 
         $response = $this->client
@@ -85,9 +106,6 @@ class Vandar extends Driver
         return $this->invoice->getTransactionId();
     }
 
-    /**
-     * @return \Shetabit\Multipay\RedirectionForm
-     */
     public function pay(): RedirectionForm
     {
         $url = $this->settings->apiPaymentUrl . $this->invoice->getTransactionId();
@@ -96,7 +114,6 @@ class Vandar extends Driver
     }
 
     /**
-     * @return ReceiptInterface
      *
      * @throws \GuzzleHttp\Exception\GuzzleException
      * @throws \Shetabit\Multipay\Exceptions\InvalidPaymentException
@@ -135,40 +152,44 @@ class Vandar extends Driver
                 $message = is_array($responseBody['error']) ? array_pop($responseBody['error']) : $responseBody['error'];
             }
 
-            if (isset($responseBody['errors']) and is_array($responseBody['errors'])) {
+            if (isset($responseBody['errors']) && is_array($responseBody['errors'])) {
                 $message = array_pop($responseBody['errors']);
             }
 
-            $this->notVerified($message ?? '');
+            $this->notVerified($message ?? '', $statusCode);
         }
 
-        return $this->createReceipt($token);
+        $receipt = $this->createReceipt($token);
+
+        $receipt->detail([
+            "amount" => $responseBody['amount'],
+            "realAmount" => $responseBody['realAmount'],
+            "wage" => $responseBody['wage'],
+            "cardNumber" => $responseBody['cardNumber'],
+        ]);
+
+        return $receipt;
     }
 
     /**
      * Generate the payment's receipt
      *
      * @param $referenceId
-     *
-     * @return Receipt
      */
-    protected function createReceipt($referenceId)
+    protected function createReceipt($referenceId): \Shetabit\Multipay\Receipt
     {
-        $receipt = new Receipt('vandar', $referenceId);
-
-        return $receipt;
+        return new Receipt('vandar', $referenceId);
     }
 
     /**
      * @param $message
      * @throws \Shetabit\Multipay\Exceptions\InvalidPaymentException
      */
-    protected function notVerified($message)
+    protected function notVerified($message, $status = 0)
     {
         if (empty($message)) {
-            throw new InvalidPaymentException('خطای ناشناخته ای رخ داده است.');
-        } else {
-            throw new InvalidPaymentException($message);
+            throw new InvalidPaymentException('خطای ناشناخته ای رخ داده است.', (int)$status);
         }
+        throw new InvalidPaymentException($message, (int)$status);
     }
 }

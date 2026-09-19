@@ -439,7 +439,7 @@
                                                     type="text"
                                                     name="SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN"
                                                     class="form-control ltr"
-                                                    value="{{ config('self-update.updater_token') }}"
+                                                    value="{{ option('SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN') }}"
                                                 >
                                             </div>
                                         </div>

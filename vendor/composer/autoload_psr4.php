@@ -7,6 +7,8 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'voku\\' => array($vendorDir . '/voku/portable-ascii/src/voku'),
+    'chillerlan\\SimpleCache\\' => array($vendorDir . '/chillerlan/php-cache/src'),
+    'chillerlan\\Settings\\' => array($vendorDir . '/chillerlan/php-settings-container/src'),
     'ZipStream\\' => array($vendorDir . '/maennchen/zipstream-php/src'),
     'Wikimedia\\Composer\\Merge\\V2\\' => array($vendorDir . '/wikimedia/composer-merge-plugin/src'),
     'Whoops\\' => array($vendorDir . '/filp/whoops/src/Whoops'),
@@ -59,8 +61,8 @@ return array(
     'Spatie\\Browsershot\\' => array($vendorDir . '/spatie/browsershot/src'),
     'Spatie\\Backup\\' => array($vendorDir . '/spatie/laravel-backup/src'),
     'Spatie\\Activitylog\\' => array($vendorDir . '/spatie/laravel-activitylog/src'),
-    'Shetabit\\Payment\\' => array($baseDir . '/packages/shetabit/payment/src'),
-    'Shetabit\\Multipay\\' => array($baseDir . '/packages/shetabit/multipay/src'),
+    'Shetabit\\Payment\\' => array($baseDir . '/packages/shetabit/payment/src', $vendorDir . '/shetabit/payment/src'),
+    'Shetabit\\Multipay\\' => array($baseDir . '/packages/shetabit/multipay/src', $vendorDir . '/shetabit/multipay/src'),
     'Sadegh19b\\LaravelPersianValidation\\' => array($vendorDir . '/sadegh19b/laravel-persian-validation/src'),
     'Ramsey\\Uuid\\' => array($vendorDir . '/ramsey/uuid/src'),
     'Ramsey\\Collection\\' => array($vendorDir . '/ramsey/collection/src'),

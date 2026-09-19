@@ -34,6 +34,7 @@
         "rachidlaasri/laravel-installer": "^4.1",
         "rap2hpoutre/laravel-log-viewer": "^3.1.0",
         "sadegh19b/laravel-persian-validation": "^2.1.0",
+        "shetabit/payment": "7.0.0",
         "spatie/image-optimizer": "^1.8",
         "spatie/laravel-activitylog": "^4.12",
         "spatie/laravel-backup": "^10.2.2",
