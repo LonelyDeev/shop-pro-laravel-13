@@ -11,6 +11,7 @@
 
     {{-- Favicon --}}
     <link rel="icon" type="image/png" sizes="16x16" href="{{ option('info_icon', theme_asset('images/favicon-32x32.png')) }}">
+    <link rel="apple-touch-icon" sizes="144x144" href="{{ option('info_icon', theme_asset('images/favicon-32x32.png')) }}"">
 
     {{-- SEO & Robots --}}
     <meta name="robots" content="index, follow" />
