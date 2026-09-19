@@ -76,6 +76,7 @@
 <script src="{{ theme_asset('js/vendor/jquery.fancybox.min.js') }}"></script>
 <script src="{{theme_asset('js/bootstrap.js')}}"></script>
 @stack('scripts')
+<script src="{{ asset('back/assets/js/customToast.js') }}?v=8"></script>
 <script src="{{ theme_asset("js/scripts.js") }}?v=11"></script>
 <script src="{{theme_asset('js/main.js')}}"></script>
 <script src="{{theme_asset('js/theia-sticky-sidebar.min.js')}}"></script>
