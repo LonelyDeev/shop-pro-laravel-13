@@ -218,60 +218,60 @@
             </div>
         </div>
     </div>
+    {{-- ====================== --}}
+    {{-- مدال‌ها --}}
+    {{-- ====================== --}}
+
+    {{-- مدال جزئیات پکیج --}}
+    <div class="modal fade pkg-modal" id="package-detail-modal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" role="document">
+            <div class="modal-content pkg-modal-content">
+                <div class="modal-header pkg-modal-header p-1">
+                    <h5 class="modal-title pkg-modal-title" id="modal-pkg-title"></h5>
+                    <button type="button" class="close pkg-modal-close-btn" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body pkg-modal-body" id="modal-pkg-body"></div>
+                <div class="modal-footer pkg-modal-footer" id="modal-pkg-footer"></div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Confirm uninstall modal --}}
+    <div class="modal fade" id="uninstall-modal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content pkg-confirm-modal">
+                <div class="modal-header pkg-confirm-header" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
+                    <h5 class="modal-title">
+                        <i class="feather icon-alert-triangle"></i> حذف ماژول
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body pkg-confirm-body">
+                    <p>آیا از حذف <strong id="uninstall-pkg-name"></strong> مطمئن هستید؟</p>
+                    <div class="pkg-confirm-alert" style="background:#fef2f2; border-color:#fecaca; color:#991b1b;">
+                        <i class="feather icon-alert-triangle"></i>
+                        <span>تمام فایل‌های ماژول از پوشه Modules حذف می‌شوند و در صورت وجود، جداول ماژول rollback می‌شوند. این عمل غیرقابل بازگشت است.</span>
+                    </div>
+                </div>
+                <div class="modal-footer pkg-confirm-footer">
+                    <button type="button" class="btn pkg-btn-ghost" data-dismiss="modal">انصراف</button>
+                    <form id="uninstall-form" style="display: inline;">
+                        @csrf
+                        <button type="submit" class="btn pkg-btn-danger">
+                            <i class="feather icon-trash-2"></i> بله، حذف شود
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 
 @endsection
 
-{{-- ====================== --}}
-{{-- مدال‌ها --}}
-{{-- ====================== --}}
-
-{{-- مدال جزئیات پکیج --}}
-<div class="modal fade pkg-modal" id="package-detail-modal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" role="document">
-        <div class="modal-content pkg-modal-content">
-            <div class="modal-header pkg-modal-header p-1">
-                <h5 class="modal-title pkg-modal-title" id="modal-pkg-title"></h5>
-                <button type="button" class="close pkg-modal-close-btn" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body pkg-modal-body" id="modal-pkg-body"></div>
-            <div class="modal-footer pkg-modal-footer" id="modal-pkg-footer"></div>
-        </div>
-    </div>
-</div>
-
-{{-- Confirm uninstall modal --}}
-<div class="modal fade" id="uninstall-modal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content pkg-confirm-modal">
-            <div class="modal-header pkg-confirm-header" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
-                <h5 class="modal-title">
-                    <i class="feather icon-alert-triangle"></i> حذف ماژول
-                </h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body pkg-confirm-body">
-                <p>آیا از حذف <strong id="uninstall-pkg-name"></strong> مطمئن هستید؟</p>
-                <div class="pkg-confirm-alert" style="background:#fef2f2; border-color:#fecaca; color:#991b1b;">
-                    <i class="feather icon-alert-triangle"></i>
-                    <span>تمام فایل‌های ماژول از پوشه Modules حذف می‌شوند و در صورت وجود، جداول ماژول rollback می‌شوند. این عمل غیرقابل بازگشت است.</span>
-                </div>
-            </div>
-            <div class="modal-footer pkg-confirm-footer">
-                <button type="button" class="btn pkg-btn-ghost" data-dismiss="modal">انصراف</button>
-                <form id="uninstall-form" style="display: inline;">
-                    @csrf
-                    <button type="submit" class="btn pkg-btn-danger">
-                        <i class="feather icon-trash-2"></i> بله، حذف شود
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
 
 @include('back.partials.plugins', ['plugins' => ['sweetalert2']])
 
