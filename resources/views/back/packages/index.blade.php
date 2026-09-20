@@ -256,68 +256,69 @@
         </div>
     </div>
 
+
+    {{-- ====================== --}}
+    {{-- مدال‌ها (بیرون از content wrapper برای جلوگیری از تداخل CSS) --}}
+    {{-- ====================== --}}
+
+    {{-- مدال جزئیات پکیج --}}
+    <div class="modal fade pkg-modal" id="package-detail-modal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" role="document">
+            <div class="modal-content pkg-modal-content">
+                <div class="modal-header pkg-modal-header p-1">
+                    <h5 class="modal-title pkg-modal-title" id="modal-pkg-title"></h5>
+                    <button type="button" class="close pkg-modal-close-btn" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body pkg-modal-body" id="modal-pkg-body">
+                    {{-- محتوا توسط JS پر می‌شود --}}
+                </div>
+                <div class="modal-footer pkg-modal-footer p-1" id="modal-pkg-footer"></div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Confirm install modal --}}
+    <div class="modal fade" id="install-confirm-modal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content pkg-confirm-modal">
+                <div class="modal-header pkg-confirm-header">
+                    <h5 class="modal-title">
+                        <i class="feather icon-download-cloud"></i> نصب پکیج
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body pkg-confirm-body">
+                    <p>آیا از نصب پکیج <strong id="confirm-pkg-name"></strong> مطمئن هستید؟</p>
+
+                    {{-- بخش انتخاب پلن (با JS پر می‌شه) --}}
+                    <div id="confirm-plans-section" class="confirm-plans-section d-none mt-3">
+                        <h6 class="mb-2"><i class="feather icon-tag"></i> انتخاب طرح قیمت‌گذاری</h6>
+                        <div id="confirm-plans-list" class="pkg-plans-list row"></div>
+                    </div>
+
+                    {{-- اطلاعات پرداخت --}}
+                    <div id="confirm-payment-info" class="pkg-confirm-alert d-none mt-3">
+                        <i class="feather icon-info"></i>
+                        <span>مبلغ قابل پرداخت: <strong id="confirm-pkg-price"></strong></span>
+                    </div>
+
+                    <input type="hidden" id="confirm-selected-plan" value="">
+                </div>
+                <div class="modal-footer pkg-confirm-footer">
+                    <button type="button" class="btn pkg-btn-ghost" data-dismiss="modal">انصراف</button>
+                    <button type="button" id="confirm-install-btn" class="btn pkg-btn-primary">
+                        <i class="feather icon-download-cloud"></i> <span id="confirm-btn-text">شروع نصب</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 @endsection
-
-{{-- ====================== --}}
-{{-- مدال‌ها (بیرون از content wrapper برای جلوگیری از تداخل CSS) --}}
-{{-- ====================== --}}
-
-{{-- مدال جزئیات پکیج --}}
-<div class="modal fade pkg-modal" id="package-detail-modal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" role="document">
-        <div class="modal-content pkg-modal-content">
-            <div class="modal-header pkg-modal-header p-1">
-                <h5 class="modal-title pkg-modal-title" id="modal-pkg-title"></h5>
-                <button type="button" class="close pkg-modal-close-btn" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body pkg-modal-body" id="modal-pkg-body">
-                {{-- محتوا توسط JS پر می‌شود --}}
-            </div>
-            <div class="modal-footer pkg-modal-footer p-1" id="modal-pkg-footer"></div>
-        </div>
-    </div>
-</div>
-
-{{-- Confirm install modal --}}
-<div class="modal fade" id="install-confirm-modal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content pkg-confirm-modal">
-            <div class="modal-header pkg-confirm-header">
-                <h5 class="modal-title">
-                    <i class="feather icon-download-cloud"></i> نصب پکیج
-                </h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body pkg-confirm-body">
-                <p>آیا از نصب پکیج <strong id="confirm-pkg-name"></strong> مطمئن هستید؟</p>
-
-                {{-- بخش انتخاب پلن (با JS پر می‌شه) --}}
-                <div id="confirm-plans-section" class="confirm-plans-section d-none mt-3">
-                    <h6 class="mb-2"><i class="feather icon-tag"></i> انتخاب طرح قیمت‌گذاری</h6>
-                    <div id="confirm-plans-list" class="pkg-plans-list row"></div>
-                </div>
-
-                {{-- اطلاعات پرداخت --}}
-                <div id="confirm-payment-info" class="pkg-confirm-alert d-none mt-3">
-                    <i class="feather icon-info"></i>
-                    <span>مبلغ قابل پرداخت: <strong id="confirm-pkg-price"></strong></span>
-                </div>
-
-                <input type="hidden" id="confirm-selected-plan" value="">
-            </div>
-            <div class="modal-footer pkg-confirm-footer">
-                <button type="button" class="btn pkg-btn-ghost" data-dismiss="modal">انصراف</button>
-                <button type="button" id="confirm-install-btn" class="btn pkg-btn-primary">
-                    <i class="feather icon-download-cloud"></i> <span id="confirm-btn-text">شروع نصب</span>
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
 
 @include('back.partials.plugins', ['plugins' => ['sweetalert2']])
 
