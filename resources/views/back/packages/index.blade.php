@@ -317,6 +317,38 @@
         </div>
     </div>
 
+
+    {{-- ====================== --}}
+    {{-- مودال نتیجه پرداخت (بعد از بازگشت از درگاه) --}}
+    {{-- ====================== --}}
+    <div class="modal fade" id="payment-result-modal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered pay-dialog" role="document">
+            <div class="modal-content pay-card">
+                <div class="pay-card-glow"></div>
+                <button type="button" class="close pay-close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <div class="pay-body">
+                    <div class="pay-icon-wrap">
+                        <div class="pay-icon">
+                            <svg viewBox="0 0 52 52">
+                                <circle class="pay-svg-circle" cx="26" cy="26" r="24"/>
+                                <path class="pay-svg-check" d="M14.5 27.5 L23 36 L38 18"/>
+                                <path class="pay-svg-cross" d="M17 17 L35 35 M35 17 L17 35"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <h3 class="pay-title" id="pay-title"></h3>
+                    <p class="pay-message" id="pay-message"></p>
+                    <div class="pay-receipt d-none" id="pay-details"></div>
+                    <div class="pay-actions">
+                        <button type="button" class="btn pay-btn-main" id="pay-action-main"></button>
+                        <button type="button" class="btn pay-btn-ghost" data-dismiss="modal">بستن</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @include('back.partials.plugins', ['plugins' => ['sweetalert2']])
@@ -333,6 +365,9 @@
             status:  '{{ route("admin.packages.status", ":slug") }}',
             checkUpdates: '{{ route("admin.packages.check-updates") }}',
         };
+        @if (session('payment_result'))
+            window.paymentResult = @json(session('payment_result'));
+        @endif
     </script>
     <script src="{{ asset('back/assets/js/pages/packages/index.js') }}?v=4"></script>
     <script src="{{ asset('back/assets/js/pages/packages/modal.js') }}?v=4"></script>

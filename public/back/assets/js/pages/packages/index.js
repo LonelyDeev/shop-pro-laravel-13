@@ -282,4 +282,101 @@
         }
     }
 
+
+    function fmt(n) {
+        return (parseInt(n, 10) || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+    function esc(s) {
+        if (s === null || s === undefined) return '';
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+    }
+    function row(label, value, opts) {
+        opts = opts || {};
+        let val = esc(value);
+        if (opts.copyable) {
+            val += ' <button type="button" class="pay-copy-btn" data-copy="' + esc(value) + '"><i class="feather icon-copy"></i></button>';
+        }
+        return '<div class="pay-row">' +
+            '<span class="pay-row-label">' + esc(label) + '</span>' +
+            '<span class="pay-row-value ' + (opts.ltr ? 'ltr' : '') + '">' + val + '</span>' +
+            '</div>';
+    }
+
+    let progressStarted = false;
+
+    function showPaymentResult(r) {
+        const $modal = $('#payment-result-modal');
+        const success = r.status === 'success';
+
+        $modal.toggleClass('pay-success', success).toggleClass('pay-failed', !success);
+        $('#pay-title').text(r.title || (success ? 'پرداخت موفق' : 'پرداخت ناموفق'));
+        $('#pay-message').text(r.message || '');
+
+        let rows = '';
+        if (r.package_name) rows += row('پکیج', r.package_name);
+        if (r.amount !== null && r.amount !== undefined && r.amount !== '') {
+            rows += row('مبلغ پرداخت‌شده', fmt(r.amount) + ' تومان');
+        }
+        if (r.transaction_id) rows += row('کد پیگیری', r.transaction_id, { ltr: true });
+        if (r.license_key)    rows += row('کد لایسنس', r.license_key, { ltr: true, copyable: true });
+
+        $('#pay-details').html(rows).toggleClass('d-none', rows === '');
+
+        const $main = $('#pay-action-main').off('click');
+        if (success) {
+            $main.html('<i class="feather icon-activity"></i> مشاهده روند نصب');
+            $main.on('click', function () { $modal.modal('hide'); });
+        } else {
+            const slug = String(r.package_slug || '').replace(/[^a-z0-9\-_]/gi, '');
+            const $retry = $('.pkg-card[data-slug="' + slug + '"] .btn-install').first();
+            if ($retry.length) {
+                $main.html('<i class="feather icon-refresh-cw"></i> تلاش دوباره');
+                $main.on('click', function () {
+                    $modal.modal('hide');
+                    setTimeout(function () { $retry.trigger('click'); }, 400);
+                });
+            } else {
+                $main.html('<i class="feather icon-shopping-bag"></i> بازگشت به بازار');
+                $main.on('click', function () { $modal.modal('hide'); });
+            }
+        }
+
+        setTimeout(function () { $modal.modal('show'); }, 400);
+    }
+
+    // کپی لایسنس
+    $(document).on('click', '.pay-copy-btn', function () {
+        const text = String($(this).data('copy') || '');
+        const $icon = $(this).find('i');
+        const done = function () {
+            $icon.removeClass('icon-copy').addClass('icon-check text-success');
+            setTimeout(function () { $icon.removeClass('icon-check text-success').addClass('icon-copy'); }, 1800);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(done, done);
+        } else {
+            const $tmp = $('<textarea>').css({ position: 'fixed', opacity: 0 }).val(text).appendTo('body');
+            $tmp[0].select();
+            try { document.execCommand('copy'); } catch (e) {}
+            $tmp.remove();
+            done();
+        }
+    });
+
+    $(function () {
+        const result = window.paymentResult;
+        if (!result) return;
+
+        showPaymentResult(result);
+
+        // بعد از بستن مودال، در صورت موفقیت، polling وضعیت نصب شروع شود
+        $('#payment-result-modal').one('hidden.bs.modal', function () {
+            if (result.status === 'success' && !progressStarted &&
+                result.package_slug && window.PkgProgress) {
+                progressStarted = true;
+                window.PkgProgress.startPolling(result.package_slug, result.package_name || result.package_slug);
+            }
+        });
+    });
 })(jQuery);

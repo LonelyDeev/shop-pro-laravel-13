@@ -142,14 +142,11 @@ class PackageController extends Controller
                     'created_at'  => $log->created_at->diffForHumans(),
                 ]);
 
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'success' => true,
-                    'data'    => $package,
-                    'logs'    => $logs,
-                ]);
-            }
-            return view('back.packages.show', compact('package', 'logs'));
+            return response()->json([
+                'success' => true,
+                'data'    => $package,
+                'logs'    => $logs,
+            ]);
         } catch (RuntimeException $e) {
             return response()->json([
                 'success' => false,
@@ -214,6 +211,7 @@ class PackageController extends Controller
             $callbackUrl = route(config('packages.payment.callback_route'));
 
             $purchase = $this->api->createPurchase($slug, $callbackUrl, $request->user('adminPanel')->id ?? null, $pricingPlanId);
+
             // ذخیره رکورد خرید
             $purchaseRecord = \App\Models\PackagePurchase::create([
                 'admin_id'      => $request->user('adminPanel')->id ?? null,

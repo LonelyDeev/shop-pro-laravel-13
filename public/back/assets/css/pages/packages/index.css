@@ -1494,3 +1494,144 @@
 .modal .modal-header{
     border-radius: unset;
 }
+
+
+
+
+/* ============================================================
+   Payment Result Modal
+   ============================================================ */
+#payment-result-modal .pay-dialog { max-width: 430px; }
+
+#payment-result-modal .pay-card {
+    position: relative;
+    border: 0;
+    border-radius: 1.25rem;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 25px 60px -15px rgba(15, 23, 42, .35);
+    animation: pay-slide-up .45s cubic-bezier(.21, 1.02, .55, 1) both;
+}
+
+#payment-result-modal .pay-card-glow {
+    position: absolute;
+    top: -90px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 320px;
+    height: 200px;
+    border-radius: 50%;
+    filter: blur(70px);
+    opacity: .25;
+    pointer-events: none;
+}
+#payment-result-modal.pay-success .pay-card-glow { background: #10b981; }
+#payment-result-modal.pay-failed  .pay-card-glow { background: #ef4444; }
+
+.pay-close { position: absolute; top: .9rem; left: 1.1rem; z-index: 5; text-shadow: none; opacity: .4; }
+.pay-close:hover { opacity: .9; }
+
+.pay-body { padding: 2.4rem 1.8rem 1.8rem; text-align: center; }
+
+/* --- آیکون --- */
+.pay-icon-wrap { position: relative; width: 96px; height: 96px; margin: 0 auto 1.4rem; }
+
+.pay-icon {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    animation: pay-pop .55s cubic-bezier(.68, -.4, .32, 1.4) both;
+}
+#payment-result-modal.pay-success .pay-icon {
+    background: linear-gradient(135deg, #34d399, #059669);
+    box-shadow: 0 12px 28px -8px rgba(16, 185, 129, .55);
+}
+#payment-result-modal.pay-failed .pay-icon {
+    background: linear-gradient(135deg, #f87171, #dc2626);
+    box-shadow: 0 12px 28px -8px rgba(239, 68, 68, .55);
+}
+
+/* حلقه‌های پالس */
+.pay-icon::before, .pay-icon::after {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    border-radius: 50%;
+    border: 2px solid;
+    animation: pay-ring 2s ease-out infinite;
+    opacity: 0;
+}
+.pay-icon::after { animation-delay: 1s; }
+#payment-result-modal.pay-success .pay-icon::before,
+#payment-result-modal.pay-success .pay-icon::after { border-color: rgba(16,185,129,.5); }
+#payment-result-modal.pay-failed  .pay-icon::before,
+#payment-result-modal.pay-failed  .pay-icon::after { border-color: rgba(239,68,68,.5); }
+
+.pay-icon svg { width: 50px; height: 50px; }
+.pay-icon svg circle, .pay-icon svg path {
+    fill: none; stroke: #fff; stroke-width: 4;
+    stroke-linecap: round; stroke-linejoin: round;
+}
+.pay-svg-circle { stroke-dasharray: 151; stroke-dashoffset: 151; animation: pay-draw .7s ease forwards; }
+.pay-svg-check  { stroke-dasharray: 40;  stroke-dashoffset: 40;  animation: pay-draw .4s .55s ease forwards; }
+.pay-svg-cross  { stroke-dasharray: 57;  stroke-dashoffset: 57;  animation: pay-draw .4s .55s ease forwards; }
+
+#payment-result-modal.pay-success .pay-svg-cross { display: none; }
+#payment-result-modal.pay-failed  .pay-svg-check { display: none; }
+
+.pay-title { font-size: 1.25rem; font-weight: 700; margin-bottom: .4rem; }
+#payment-result-modal.pay-success .pay-title { color: #047857; }
+#payment-result-modal.pay-failed  .pay-title { color: #b91c1c; }
+
+.pay-message { color: #64748b; font-size: .875rem; line-height: 2; margin-bottom: 1.3rem; }
+
+/* --- رسید پرداخت --- */
+.pay-receipt {
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: 14px;
+    padding: .35rem 1.1rem;
+    margin-bottom: 1.4rem;
+    text-align: right;
+}
+.pay-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: .75rem; padding: .6rem 0; font-size: .82rem;
+}
+.pay-row + .pay-row { border-top: 1px dashed #e2e8f0; }
+.pay-row-label { color: #94a3b8; flex-shrink: 0; }
+.pay-row-value { font-weight: 600; color: #1e293b; word-break: break-word; text-align: left; }
+.pay-row-value.ltr { direction: ltr; font-family: Consolas, monospace; font-size: .78rem; }
+.pay-copy-btn { border: 0; background: transparent; color: #6366f1; cursor: pointer; padding: 0 0 0 .3rem; }
+.pay-copy-btn:hover { color: #4f46e5; }
+
+/* --- دکمه‌ها --- */
+.pay-actions { display: flex; gap: .6rem; }
+.pay-btn-main {
+    flex: 1; color: #fff; border: 0; border-radius: 12px;
+    padding: .68rem 1rem; font-weight: 600;
+    transition: transform .15s ease;
+}
+.pay-btn-main:hover { transform: translateY(-1px); color: #fff; }
+#payment-result-modal.pay-success .pay-btn-main {
+    background: linear-gradient(135deg, #10b981, #059669);
+    box-shadow: 0 10px 22px -10px rgba(16, 185, 129, .8);
+}
+#payment-result-modal.pay-failed .pay-btn-main {
+    background: linear-gradient(135deg, #f59e0b, #ea580c);
+    box-shadow: 0 10px 22px -10px rgba(245, 158, 11, .8);
+}
+.pay-btn-ghost { border: 1px solid #e2e8f0; border-radius: 12px; color: #64748b; background: transparent; }
+
+/* --- انیمیشن‌ها --- */
+@keyframes pay-draw { to { stroke-dashoffset: 0; } }
+@keyframes pay-pop { from { transform: scale(.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes pay-ring { 0% { transform: scale(1); opacity: .7; } 100% { transform: scale(1.7); opacity: 0; } }
+@keyframes pay-slide-up { from { transform: translateY(24px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+/* حالت تیره */
+.dark-layout #payment-result-modal .pay-card { background: #1f2937; }
+.dark-layout .pay-receipt { background: rgba(255,255,255,.04); border-color: #374151; }
+.dark-layout .pay-row + .pay-row { border-color: #374151; }
+.dark-layout .pay-row-value { color: #e5e7eb; }
+.dark-layout .pay-message { color: #9ca3af; }
+.dark-layout .pay-btn-ghost { border-color: #374151; color: #9ca3af; }
