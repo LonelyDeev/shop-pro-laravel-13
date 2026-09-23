@@ -20,8 +20,10 @@ class PackagePaymentController extends Controller
      * =================================================================== */
     public function callback(Request $request)
     {
+
         $transactionId = $request->query('transaction_id')
             ?? $request->query('Authority')
+            ?? $request->query('transactionId')
             ?? $request->query('tracking_code');
 
         if (!$transactionId) {

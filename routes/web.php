@@ -70,7 +70,6 @@ use App\Http\Controllers\PushSubscriptionController;
 use Illuminate\Support\Facades\Route;
 use Rap2hpoutre\LaravelLogViewer\LogViewerController;
 use App\Http\Controllers\Back\ReturnController;
-
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -666,6 +665,7 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
         // --- وضعیت (polling) ---
         Route::get('{slug}/status', [PackageController::class, 'status'])->name('status');
     });
+
 
 });
 

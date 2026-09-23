@@ -211,7 +211,6 @@ class PackageController extends Controller
             $callbackUrl = route(config('packages.payment.callback_route'));
 
             $purchase = $this->api->createPurchase($slug, $callbackUrl, $request->user('adminPanel')->id ?? null, $pricingPlanId);
-
             // ذخیره رکورد خرید
             $purchaseRecord = \App\Models\PackagePurchase::create([
                 'admin_id'      => $request->user('adminPanel')->id ?? null,

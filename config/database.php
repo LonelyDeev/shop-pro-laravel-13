@@ -59,13 +59,14 @@ return [
             'strict' => true,
             'engine' => 'InnoDB',
             'options' => extension_loaded('pdo_mysql') ? array_filter([
-                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                // ✅ سازگار با PHP 8.5+ و نسخه‌های قبلی
+                (PHP_VERSION_ID >= 80500 ? \Pdo\Mysql::ATTR_SSL_CA : \PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
             'dump' => [
-                'dump_binary_path' => env('DB_DUMP_BINARY_PATH') ?: '/usr/bin/', // only the path, so without `mysqldump` or `pg_dump`
+                'dump_binary_path' => env('DB_DUMP_BINARY_PATH') ?: '/usr/bin/',
                 'use_single_transaction',
-                'timeout' => 60 * 10, // 10 minute timeout
-             ],
+                'timeout' => 60 * 10,
+            ],
         ],
 
         'pgsql' => [

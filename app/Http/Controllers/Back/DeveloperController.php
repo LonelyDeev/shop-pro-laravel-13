@@ -72,6 +72,7 @@ class DeveloperController extends Controller
             option_update('enable_help_videos', $helpVideos);
 
             // Update updater token in env
+            option_update('SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN', $request->input('SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN'));
             change_env('SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN', $request->input('SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN'));
 
             // Update DEBUGBAR_ENABLED in env

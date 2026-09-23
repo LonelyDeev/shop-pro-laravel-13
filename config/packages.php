@@ -12,6 +12,7 @@ return [
         // ✅ حذف option() و استفاده مستقیم از env()
         'token'           => env('SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN', env('PACKAGES_API_TOKEN')),
         'project_key'     => env('SELF_UPDATER_HTTP_PRIVATE_ACCESS_TOKEN', env('PACKAGES_API_PROJECT_KEY')),
+        'project_url'     => env('PACKAGES_PROJECT_URL', env('APP_URL')),
         'timeout'         => env('PACKAGES_API_TIMEOUT', 120),
         'connect_timeout' => env('PACKAGES_API_CONNECT_TIMEOUT', 30),
         'cache_ttl'       => env('PACKAGES_CACHE_TTL', 300),
