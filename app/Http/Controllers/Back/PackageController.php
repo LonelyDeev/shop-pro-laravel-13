@@ -142,11 +142,14 @@ class PackageController extends Controller
                     'created_at'  => $log->created_at->diffForHumans(),
                 ]);
 
-            return response()->json([
-                'success' => true,
-                'data'    => $package,
-                'logs'    => $logs,
-            ]);
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'data'    => $package,
+                    'logs'    => $logs,
+                ]);
+            }
+            return view('back.packages.show', compact('package', 'logs'));
         } catch (RuntimeException $e) {
             return response()->json([
                 'success' => false,
