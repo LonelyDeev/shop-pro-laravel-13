@@ -152,7 +152,7 @@
                                         </div>
                                     @endif
                                     <div class="pkg-card-badges">
-                                        @if ($isPurchased && !$isFree && !$isInstalled)
+                                        @if ($isPurchased && !$isFree)
                                             <span class="pkg-tag pkg-tag-owned">خریداری‌شده</span>
                                         @else
                                             @if ($pkg['is_free'] ?? false)

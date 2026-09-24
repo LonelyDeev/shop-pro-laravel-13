@@ -3,7 +3,7 @@
    ============================================================ */
 (function ($) {
     "use strict";
-
+    let modalLicenseMode = false;
     const csrfToken = window.csrfToken || $('meta[name="csrf-token"]').attr('content');
 
     function route(name, slug) {
@@ -98,15 +98,20 @@
         // delegate اکشن‌های داخل مدال
         // نصب مستقیم از مدال جزئیات (بدون باز کردن مدال تأیید مجدد)
         $(document).on('click', '#modal-btn-install', function () {
-            const slug = $(this).data('slug');
-            const planId = $(this).data('plan-id');
             const $btn = $(this);
+            const slug = $btn.data('slug');
+            const useLicense = String($btn.attr('data-use-license') || '') === '1';
+            const planId = useLicense ? null : $btn.data('plan-id');
             const originalHtml = $btn.html();
 
-            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> در حال ارسال...');
+            $btn.prop('disabled', true)
+                .html('<span class="spinner-border spinner-border-sm"></span> ' +
+                    (useLicense ? 'در حال بررسی و نصب...' : 'در حال ارسال...'));
 
             const data = { _token: csrfToken };
-            if (planId) {
+            if (useLicense) {
+                data.use_license = 1;          // ★ نصب مجدد با لایسنس
+            } else if (planId) {
                 data.pricing_plan_id = planId;
             }
 
@@ -116,33 +121,30 @@
                 data: data,
                 success: function (resp) {
                     if (resp.success && resp.redirect_url) {
-                        // اگه پرداخت داره (redirect به درگاه)
                         window.location.href = resp.redirect_url;
                     } else if (resp.success) {
-                        // نصب رایگان شروع شد - بستن مدال و نمایش progress
                         hideModal($('#package-detail-modal'));
                         const packageName = $('#modal-pkg-title').text().trim() || slug;
                         if (window.PkgProgress) {
                             window.PkgProgress.startPolling(slug, packageName);
                         }
-                    } else {
+                    } else if (resp.needs_payment) {
+                        // لایسنس بین لحظه بررسی و کلیک منقضی شد → مودال با جریان خرید بازنویسی می‌شود
+                        modalLicenseMode = false;
                         Swal.fire({
-                            icon: 'error',
-                            title: 'خطا',
-                            text: resp.message || 'عملیات ناموفق بود.',
-                            confirmButtonText: 'بستن'
-                        });
-                        $btn.prop('disabled', false).html(originalHtml);
+                            icon: 'warning',
+                            title: 'لایسنس منقضی شده است',
+                            text: resp.message || 'برای نصب، ابتدا پلن موردنظر را انتخاب و پرداخت کنید.',
+                            confirmButtonText: 'باشه'
+                        }).then(function () { openDetailModal(slug); });
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'خطا', text: resp.message || 'عملیات ناموفق بود.', confirmButtonText: 'بستن' });
+                        $btn.prop('disabled', false).html(originalHtml).removeAttr('data-use-license');
                     }
                 },
                 error: function (xhr) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'خطا',
-                        text: xhr.responseJSON?.message || 'خطا در ارتباط با سرور.',
-                        confirmButtonText: 'بستن'
-                    });
-                    $btn.prop('disabled', false).html(originalHtml);
+                    Swal.fire({ icon: 'error', title: 'خطا', text: xhr.responseJSON?.message || 'خطا در ارتباط با سرور.', confirmButtonText: 'بستن' });
+                    $btn.prop('disabled', false).html(originalHtml).removeAttr('data-use-license');
                 }
             });
         });
@@ -293,7 +295,7 @@
 
         // gallery
         if (pkg.images && pkg.images.length > 0) {
-            html += '<div class="pkg-section">';
+            html += '<div class="pkg-section" id="modal-plans-section">';
             html += '<h6 class="pkg-section-title"><i class="feather icon-grid"></i> گالری تصاویر <small class="text-muted">(' + pkg.images.length + ')</small></h6>';
             html += '<div class="pkg-gallery">';
             pkg.images.forEach(function (img) {
@@ -312,14 +314,14 @@
             // استفاده از jQuery برای تنظیم HTML
             var $desc = $('<div class="pkg-long-desc"></div>').html(descContent);
 
-            html += '<div class="pkg-section">';
+            html += '<div class="pkg-section" id="modal-plans-section">';
             html += '<h6 class="pkg-section-title"><i class="feather icon-file-text"></i> توضیحات کامل</h6>';
             html += $desc[0].outerHTML;
             html += '</div>';
         }
         // changelog
         if (pkg.changelog && (Object.keys(pkg.changelog).length > 0 || Array.isArray(pkg.changelog))) {
-            html += '<div class="pkg-section">';
+            html += '<div class="pkg-section" id="modal-plans-section">';
             html += '<h6 class="pkg-section-title"><i class="feather icon-git-commit"></i> تاریخچه نسخه‌ها</h6>';
             html += '<ul class="pkg-changelog">';
             if (Array.isArray(pkg.changelog)) {
@@ -340,7 +342,7 @@
         if (versions.length > 0) {
             const latest = versions[0];
             if (latest.what_added || latest.what_changed || latest.what_fixed) {
-                html += '<div class="pkg-section">';
+                html += '<div class="pkg-section" id="modal-plans-section">';
                 html += '<h6 class="pkg-section-title"><i class="feather icon-info"></i> تغییرات نسخه v' + escapeHtml(latest.version || latestVersion) + '</h6>';
                 if (latest.what_added) {
                     html += '<div class="pkg-change-block pkg-change-added"><strong><i class="feather icon-plus-circle"></i> قابلیت‌های جدید</strong><p>' + nl2br(escapeHtml(latest.what_added)) + '</p></div>';
@@ -357,7 +359,7 @@
 
         // requirements
         if (pkg.requirements && Object.keys(pkg.requirements).length > 0) {
-            html += '<div class="pkg-section">';
+            html += '<div class="pkg-section" id="modal-plans-section">';
             html += '<h6 class="pkg-section-title"><i class="feather icon-info"></i> پیش‌نیازها</h6>';
             html += '<ul class="pkg-requirements">';
             Object.keys(pkg.requirements).forEach(function (req) {
@@ -379,7 +381,7 @@
             });
             cheapestPlanId = cheapest ? cheapest.id : null;
 
-            html += '<div class="pkg-section">';
+            html += '<div class="pkg-section" id="modal-plans-section">';
             html += '<h6 class="pkg-section-title"><i class="feather icon-tag"></i> طرح‌های قیمت‌گذاری <small class="text-muted">یک طرح انتخاب کنید</small></h6>';
             html += '<div class="pkg-plans-list row" id="modal-plans-list">';
             plans.forEach(function (plan) {
@@ -436,7 +438,7 @@
 
         // status
         if (installed) {
-            html += '<div class="pkg-section">';
+            html += '<div class="pkg-section" id="modal-plans-section">';
             html += '<h6 class="pkg-section-title"><i class="feather icon-settings"></i> وضعیت نصب</h6>';
             html += '<div class="pkg-status-box ';
             if (installed.status === 'updating') html += 'status-running';
@@ -473,7 +475,7 @@
 
         // logs
         if (logs && logs.length > 0) {
-            html += '<div class="pkg-section">';
+            html += '<div class="pkg-section" id="modal-plans-section">';
             html += '<h6 class="pkg-section-title"><i class="feather icon-list"></i> لاگ‌های اخیر</h6>';
             html += '<div class="table-responsive"><table class="pkg-logs-table">';
             html += '<thead><tr>';
@@ -565,6 +567,11 @@
 
         $footer.html(footerHtml);
 
+        // ★ بررسی خرید قبلی → نصب مجدد بدون پرداخت
+        if (!installed && !isFree && pkg.purchased) {
+            checkModalLicense(slug);
+        }
+
         // اتصال event listener برای انتخاب پلن در مدال جزئیات
         if (!installed && plans && plans.length > 0) {
             $('#modal-pkg-body').off('click', '.pkg-plan-card').on('click', '.pkg-plan-card', function () {
@@ -601,6 +608,119 @@
                 }
             });
         }
+    }
+
+    /* ============================================================
+   نصب مجدد با لایسنس (پس از خرید قبلی)
+   ============================================================ */
+    function checkModalLicense(slug) {
+        const $btn = $('#modal-btn-install');
+        if (!$btn.length) return;
+
+        const originalHtml = $btn.html();
+        $btn.prop('disabled', true)
+            .html('<span class="spinner-border spinner-border-sm"></span> در حال بررسی لایسنس...');
+
+        $.ajax({
+            url: route('checkPurchase', slug),
+            method: 'POST',
+            data: { _token: csrfToken }
+        }).done(function (resp) {
+            if (resp.purchased && resp.valid) {
+                applyModalLicenseMode(resp);
+                return;
+            }
+            if (resp.purchased) {
+                applyModalLicenseExpired(resp.message);
+            }
+            // برگشت دکمه به جریان خرید (حالت فعلی = پلن ارزان انتخاب شده)
+            const planPrice = parseInt($('#modal-pkg-body .pkg-plan-card.selected').data('plan-price'));
+            const planIsFree = !isNaN(planPrice) && planPrice === 0;
+            $btn.prop('disabled', false).html(originalHtml)
+                .removeClass('pkg-modal-btn-primary pkg-modal-btn-warning')
+                .addClass(planIsFree ? 'pkg-modal-btn-primary' : 'pkg-modal-btn-warning');
+        }).fail(function () {
+            $btn.prop('disabled', false).html(originalHtml);
+        });
+    }
+
+    function applyModalLicenseMode(resp) {
+        modalLicenseMode = true;
+
+        // حذف پلن‌ها و نمایش باکس لایسنس
+        $('#modal-plans-section').remove();
+
+        let expiryText = 'نامحدود';
+        if (resp.expires_at) {
+            const days = daysRemaining(resp.expires_at);
+            expiryText = toJalali(resp.expires_at) +
+                (days !== null ? ' — ' + number_format(Math.max(days, 0)) + ' روز باقی‌مانده' : '');
+        }
+        let subLine = 'لایسنس شما فعال است <span class="text-muted">(اعتبار تا ' + escapeHtml(expiryText) + ')</span>';
+        if (resp.version) subLine += ' — نسخه قابل نصب: v' + escapeHtml(resp.version);
+
+        const box =
+            '<div class="pkg-section" id="modal-license-section">' +
+            '<h6 class="pkg-section-title"><i class="feather icon-shield"></i> وضعیت لایسنس</h6>' +
+            '<div class="pkg-license-box">' +
+            '<div class="pkg-license-icon"><i class="feather icon-check-circle"></i></div>' +
+            '<div class="pkg-license-body">' +
+            '<strong>این پکیج قبلاً خریداری شده — بدون پرداخت نصب می‌شود</strong>' +
+            '<p class="mb-0">' + subLine + '</p>' +
+            '</div>' +
+            '</div>' +
+            '</div>';
+
+        $('#modal-pkg-body .pkg-modal-content-area').prepend(box);
+
+        // دکمه → «بررسی و نصب»
+        $('#modal-btn-install')
+            .prop('disabled', false)
+            .removeClass('pkg-modal-btn-warning').addClass('pkg-modal-btn-primary')
+            .attr('data-use-license', '1')
+            .find('i').removeClass('icon-credit-card').addClass('icon-rotate-ccw');
+        $('#modal-install-text').text('بررسی و نصب');
+
+        // قیمت → بدون پرداخت
+        $('#modal-price-display').html(
+            '<span class="pkg-modal-price-free"><i class="feather icon-check-circle"></i> لایسنس فعال — بدون پرداخت</span>'
+        );
+    }
+
+    function applyModalLicenseExpired(message) {
+        const $plans = $('#modal-plans-section');
+        if (!$plans.length) return;
+        $plans.find('.pkg-license-warning').remove();
+        $plans.prepend(
+            '<div class="pkg-license-warning mb-2">' +
+            '<i class="feather icon-alert-triangle"></i>' +
+            '<span>' + escapeHtml(message || 'لایسنس قبلی شما منقضی شده است؛ برای نصب مجدد، پلن را انتخاب و پرداخت کنید.') + '</span>' +
+            '</div>'
+        );
+    }
+
+    function toJalali(dateStr) {
+        if (!dateStr) return '';
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return dateStr;
+        let gy = d.getFullYear(), gm = d.getMonth() + 1, gd = d.getDate();
+        const g_d_m = [0,31,59,90,120,151,181,212,243,273,304,334];
+        let jy = (gy <= 1600) ? 0 : 979;
+        gy -= (gy <= 1600) ? 621 : 1600;
+        const gy2 = (gm > 2) ? (gy + 1) : gy;
+        let days = (365*gy) + Math.floor((gy2+3)/4) - Math.floor((gy2+99)/100) + Math.floor((gy2+399)/400) - 80 + gd + g_d_m[gm-1];
+        jy += 33 * Math.floor(days/12053); days %= 12053;
+        jy += 4 * Math.floor(days/1461);   days %= 1461;
+        if (days > 365) { jy += Math.floor((days-1)/365); days = (days-1)%365; }
+        const jm = (days < 186) ? 1 + Math.floor(days/31) : 7 + Math.floor((days-186)/30);
+        const jd = 1 + ((days < 186) ? (days%31) : ((days-186)%30));
+        return jy + '/' + String(jm).padStart(2,'0') + '/' + String(jd).padStart(2,'0');
+    }
+
+    function daysRemaining(dateStr) {
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return null;
+        return Math.ceil((d.getTime() - Date.now()) / 86400000);
     }
 
     /* ============================================================

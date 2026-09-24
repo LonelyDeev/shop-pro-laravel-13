@@ -139,6 +139,18 @@ class PackageInstallerService
             $verify = $this->api->verifyLicense($slug, $installed->license_key);
 
             if (!($verify['valid'] ?? false)) {
+                throw new RuntimeException($verify['message'] ?? 'لایسنس منقضی یا نامعتبر است.');
+            }
+
+// ★ آپدیت فقط وقتی لایسنس زمان داشته باشد — منقضی = ممنوع
+            $expiresAt = $verify['expires_at'] ?? optional($installed->license_expires_at)->toDateTimeString();
+
+            if (!$this->licenseHasRemainingTime($expiresAt)) {
+                throw new RuntimeException(
+                    'لایسنس شما منقضی شده است. برای دریافت آپدیت، ابتدا لایسنس را تمدید کنید.'
+                );
+            }
+            if (!($verify['valid'] ?? false)) {
                 throw new RuntimeException(
                     $verify['message'] ?? 'لایسنس منقضی یا نامعتبر است.'
                 );
@@ -1151,6 +1163,18 @@ class PackageInstallerService
         $installed = InstalledModule::where('slug', $slug)->first();
         if ($installed) {
             $installed->markAsFailed($e->getMessage());
+        }
+    }
+
+    private function licenseHasRemainingTime($expiresAt): bool
+    {
+        if (empty($expiresAt)) {
+            return true; // لایسنس نامحدود → دارای اعتبار. (اگر می‌خواهید فقط لایسنسِ تاریخ‌دار آپدیت شود، false کنید)
+        }
+        try {
+            return \Illuminate\Support\Carbon::parse($expiresAt)->isFuture();
+        } catch (\Throwable $e) {
+            return false;
         }
     }
 }

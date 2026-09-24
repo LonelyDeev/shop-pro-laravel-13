@@ -131,7 +131,10 @@ class PackageController extends Controller
             ] : null;
             $package['has_update'] = $hasUpdate;
             $package['latestVersion'] = $latestVersion;
-
+            $data['purchased'] = PackagePurchase::where('package_slug', $slug)
+                ->where('status', PackagePurchase::STATUS_PAID)
+                ->whereNotNull('license_key')
+                ->exists();
             // enrich: لاگ‌های اخیر
             $logs = ModuleInstallLog::where('module_slug', $slug)
                 ->latest()
@@ -467,7 +470,6 @@ class PackageController extends Controller
             ->where('package_slug', $slug)
             ->where('status', PackagePurchase::STATUS_PAID)
             ->whereNotNull('license_key')
-            // ->where('admin_id', auth('admin')->id()) // اگر multi-admin هستید فعال کنید
             ->orderByDesc('paid_at')
             ->first();
 
@@ -478,7 +480,6 @@ class PackageController extends Controller
         try {
             $verify = $this->api->verifyLicense($slug, $purchase->license_key);
         } catch (Throwable $e) {
-            // سرور پکیج در دسترس نیست → جریان عادی خرید ادامه پیدا کند
             return response()->json([
                 'purchased' => true,
                 'valid'     => false,
@@ -486,11 +487,14 @@ class PackageController extends Controller
             ]);
         }
 
-        if (!($verify['valid'] ?? false)) {
+        // ★ valid بودن کافی نیست — لایسنس باید حتماً زمان داشته باشد
+        if (!($verify['valid'] ?? false) ||
+            !$this->licenseHasTime($verify['expires_at'] ?? null, $purchase->license_expires_at)) {
             return response()->json([
                 'purchased' => true,
                 'valid'     => false,
-                'message'   => $verify['message'] ?? 'لایسنس قبلی شما منقضی شده است.',
+                'message'   => $verify['message']
+                    ?? 'لایسنس قبلی شما منقضی شده است. برای نصب مجدد، ابتدا پلن را انتخاب و تمدید کنید.',
             ]);
         }
 
@@ -553,5 +557,24 @@ class PackageController extends Controller
         ]);
 
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * آیا لایسنس هنوز زمان (اعتبار) دارد؟
+     * خالی = لایسنس مادام‌العمر (duration_months=0) → دارای اعتبار
+     */
+    private function licenseHasTime($apiExpiresAt = null, $dbExpiresAt = null): bool
+    {
+        $date = $apiExpiresAt ?: $dbExpiresAt;
+
+        if (empty($date)) {
+            return true; // نامحدود
+        }
+
+        try {
+            return \Carbon\Carbon::parse($date)->isFuture();
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 }
