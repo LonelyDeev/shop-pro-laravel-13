@@ -12,6 +12,7 @@
     let pendingPlans = [];
     let selectedPlanId = null;
     let selectedPlanPrice = 0;
+    let pendingUseLicense = false;
 
     const csrfToken = window.csrfToken || $('meta[name="csrf-token"]').attr('content');
 
