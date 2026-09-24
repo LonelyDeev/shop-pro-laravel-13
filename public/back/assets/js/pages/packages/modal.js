@@ -504,6 +504,12 @@
 
         html += '</div>'; // pkg-modal-content-area
 
+        // ★ بررسی خرید قبلی → نصب مجدد بدون پرداخت
+        if (!installed && !isFree && pkg.purchased) {
+            checkModalLicense(slug);
+        }
+
+
         $body.html(html);
 
         // ---- Footer ----
@@ -566,12 +572,6 @@
             footerHtml += '</button>';
         }
         footerHtml += '</div>';
-
-        // ★ بررسی خرید قبلی → نصب مجدد بدون پرداخت
-        if (!installed && !isFree && pkg.purchased) {
-            checkModalLicense(slug);
-        }
-
 
         $footer.html(footerHtml);
 
