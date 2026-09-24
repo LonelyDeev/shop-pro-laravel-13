@@ -101,12 +101,11 @@ class PackageController extends Controller
             $data = Cache::remember($cacheKey, now()->addMinutes(config('packages.cache.detail_ttl')), function () use ($slug) {
                 return $this->api->getPackage($slug);
             });
-            $data['purchased'] = PackagePurchase::where('package_slug', $slug)
+            $package = $data['data'] ?? $data;
+            $package['purchased'] = PackagePurchase::where('package_slug', $slug)
                 ->where('status', PackagePurchase::STATUS_PAID)
                 ->whereNotNull('license_key')
                 ->exists();
-            $package = $data['data'] ?? $data;
-
             // enrich: اطلاعات نصب محلی
             $installed = InstalledModule::where('slug', $slug)->first();
             $activeVersions = $package['active_versions'] ?? [];

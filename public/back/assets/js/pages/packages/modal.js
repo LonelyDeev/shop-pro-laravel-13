@@ -504,11 +504,6 @@
 
         html += '</div>'; // pkg-modal-content-area
 
-        // ★ بررسی خرید قبلی → نصب مجدد بدون پرداخت
-        if (!installed && !isFree && pkg.purchased) {
-            checkModalLicense(slug);
-        }
-
         $body.html(html);
 
         // ---- Footer ----
@@ -576,7 +571,6 @@
 
 
         // اتصال event listener برای انتخاب پلن در مدال جزئیات
-        // اتصال event listener برای انتخاب پلن در مدال جزئیات
         if (!installed && plans && plans.length > 0) {
             $('#modal-pkg-body').off('click', '.pkg-plan-card').on('click', '.pkg-plan-card', function () {
                 // ★ در حالت نصب مجدد با لایسنس، پلن‌ها معنا ندارند
@@ -615,6 +609,12 @@
                     $text.text('پرداخت و نصب');
                 }
             });
+        }
+
+        // ★★★ بررسی خرید قبلی — باید بعد از رندر footer باشد
+        const isPurchased = !!(pkg.purchased || pkg.is_purchased);
+        if (!installed && !isFree && isPurchased) {
+            checkModalLicense(slug);
         }
     }
 
