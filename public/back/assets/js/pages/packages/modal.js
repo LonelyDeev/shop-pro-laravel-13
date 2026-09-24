@@ -509,7 +509,6 @@
             checkModalLicense(slug);
         }
 
-
         $body.html(html);
 
         // ---- Footer ----
