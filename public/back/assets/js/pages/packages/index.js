@@ -5,6 +5,7 @@
 (function ($) {
     "use strict";
 
+
     let pendingSlug = null;
     let pendingName = null;
     let pendingIsFree = true;
