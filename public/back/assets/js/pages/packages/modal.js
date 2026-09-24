@@ -679,10 +679,10 @@
         // دکمه → «بررسی و نصب»
         $('#modal-btn-install')
             .prop('disabled', false)
+            .html('بررسی و نصب')
             .removeClass('pkg-modal-btn-warning').addClass('pkg-modal-btn-primary')
             .attr('data-use-license', '1')
             .find('i').removeClass('icon-credit-card icon-download-cloud').addClass('icon-rotate-ccw');
-        $('#modal-install-text').text('بررسی و نصب');
 
         // قیمت → بدون پرداخت
         $('#modal-price-display').html(
