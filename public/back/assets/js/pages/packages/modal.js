@@ -567,12 +567,14 @@
         }
         footerHtml += '</div>';
 
-        $footer.html(footerHtml);
-
         // ★ بررسی خرید قبلی → نصب مجدد بدون پرداخت
         if (!installed && !isFree && pkg.purchased) {
             checkModalLicense(slug);
         }
+
+
+        $footer.html(footerHtml);
+
 
         // اتصال event listener برای انتخاب پلن در مدال جزئیات
         // اتصال event listener برای انتخاب پلن در مدال جزئیات
