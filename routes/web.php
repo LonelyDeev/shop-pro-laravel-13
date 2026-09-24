@@ -655,7 +655,7 @@ Route::group(['as' => 'admin.', 'prefix' => 'admin/' . admin_route_prefix(), 'mi
 
         // --- آپدیت‌ها ---
         Route::post('check-updates', [PackageController::class, 'checkUpdates'])->name('check-updates');
-
+        Route::post('{slug}/check-purchase', [PackageController::class, 'checkPurchase'])->name('check-purchase');
         // --- نصب ---
         Route::post('{slug}/install', [PackageController::class, 'startInstall'])->name('install');
         Route::post('{slug}/update', [PackageController::class, 'update'])->name('update');

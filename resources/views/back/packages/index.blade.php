@@ -132,7 +132,7 @@
 
                             @php
                                 $slug = $pkg['slug'] ?? '';
-
+                                 $isPurchased = in_array($slug, $purchasedSlugs ?? []);
                                 $isInstalled = array_key_exists($slug, $installedMap);
 
                                 $installedVersion = $installedMap[$slug] ?? null;
@@ -152,11 +152,16 @@
                                         </div>
                                     @endif
                                     <div class="pkg-card-badges">
-                                        @if ($pkg['is_free'] ?? false)
-                                            <span class="pkg-tag pkg-tag-free">رایگان</span>
+                                        @if ($isPurchased && !$isFree && !$isInstalled)
+                                            <span class="pkg-tag pkg-tag-owned">خریداری‌شده</span>
                                         @else
-                                            <span class="pkg-tag pkg-tag-paid">پولی</span>
+                                            @if ($pkg['is_free'] ?? false)
+                                                <span class="pkg-tag pkg-tag-free">رایگان</span>
+                                            @else
+                                                <span class="pkg-tag pkg-tag-paid">پولی</span>
+                                            @endif
                                         @endif
+
                                     </div>
                                     @if ($isInstalled)
                                         <div class="pkg-card-installed-stamp">
@@ -214,8 +219,10 @@
                                                     data-name="{{ $pkg['name'] ?? $slug }}"
                                                     data-free="{{ $isFree ? '1' : '0' }}"
                                                     data-price="{{ $minPrice }}"
+                                                    data-purchased="{{ ($isPurchased && !$isFree) ? '1' : '0' }}"
                                                     data-plans='@json($pkg['plans'] ?? [])'>
-                                                <i class="feather icon-download-cloud"></i> نصب
+                                                <i class="feather icon-{{ ($isPurchased && !$isFree) ? 'rotate-ccw' : 'download-cloud' }}"></i>
+                                                {{ ($isPurchased && !$isFree) ? 'نصب مجدد' : 'نصب' }}
                                             </button>
                                         @elseif ($hasUpdate)
                                             <button type="button"
@@ -299,6 +306,25 @@
                         <div id="confirm-plans-list" class="pkg-plans-list row"></div>
                     </div>
 
+                    {{-- ★ نصب مجدد با لایسنس فعال --}}
+                    <div id="confirm-license-section" class="d-none mt-3">
+                        <div class="pkg-license-box">
+                            <div class="pkg-license-icon"><i class="feather icon-shield"></i></div>
+                            <div class="pkg-license-body">
+                                <strong><i class="feather icon-check-circle"></i> قبلاً خریداری شده — بدون پرداخت نصب می‌شود</strong>
+                                <p class="mb-0">لایسنس شما برای این پکیج فعال است<span id="confirm-license-expiry"></span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- ★ هشدار انقضای لایسنس --}}
+                    <div id="confirm-license-warning" class="d-none mt-3">
+                        <div class="pkg-license-warning">
+                            <i class="feather icon-alert-triangle"></i>
+                            <span id="confirm-license-warning-text"></span>
+                        </div>
+                    </div>
+
                     {{-- اطلاعات پرداخت --}}
                     <div id="confirm-payment-info" class="pkg-confirm-alert d-none mt-3">
                         <i class="feather icon-info"></i>
@@ -364,6 +390,7 @@
             toggle:  '{{ route("admin.packages.toggle", ":slug") }}',
             status:  '{{ route("admin.packages.status", ":slug") }}',
             checkUpdates: '{{ route("admin.packages.check-updates") }}',
+            checkPurchase: '{{ route("admin.packages.check-purchase", ":slug") }}',
         };
         @if (session('payment_result'))
             window.paymentResult = @json(session('payment_result'));

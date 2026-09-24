@@ -55,38 +55,63 @@
         $(document).on('click', '.btn-install', function (e) {
             e.preventDefault();
             e.stopPropagation();
-            pendingSlug = $(this).data('slug');
-            pendingName = $(this).data('name');
-            pendingIsFree = $(this).data('free') === '1' || $(this).data('free') === true;
-            pendingPrice = parseInt($(this).data('price')) || 0;
+
+            const $btn = $(this);
+            pendingSlug = $btn.data('slug');
+            pendingName = $btn.data('name');
+            pendingIsFree = String($btn.data('free')) === '1';
+            pendingPrice = parseInt($btn.data('price')) || 0;
+            pendingUseLicense = false;
 
             try {
-                pendingPlans = $(this).data('plans') || [];
-                if (typeof pendingPlans === 'string') {
-                    pendingPlans = JSON.parse(pendingPlans);
-                }
-            } catch (err) {
-                pendingPlans = [];
-            }
+                pendingPlans = $btn.data('plans') || [];
+                if (typeof pendingPlans === 'string') pendingPlans = JSON.parse(pendingPlans);
+            } catch (err) { pendingPlans = []; }
 
             $('#confirm-pkg-name').text(pendingName);
 
+            // ★ پکیج پولیِ خریداری‌شده → اول لایسنس با API بررسی شود
+            const isPurchased = String($btn.data('purchased')) === '1';
+
             if (pendingIsFree) {
-                $('#confirm-plans-section').addClass('d-none');
-                $('#confirm-payment-info').addClass('d-none');
+                $('#confirm-license-section, #confirm-license-warning, #confirm-plans-section, #confirm-payment-info').addClass('d-none');
                 updateConfirmButton(true);
+                $('#confirm-btn-text').text('نصب پکیج');
                 selectedPlanId = null;
-            } else if (pendingPlans && pendingPlans.length > 0) {
-                renderPlans(pendingPlans);
-                $('#confirm-plans-section').removeClass('d-none');
-            } else {
-                $('#confirm-plans-section').addClass('d-none');
-                $('#confirm-payment-info').removeClass('d-none');
-                $('#confirm-pkg-price').text(number_format(pendingPrice));
-                updateConfirmButton(pendingPrice === 0);
-                selectedPlanId = null;
+                $('#install-confirm-modal').modal('show');
+                return;
             }
 
+            if (isPurchased) {
+                const btnHtml = $btn.html();
+                $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
+                $.ajax({
+                    url: route('checkPurchase', pendingSlug),
+                    method: 'POST',
+                    data: { _token: csrfToken }
+                })
+                    .done(function (resp) {
+                        if (resp.purchased && resp.valid) {
+                            renderLicenseMode(resp);          // ✔ نصب مجدد بدون پرداخت
+                        } else if (resp.purchased) {
+                            renderPaidFlow();                  // ✘ منقضی → خرید + هشدار
+                            showLicenseWarning(resp.message);
+                        } else {
+                            renderPaidFlow();                  // جریان عادی
+                        }
+                        $('#install-confirm-modal').modal('show');
+                    })
+                    .fail(function () {
+                        renderPaidFlow();
+                        $('#install-confirm-modal').modal('show');
+                    })
+                    .always(function () {
+                        $btn.prop('disabled', false).html(btnHtml);
+                    });
+                return;
+            }
+
+            renderPaidFlow();
             $('#install-confirm-modal').modal('show');
         });
 
@@ -108,12 +133,17 @@
         });
 
         // تأیید و شروع نصب
+        let confirmBtnDefaultHtml = null;
+
         $('#confirm-install-btn').on('click', function () {
             const $btn = $(this);
+            if (!confirmBtnDefaultHtml) confirmBtnDefaultHtml = $btn.html();
             $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> در حال ارسال...');
 
             const data = { _token: csrfToken };
-            if (selectedPlanId) {
+            if (pendingUseLicense) {
+                data.use_license = 1;                 // ★ نصب مجدد با لایسنس
+            } else if (selectedPlanId) {
                 data.pricing_plan_id = selectedPlanId;
             }
 
@@ -123,24 +153,31 @@
                 data: data,
                 success: function (resp) {
                     if (resp.success && resp.redirect_url) {
-                        // اگه پرداخت داره (redirect به درگاه)
+                        $('#install-confirm-modal').modal('hide');
                         window.location.href = resp.redirect_url;
                     } else if (resp.success) {
-                        // نصب رایگان شروع شد - بستن مدال و نمایش progress
                         $('#install-confirm-modal').modal('hide');
                         if (window.PkgProgress) {
                             window.PkgProgress.startPolling(pendingSlug, pendingName);
                         }
+                    } else if (resp.needs_payment) {
+                        // لایسنس بین لحظه بررسی و تأیید منقضی شده → سوییچ به خرید
+                        pendingUseLicense = false;
+                        $('#confirm-license-section').addClass('d-none');
+                        showLicenseWarning(resp.message);
+                        if (pendingPlans.length) {
+                            renderPlans(pendingPlans);
+                            $('#confirm-plans-section').removeClass('d-none');
+                        }
+                        $btn.prop('disabled', false).html(confirmBtnDefaultHtml);
                     } else {
                         Swal.fire({ icon: 'error', title: 'خطا', text: resp.message || 'عملیات ناموفق بود.', confirmButtonText: 'بستن' });
+                        $btn.prop('disabled', false).html(confirmBtnDefaultHtml);
                     }
                 },
                 error: function (xhr) {
                     Swal.fire({ icon: 'error', title: 'خطا', text: xhr.responseJSON?.message || 'خطا در ارتباط با سرور.', confirmButtonText: 'بستن' });
-                },
-                complete: function () {
-                    $btn.prop('disabled', false);
-                    $('#install-confirm-modal').modal('hide');
+                    $btn.prop('disabled', false).html(confirmBtnDefaultHtml);
                 }
             });
         });
@@ -179,9 +216,81 @@
         $('#install-confirm-modal').on('hidden.bs.modal', function () {
             selectedPlanId = null;
             selectedPlanPrice = 0;
+            pendingUseLicense = false;
             $('.pkg-plan-card').removeClass('selected');
+            $('#confirm-license-section').addClass('d-none');
+            $('#confirm-license-warning').addClass('d-none');
         });
     });
+
+    /* جریان عادی پولی (پلن یا مبلغ ثابت) */
+    function renderPaidFlow() {
+        $('#confirm-license-section').addClass('d-none');
+        if (pendingPlans && pendingPlans.length > 0) {
+            $('#confirm-payment-info').addClass('d-none');
+            renderPlans(pendingPlans);
+            $('#confirm-plans-section').removeClass('d-none');
+        } else {
+            $('#confirm-plans-section').addClass('d-none');
+            $('#confirm-payment-info').removeClass('d-none');
+            $('#confirm-pkg-price').text(number_format(pendingPrice));
+            updateConfirmButton(pendingPrice === 0);
+            selectedPlanId = null;
+        }
+    }
+
+    /* حالت نصب مجدد با لایسنس فعال */
+    function renderLicenseMode(resp) {
+        pendingUseLicense = true;
+        selectedPlanId = null;
+
+        $('#confirm-plans-section, #confirm-payment-info, #confirm-license-warning').addClass('d-none');
+
+        let expiryText = '';
+        if (resp.expires_at) {
+            const days = daysRemaining(resp.expires_at);
+            expiryText = ' (اعتبار تا ' + toJalali(resp.expires_at) +
+                (days !== null ? ' — حدود ' + number_format(Math.max(days, 0)) + ' روز باقی‌مانده' : '') + ')';
+        } else {
+            expiryText = ' (نامحدود)';
+        }
+        $('#confirm-license-expiry').text(expiryText);
+
+        $('#confirm-license-section').removeClass('d-none');
+        updateConfirmButton(true);
+        $('#confirm-btn-text').text('بررسی و نصب');
+    }
+
+    /* هشدار انقضا */
+    function showLicenseWarning(message) {
+        $('#confirm-license-warning').removeClass('d-none');
+        $('#confirm-license-warning-text').text(message || 'لایسنس قبلی شما منقضی شده است. برای نصب، یکی از پلن‌ها را انتخاب کنید.');
+    }
+
+    /* تبدیل میلادی → جلالی */
+    function toJalali(dateStr) {
+        if (!dateStr) return '';
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return dateStr;
+        let gy = d.getFullYear(), gm = d.getMonth() + 1, gd = d.getDate();
+        const g_d_m = [0,31,59,90,120,151,181,212,243,273,304,334];
+        let jy = (gy <= 1600) ? 0 : 979;
+        gy -= (gy <= 1600) ? 621 : 1600;
+        const gy2 = (gm > 2) ? (gy + 1) : gy;
+        let days = (365*gy) + Math.floor((gy2+3)/4) - Math.floor((gy2+99)/100) + Math.floor((gy2+399)/400) - 80 + gd + g_d_m[gm-1];
+        jy += 33 * Math.floor(days/12053); days %= 12053;
+        jy += 4 * Math.floor(days/1461);  days %= 1461;
+        if (days > 365) { jy += Math.floor((days-1)/365); days = (days-1)%365; }
+        const jm = (days < 186) ? 1 + Math.floor(days/31) : 7 + Math.floor((days-186)/30);
+        const jd = 1 + ((days < 186) ? (days%31) : ((days-186)%30));
+        return jy + '/' + String(jm).padStart(2,'0') + '/' + String(jd).padStart(2,'0');
+    }
+
+    function daysRemaining(dateStr) {
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return null;
+        return Math.ceil((d.getTime() - Date.now()) / 86400000);
+    }
 
     /* ============================================================
        آپدیت متن دکمه‌ی تأیید بر اساس رایگان/پولی بودن

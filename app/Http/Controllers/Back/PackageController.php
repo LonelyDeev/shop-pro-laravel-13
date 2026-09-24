@@ -8,6 +8,7 @@ use App\Jobs\UpdatePackageJob;
 use App\Models\InstalledModule;
 use App\Models\ModuleInstallLog;
 use App\Models\PackageCache;
+use App\Models\PackagePurchase;
 use App\Services\LicenseVerifier;
 use App\Services\PackageApiService;
 use App\Services\PackageInstallerService;
@@ -73,7 +74,11 @@ class PackageController extends Controller
 
             // دریافت ماژول‌های نصب‌شده برای مقایسه نسخه
             $installedMap = InstalledModule::pluck('version', 'slug')->toArray();
-
+            $purchasedSlugs = PackagePurchase::query()
+                ->where('status', PackagePurchase::STATUS_PAID)
+                // ->where('admin_id', auth('admin')->id())
+                ->pluck('package_slug')
+                ->all();
         } catch (RuntimeException $e) {
             $packages = [];
             $pagination = [];
@@ -82,7 +87,7 @@ class PackageController extends Controller
             session()->flash('error', $e->getMessage());
         }
 
-        return view('back.packages.index', compact('packages', 'pagination', 'installedMap','errors'));
+        return view('back.packages.index', compact('packages', 'pagination','purchasedSlugs', 'installedMap','errors'));
     }
 
     /* ===================================================================
@@ -205,6 +210,11 @@ class PackageController extends Controller
             if ($isFree) {
                 // پکیج رایگان: مستقیم به job
                 return $this->dispatchInstall($slug, $version, null,$pricingPlanId);
+            }
+
+            // ★ نصب مجدد با لایسنس قبلی (خریداری‌شده — بدون پرداخت)
+            if ($request->boolean('use_license')) {
+                return $this->reinstallWithExistingLicense($slug);
             }
 
             // پکیج پولی: ایجاد درخواست خرید با pricing_plan_id
@@ -446,5 +456,102 @@ class PackageController extends Controller
         } catch (\Exception $e) {
             Log::warning('Packages cache sync failed', ['error' => $e->getMessage()]);
         }
+    }
+
+    /**
+     * بررسی خرید قبلی و اعتبار لایسنس (قبل از باز شدن مودال نصب)
+     */
+    public function checkPurchase(string $slug)
+    {
+        $purchase = PackagePurchase::query()
+            ->where('package_slug', $slug)
+            ->where('status', PackagePurchase::STATUS_PAID)
+            ->whereNotNull('license_key')
+            // ->where('admin_id', auth('admin')->id()) // اگر multi-admin هستید فعال کنید
+            ->orderByDesc('paid_at')
+            ->first();
+
+        if (!$purchase) {
+            return response()->json(['purchased' => false]);
+        }
+
+        try {
+            $verify = $this->api->verifyLicense($slug, $purchase->license_key);
+        } catch (Throwable $e) {
+            // سرور پکیج در دسترس نیست → جریان عادی خرید ادامه پیدا کند
+            return response()->json([
+                'purchased' => true,
+                'valid'     => false,
+                'message'   => 'بررسی آنلاین لایسنس ناموفق بود. لطفاً مجدد تلاش کنید.',
+            ]);
+        }
+
+        if (!($verify['valid'] ?? false)) {
+            return response()->json([
+                'purchased' => true,
+                'valid'     => false,
+                'message'   => $verify['message'] ?? 'لایسنس قبلی شما منقضی شده است.',
+            ]);
+        }
+
+        return response()->json([
+            'purchased'  => true,
+            'valid'      => true,
+            'expires_at' => $verify['expires_at'] ?? optional($purchase->license_expires_at)->toDateString(),
+            'version'    => $verify['version'] ?? null,
+        ]);
+    }
+
+    /**
+     * نصب مجدد پکیج با لایسنس قبلی (بدون پرداخت)
+     */
+    private function reinstallWithExistingLicense(string $slug)
+    {
+        $purchase = PackagePurchase::query()
+            ->where('package_slug', $slug)
+            ->where('status', PackagePurchase::STATUS_PAID)
+            ->whereNotNull('license_key')
+            ->orderByDesc('paid_at')
+            ->first();
+
+        if (!$purchase) {
+            return response()->json([
+                'success'       => false,
+                'needs_payment' => true,
+                'message'       => 'خرید معتبری برای این پکیج یافت نشد.',
+            ]);
+        }
+
+        try {
+            $verify = $this->api->verifyLicense($slug, $purchase->license_key);
+        } catch (Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'بررسی لایسنس ناموفق بود: ' . $e->getMessage(),
+            ]);
+        }
+
+        if (!($verify['valid'] ?? false)) {
+            return response()->json([
+                'success'       => false,
+                'needs_payment' => true,
+                'message'       => $verify['message'] ?? 'لایسنس شما منقضی شده است. برای ادامه، یکی از پلن‌ها را انتخاب کنید.',
+            ]);
+        }
+
+        InstallPackageJob::dispatch(
+            $slug,
+            $purchase->license_key,          // متد install() سرویس خودش verifyLicense و download_token را می‌گیرد
+            $purchase->admin_id,
+            $purchase->id,
+            $verify['download_token'] ?? null
+        );
+
+        Log::info('Package reinstall with existing license', [
+            'slug'        => $slug,
+            'purchase_id' => $purchase->id,
+        ]);
+
+        return response()->json(['success' => true]);
     }
 }

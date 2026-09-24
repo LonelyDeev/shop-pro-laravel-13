@@ -1635,3 +1635,34 @@
 .dark-layout .pay-row-value { color: #e5e7eb; }
 .dark-layout .pay-message { color: #9ca3af; }
 .dark-layout .pay-btn-ghost { border-color: #374151; color: #9ca3af; }
+/* ---------- نصب مجدد با لایسنس ---------- */
+.pkg-license-box {
+    display: flex; align-items: flex-start; gap: .9rem;
+    background: linear-gradient(135deg, rgba(16,185,129,.09), rgba(16,185,129,.03));
+    border: 1px solid rgba(16,185,129,.35);
+    border-radius: 14px; padding: 1rem 1.1rem;
+}
+.pkg-license-icon {
+    width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg, #34d399, #059669);
+    color: #fff; display: flex; align-items: center; justify-content: center;
+    font-size: 1.15rem;
+    box-shadow: 0 8px 18px -8px rgba(16,185,129,.7);
+}
+.pkg-license-body strong { display: block; color: #047857; font-size: .9rem; margin-bottom: .25rem; }
+.pkg-license-body p { color: #64748b; font-size: .8rem; margin: 0; line-height: 2; }
+
+.pkg-license-warning {
+    display: flex; align-items: center; gap: .6rem;
+    background: #fffbeb; border: 1px solid #fcd34d;
+    color: #92400e; border-radius: 12px;
+    padding: .75rem 1rem; font-size: .82rem; line-height: 1.9;
+}
+
+.pkg-tag-owned {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: #fff;
+}
+
+.dark-layout .pkg-license-box { background: rgba(16,185,129,.08); }
+.dark-layout .pkg-license-warning { background: rgba(245,158,11,.1); border-color: rgba(245,158,11,.4); color: #fbbf24; }
