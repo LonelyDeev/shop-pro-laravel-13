@@ -240,6 +240,8 @@
        رندر محتوا
        ============================================================ */
     function renderDetail(pkg, logs) {
+        modalLicenseMode = false;   // ★ ریست برای هر باز شدن مودال
+
         const $body = $('#modal-pkg-body');
         const $footer = $('#modal-pkg-footer');
         const $title = $('#modal-pkg-title');
@@ -295,7 +297,7 @@
 
         // gallery
         if (pkg.images && pkg.images.length > 0) {
-            html += '<div class="pkg-section" id="modal-plans-section">';
+            html += '<div class="pkg-section">';
             html += '<h6 class="pkg-section-title"><i class="feather icon-grid"></i> گالری تصاویر <small class="text-muted">(' + pkg.images.length + ')</small></h6>';
             html += '<div class="pkg-gallery">';
             pkg.images.forEach(function (img) {
@@ -314,14 +316,14 @@
             // استفاده از jQuery برای تنظیم HTML
             var $desc = $('<div class="pkg-long-desc"></div>').html(descContent);
 
-            html += '<div class="pkg-section" id="modal-plans-section">';
+            html += '<div class="pkg-section">';
             html += '<h6 class="pkg-section-title"><i class="feather icon-file-text"></i> توضیحات کامل</h6>';
             html += $desc[0].outerHTML;
             html += '</div>';
         }
         // changelog
         if (pkg.changelog && (Object.keys(pkg.changelog).length > 0 || Array.isArray(pkg.changelog))) {
-            html += '<div class="pkg-section" id="modal-plans-section">';
+            html += '<div class="pkg-section">';
             html += '<h6 class="pkg-section-title"><i class="feather icon-git-commit"></i> تاریخچه نسخه‌ها</h6>';
             html += '<ul class="pkg-changelog">';
             if (Array.isArray(pkg.changelog)) {
@@ -342,7 +344,7 @@
         if (versions.length > 0) {
             const latest = versions[0];
             if (latest.what_added || latest.what_changed || latest.what_fixed) {
-                html += '<div class="pkg-section" id="modal-plans-section">';
+                html += '<div class="pkg-section">';
                 html += '<h6 class="pkg-section-title"><i class="feather icon-info"></i> تغییرات نسخه v' + escapeHtml(latest.version || latestVersion) + '</h6>';
                 if (latest.what_added) {
                     html += '<div class="pkg-change-block pkg-change-added"><strong><i class="feather icon-plus-circle"></i> قابلیت‌های جدید</strong><p>' + nl2br(escapeHtml(latest.what_added)) + '</p></div>';
@@ -359,7 +361,7 @@
 
         // requirements
         if (pkg.requirements && Object.keys(pkg.requirements).length > 0) {
-            html += '<div class="pkg-section" id="modal-plans-section">';
+            html += '<div class="pkg-section">';
             html += '<h6 class="pkg-section-title"><i class="feather icon-info"></i> پیش‌نیازها</h6>';
             html += '<ul class="pkg-requirements">';
             Object.keys(pkg.requirements).forEach(function (req) {
@@ -438,7 +440,7 @@
 
         // status
         if (installed) {
-            html += '<div class="pkg-section" id="modal-plans-section">';
+            html += '<div class="pkg-section">';
             html += '<h6 class="pkg-section-title"><i class="feather icon-settings"></i> وضعیت نصب</h6>';
             html += '<div class="pkg-status-box ';
             if (installed.status === 'updating') html += 'status-running';
@@ -475,7 +477,7 @@
 
         // logs
         if (logs && logs.length > 0) {
-            html += '<div class="pkg-section" id="modal-plans-section">';
+            html += '<div class="pkg-section">';
             html += '<h6 class="pkg-section-title"><i class="feather icon-list"></i> لاگ‌های اخیر</h6>';
             html += '<div class="table-responsive"><table class="pkg-logs-table">';
             html += '<thead><tr>';
@@ -573,8 +575,12 @@
         }
 
         // اتصال event listener برای انتخاب پلن در مدال جزئیات
+        // اتصال event listener برای انتخاب پلن در مدال جزئیات
         if (!installed && plans && plans.length > 0) {
             $('#modal-pkg-body').off('click', '.pkg-plan-card').on('click', '.pkg-plan-card', function () {
+                // ★ در حالت نصب مجدد با لایسنس، پلن‌ها معنا ندارند
+                if (modalLicenseMode) return;
+
                 // آپدیت selected
                 $('#modal-pkg-body .pkg-plan-card').removeClass('selected');
                 $(this).addClass('selected');
@@ -595,15 +601,16 @@
                 const $btn = $('#modal-btn-install');
                 const $icon = $btn.find('i');
                 const $text = $('#modal-install-text');
+                $btn.removeAttr('data-use-license');   // ★ خروج از حالت لایسنس (اگر بوده)
                 $btn.data('plan-id', planId);
 
                 if (planIsFree) {
                     $btn.removeClass('pkg-modal-btn-warning').addClass('pkg-modal-btn-primary');
-                    $icon.removeClass('icon-credit-card').addClass('icon-download-cloud');
+                    $icon.removeClass('icon-credit-card icon-rotate-ccw').addClass('icon-download-cloud');
                     $text.text('نصب پکیج');
                 } else {
                     $btn.removeClass('pkg-modal-btn-primary').addClass('pkg-modal-btn-warning');
-                    $icon.removeClass('icon-download-cloud').addClass('icon-credit-card');
+                    $icon.removeClass('icon-download-cloud icon-rotate-ccw').addClass('icon-credit-card');
                     $text.text('پرداخت و نصب');
                 }
             });
@@ -633,12 +640,6 @@
             if (resp.purchased) {
                 applyModalLicenseExpired(resp.message);
             }
-            // برگشت دکمه به جریان خرید (حالت فعلی = پلن ارزان انتخاب شده)
-            const planPrice = parseInt($('#modal-pkg-body .pkg-plan-card.selected').data('plan-price'));
-            const planIsFree = !isNaN(planPrice) && planPrice === 0;
-            $btn.prop('disabled', false).html(originalHtml)
-                .removeClass('pkg-modal-btn-primary pkg-modal-btn-warning')
-                .addClass(planIsFree ? 'pkg-modal-btn-primary' : 'pkg-modal-btn-warning');
         }).fail(function () {
             $btn.prop('disabled', false).html(originalHtml);
         });
@@ -647,7 +648,8 @@
     function applyModalLicenseMode(resp) {
         modalLicenseMode = true;
 
-        // حذف پلن‌ها و نمایش باکس لایسنس
+        // ★ هندلر انتخاب پلن از کار افتد + پلن‌ها حذف شوند
+        $('#modal-pkg-body').off('click', '.pkg-plan-card');
         $('#modal-plans-section').remove();
 
         let expiryText = 'نامحدود';
@@ -678,7 +680,7 @@
             .prop('disabled', false)
             .removeClass('pkg-modal-btn-warning').addClass('pkg-modal-btn-primary')
             .attr('data-use-license', '1')
-            .find('i').removeClass('icon-credit-card').addClass('icon-rotate-ccw');
+            .find('i').removeClass('icon-credit-card icon-download-cloud').addClass('icon-rotate-ccw');
         $('#modal-install-text').text('بررسی و نصب');
 
         // قیمت → بدون پرداخت
@@ -690,6 +692,7 @@
     function applyModalLicenseExpired(message) {
         const $plans = $('#modal-plans-section');
         if (!$plans.length) return;
+
         $plans.find('.pkg-license-warning').remove();
         $plans.prepend(
             '<div class="pkg-license-warning mb-2">' +
@@ -697,6 +700,20 @@
             '<span>' + escapeHtml(message || 'لایسنس قبلی شما منقضی شده است؛ برای نصب مجدد، پلن را انتخاب و پرداخت کنید.') + '</span>' +
             '</div>'
         );
+
+        // ★ در جریان خرید معمولی می‌مانیم — دکمه به «پرداخت و نصب» با پلن ارزان برگردد
+        modalLicenseMode = false;
+        const $btn = $('#modal-btn-install').prop('disabled', false).removeAttr('data-use-license');
+        const planPrice = parseInt($('#modal-pkg-body .pkg-plan-card.selected').data('plan-price')) || 0;
+        if (planPrice === 0) {
+            $btn.removeClass('pkg-modal-btn-warning').addClass('pkg-modal-btn-primary')
+                .find('i').removeClass('icon-credit-card icon-rotate-ccw').addClass('icon-download-cloud');
+            $('#modal-install-text').text('نصب پکیج');
+        } else {
+            $btn.removeClass('pkg-modal-btn-primary').addClass('pkg-modal-btn-warning')
+                .find('i').removeClass('icon-download-cloud icon-rotate-ccw').addClass('icon-credit-card');
+            $('#modal-install-text').text('پرداخت و نصب');
+        }
     }
 
     function toJalali(dateStr) {
