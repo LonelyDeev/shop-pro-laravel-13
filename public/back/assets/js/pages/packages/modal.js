@@ -707,11 +707,11 @@
         const $btn = $('#modal-btn-install').prop('disabled', false).removeAttr('data-use-license');
         const planPrice = parseInt($('#modal-pkg-body .pkg-plan-card.selected').data('plan-price')) || 0;
         if (planPrice === 0) {
-            $btn.removeClass('pkg-modal-btn-warning').addClass('pkg-modal-btn-primary')
+            $btn.html('نصب پکیج').removeClass('pkg-modal-btn-warning').addClass('pkg-modal-btn-primary')
                 .find('i').removeClass('icon-credit-card icon-rotate-ccw').addClass('icon-download-cloud');
             $('#modal-install-text').text('نصب پکیج');
         } else {
-            $btn.removeClass('pkg-modal-btn-primary').addClass('pkg-modal-btn-warning')
+            $btn.html('پرداخت و نصب').removeClass('pkg-modal-btn-primary').addClass('pkg-modal-btn-warning')
                 .find('i').removeClass('icon-download-cloud icon-rotate-ccw').addClass('icon-credit-card');
             $('#modal-install-text').text('پرداخت و نصب');
         }
