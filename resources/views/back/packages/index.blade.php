@@ -234,7 +234,6 @@
                                             <span class="pkg-price-unit">تومان</span>
                                         @endif
 
-
                                             @php
                                                 $isInstalling = ($installStatusMap[$slug] ?? null) === 'installing';
                                             @endphp

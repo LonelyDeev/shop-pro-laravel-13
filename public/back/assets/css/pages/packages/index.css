@@ -1200,11 +1200,12 @@
    Plans Selection (مشترک بین مدال تأیید و مدال جزئیات)
    ============================================================ */
 .pkg-plans-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 12px;
+    display: flex;
+    gap: inherit;
 }
-
+.pkg-plans-list  > [class*="col-"] {
+    margin-bottom: 10px;
+}
 .pkg-plan-card {
     position: relative;
     display: flex;
