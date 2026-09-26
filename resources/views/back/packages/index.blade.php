@@ -234,6 +234,7 @@
                                             <span class="pkg-price-unit">تومان</span>
                                         @endif
 
+
                                             @if ($hasUpdate)
                                                 {{-- حالت ۱: آپدیت موجوده --}}
                                                 <button type="button"
