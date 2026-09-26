@@ -5,9 +5,6 @@
 @endpush
 
 @section('content')
-    @php
-        $hasActiveSubscription = ($pkg['subscription']['is_free_with_subscription'] ?? false);
-    @endphp
     <div class="app-content content pkg-page">
         <div class="content-overlay"></div>
         <div class="header-navbar-shadow"></div>
@@ -175,6 +172,7 @@
                                                 $minPrice = $pkg['min_price'] ?? ($pkg['price'] ?? 0);
                                                 $isFree = $pkg['is_free'] ?? false;
                                                 $hasFreePlan = $pkg['has_free_plan'] ?? false;
+                                                 $hasActiveSubscription = ($pkg['subscription']['is_free_with_subscription'] ?? false);
                                             @endphp
                                             @if (!$isFree && $hasActiveSubscription)
                                                 <span class="pkg-tag pkg-tag-subscription"><i class="feather icon-award"></i> رایگان با اشتراک</span>
