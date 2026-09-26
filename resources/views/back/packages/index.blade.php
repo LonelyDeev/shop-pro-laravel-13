@@ -171,6 +171,11 @@
                                         </div>
                                     @endif
                                         <div class="pkg-card-badges">
+                                            @php
+                                                $minPrice = $pkg['min_price'] ?? ($pkg['price'] ?? 0);
+                                                $isFree = $pkg['is_free'] ?? false;
+                                                $hasFreePlan = $pkg['has_free_plan'] ?? false;
+                                            @endphp
                                             @if (!$isFree && $hasActiveSubscription)
                                                 <span class="pkg-tag pkg-tag-subscription"><i class="feather icon-award"></i> رایگان با اشتراک</span>
                                             @elseif ($isPurchased && !$isFree)
