@@ -59,6 +59,7 @@ class PackageController extends Controller
                     $minPrice = min($planPrices);
                 }
 
+
                 // is_free فقط اگر خود API گفته باشه (پکیج کاملاً رایگان)
                 // has_free_plan: اگر حداقل یک پلن رایگان وجود داره
                 $pkg['min_price'] = $minPrice;
@@ -66,8 +67,29 @@ class PackageController extends Controller
                 $pkg['has_free_plan'] = $minPrice === 0;
                 // is_free از API حفظ می‌شه (اگه API گفته false، همون false می‌مونه)
 
+                if (!empty($pkg['subscription']['subscription_expires_at'])) {
+                    $exp = \Carbon\Carbon::parse($pkg['subscription']['subscription_expires_at']);
+                    $pkg['subscription']['days_remaining'] = max(0, (int) round(now()->diffInDays($exp)));
+                    if ($exp->isPast()) {
+                        $pkg['subscription']['is_free_with_subscription'] = false;
+                    }
+                }
+
                 return $pkg;
             }, $packages);
+
+            // ★ خلاصه اشتراک فعال پروژه (برای بنر صفحه ایندکس)
+            $subscriptionSummary = $data['subscription_summary'] ?? null;
+            if (is_array($subscriptionSummary)) {
+                if (!empty($subscriptionSummary['expires_at'])) {
+                    $exp = \Carbon\Carbon::parse($subscriptionSummary['expires_at']);
+                    $subscriptionSummary['days_remaining'] = max(0, (int) round(now()->diffInDays($exp)));
+                    $subscriptionSummary['has_active_subscription'] =
+                        ($subscriptionSummary['has_active_subscription'] ?? false) && $exp->isFuture();
+                }
+            } else {
+                $subscriptionSummary = null;
+            }
 
             // sync با جدول packages_cache (در background)
             $this->syncCache($packages);
@@ -86,8 +108,7 @@ class PackageController extends Controller
             $errors = $e->getMessage();
             session()->flash('error', $e->getMessage());
         }
-
-        return view('back.packages.index', compact('packages', 'pagination','purchasedSlugs', 'installedMap','errors'));
+        return view('back.packages.index', compact('packages', 'pagination', 'purchasedSlugs', 'installedMap', 'errors', 'subscriptionSummary'));
     }
 
     /* ===================================================================
@@ -102,6 +123,14 @@ class PackageController extends Controller
                 return $this->api->getPackage($slug);
             });
             $package = $data['data'] ?? $data;
+            // ★ اشتراک — اصلاح اعتبار و روزها (به دلیل کش شدن detail)
+            if (!empty($package['subscription']['subscription_expires_at'])) {
+                $exp = \Carbon\Carbon::parse($package['subscription']['subscription_expires_at']);
+                $package['subscription']['days_remaining'] = max(0, (int) round(now()->diffInDays($exp)));
+                if ($exp->isPast()) {
+                    $package['subscription']['is_free_with_subscription'] = false;
+                }
+            }
             $package['purchased'] = PackagePurchase::where('package_slug', $slug)
                 ->where('status', PackagePurchase::STATUS_PAID)
                 ->whereNotNull('license_key')
@@ -201,6 +230,10 @@ class PackageController extends Controller
                 $isFree = (bool) ($package['is_free'] ?? false);
             }
 
+// ★ نصب با اشتراک فعال (بدون پرداخت)
+            if ($request->boolean('use_subscription')) {
+                return $this->installWithSubscription($slug, $request);
+            }
 
             // اگر قبلاً نصب شده، جلوگیری شود
             if (InstalledModule::where('slug', $slug)->exists()) {
@@ -465,6 +498,41 @@ class PackageController extends Controller
      */
     public function checkPurchase(string $slug)
     {
+        $subscriptionNotice = null;
+
+        // ★ اولویت ۱: اشتراک فعال — از API (داده تازه، بدون کش)
+        try {
+            $apiPackage = $this->api->getPackage($slug);
+            $apiPackage = $apiPackage['data'] ?? $apiPackage;
+            $subscription = $apiPackage['subscription'] ?? null;
+
+            if ($subscription && ($subscription['is_free_with_subscription'] ?? false)) {
+                $expiresAt = $subscription['subscription_expires_at'] ?? null;
+                $active = true;
+                if (!empty($expiresAt)) {
+                    try { $active = \Carbon\Carbon::parse($expiresAt)->isFuture(); }
+                    catch (\Throwable $e) { $active = false; }
+                }
+
+                if ($active) {
+                    return response()->json([
+                        'purchased'      => true,   // برای سازگاری با JS فعلی
+                        'valid'          => true,
+                        'mode'           => 'subscription',
+                        'plan_name'      => $subscription['plan_name'] ?? null,
+                        'plan_slug'      => $subscription['plan_slug'] ?? null,
+                        'expires_at'     => $expiresAt,
+                        'days_remaining' => $subscription['days_remaining'] ?? null,
+                        'license_key'    => $subscription['license_key'] ?? null,
+                    ]);
+                }
+                $subscriptionNotice = 'اشتراک شما منقضی شده است؛ برای نصب، پلن موردنظر را انتخاب کنید.';
+            }
+        } catch (\Throwable $e) {
+            // API در دسترس نیست → ادامه با بررسی خرید محلی
+        }
+
+        // اولویت ۲: خرید مستقیم قبلی
         $purchase = PackagePurchase::query()
             ->where('package_slug', $slug)
             ->where('status', PackagePurchase::STATUS_PAID)
@@ -478,7 +546,7 @@ class PackageController extends Controller
 
         try {
             $verify = $this->api->verifyLicense($slug, $purchase->license_key);
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             return response()->json([
                 'purchased' => true,
                 'valid'     => false,
@@ -486,20 +554,21 @@ class PackageController extends Controller
             ]);
         }
 
-        // ★ valid بودن کافی نیست — لایسنس باید حتماً زمان داشته باشد
         if (!($verify['valid'] ?? false) ||
             !$this->licenseHasTime($verify['expires_at'] ?? null, $purchase->license_expires_at)) {
             return response()->json([
                 'purchased' => true,
                 'valid'     => false,
+                'mode'      => 'purchase',
                 'message'   => $verify['message']
-                    ?? 'لایسنس قبلی شما منقضی شده است. برای نصب مجدد، ابتدا پلن را انتخاب و تمدید کنید.',
+                    ?? ($subscriptionNotice ?? 'لایسنس قبلی شما منقضی شده است. برای نصب مجدد، ابتدا پلن را انتخاب و تمدید کنید.'),
             ]);
         }
 
         return response()->json([
             'purchased'  => true,
             'valid'      => true,
+            'mode'       => 'purchase',
             'expires_at' => $verify['expires_at'] ?? optional($purchase->license_expires_at)->toDateString(),
             'version'    => $verify['version'] ?? null,
         ]);
@@ -575,5 +644,54 @@ class PackageController extends Controller
         } catch (\Throwable $e) {
             return false;
         }
+    }
+
+    /**
+     * نصب پکیج با اشتراک فعال (بدون پرداخت) — اعتبار همیشه سمت سرور چک می‌شود
+     */
+    private function installWithSubscription(string $slug, Request $request)
+    {
+        try {
+            $package = $this->api->getPackage($slug);
+            $package = $package['data'] ?? $package;
+        } catch (RuntimeException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'بررسی اشتراک ناموفق بود: ' . $e->getMessage(),
+            ], 500);
+        }
+
+        $subscription = $package['subscription'] ?? null;
+        $eligible     = false;
+
+        if ($subscription && ($subscription['is_free_with_subscription'] ?? false)) {
+            $expiresAt = $subscription['subscription_expires_at'] ?? null;
+            if (empty($expiresAt)) {
+                $eligible = true; // اشتراک نامحدود
+            } else {
+                try { $eligible = \Carbon\Carbon::parse($expiresAt)->isFuture(); }
+                catch (\Throwable $e) { $eligible = false; }
+            }
+        }
+
+        if (!$eligible || empty($subscription['license_key'])) {
+            return response()->json([
+                'success'       => false,
+                'needs_payment' => true,
+                'message'       => 'اشتراک فعال شما این پکیج را پوشش نمی‌دهد یا منقضی شده است. برای نصب، پلن را انتخاب کنید.',
+            ]);
+        }
+
+        InstallPackageJob::dispatch(
+            $slug,
+            $subscription['license_key'],   // لایسنسِ ارائه‌شده توسط اشتراک
+            $request->user('adminPanel')->id ?? null,
+            null,
+            null                            // سرویس install() خودش verifyLicense و token می‌گیرد
+        );
+
+        Log::info('Package install via subscription', ['slug' => $slug]);
+
+        return response()->json(['success' => true]);
     }
 }

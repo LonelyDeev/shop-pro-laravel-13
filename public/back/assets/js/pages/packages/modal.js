@@ -100,17 +100,23 @@
         $(document).on('click', '#modal-btn-install', function () {
             const $btn = $(this);
             const slug = $btn.data('slug');
+            const useSubscription = String($btn.attr('data-use-subscription') || '') === '1';
             const useLicense = String($btn.attr('data-use-license') || '') === '1';
             const planId = useLicense ? null : $btn.data('plan-id');
             const originalHtml = $btn.html();
 
             $btn.prop('disabled', true)
                 .html('<span class="spinner-border spinner-border-sm"></span> ' +
-                    (useLicense ? 'در حال بررسی و نصب...' : 'در حال ارسال...'));
+                    (useSubscription ? 'در حال بررسی اشتراک...' : (useLicense ? 'در حال بررسی و نصب...' : 'در حال ارسال...')));
+
+
 
             const data = { _token: csrfToken };
-            if (useLicense) {
-                data.use_license = 1;          // ★ نصب مجدد با لایسنس
+
+            if (useSubscription) {
+                data.use_subscription = 1;
+            } else if (useLicense) {
+                data.use_license = 1;
             } else if (planId) {
                 data.pricing_plan_id = planId;
             }
@@ -255,6 +261,8 @@
         const installed = pkg.installed;
         const hasUpdate = pkg.has_update;
         const thumbnail = pkg.thumbnail_url || pkg.thumbnail || '';
+        const subscription = pkg.subscription || null;
+        const hasActiveSubscription = !!(subscription && subscription.is_free_with_subscription);
         // عنوان در header
         $title.html('<i class="feather icon-package"></i> ' + escapeHtml(name));
 
@@ -277,6 +285,11 @@
         if (installed && installed.status === 'installed') {
             html += '<span class="pkg-modal-badge" style="background:rgba(255,255,255,0.25);">نصب‌شده v' + escapeHtml(installed.version) + '</span>';
         }
+
+        if (hasActiveSubscription) {
+            html += '<span class="pkg-modal-badge pkg-modal-badge-subscription"><i class="feather icon-award"></i> رایگان با اشتراک</span>';
+        }
+
         html += '</div>';
 
         html += '<div class="pkg-modal-meta">';
@@ -372,7 +385,7 @@
 
         // pricing plans (اگه نصب نشده و پلن داره)
         let cheapestPlanId = null;
-        if (!installed && plans && plans.length > 0) {
+        if (!installed && plans && plans.length > 0 && !hasActiveSubscription) {
             // پیدا کردن ارزان‌ترین پلن
             let cheapest = null;
             plans.forEach(function (p) {
@@ -531,7 +544,9 @@
         }
 
         let footerHtml = '<div class="pkg-modal-price p-1" id="modal-price-display">';
-        if (isFree) {
+        if (!installed && hasActiveSubscription) {
+            footerHtml += '<span class="pkg-modal-price-free"><i class="feather icon-award"></i> رایگان با اشتراک</span>';
+        } else if (isFree) {
             footerHtml += '<span class="pkg-modal-price-free">رایگان</span>';
         } else if (initialPlanIsFree) {
             footerHtml += '<span class="pkg-modal-price-free">رایگان</span>';
@@ -543,8 +558,13 @@
         footerHtml += '<div class="pkg-modal-actions">';
 
         if (!installed) {
-            footerHtml += '<button type="button" id="modal-btn-install" class="pkg-modal-btn ' + (initialPlanIsFree ? 'pkg-modal-btn-primary' : 'pkg-modal-btn-warning') + '" data-slug="' + slug + '" data-plan-id="' + (initialPlanId ?? '') + '">';
-            footerHtml += '<i class="feather ' + (initialPlanIsFree ? 'icon-download-cloud' : 'icon-credit-card') + '"></i> <span id="modal-install-text">' + (initialPlanIsFree ? 'نصب پکیج' : 'پرداخت و نصب') + '</span>';
+            const subMode = hasActiveSubscription;
+            footerHtml += '<button type="button" id="modal-btn-install" class="pkg-modal-btn ' +
+                ((subMode || initialPlanIsFree) ? 'pkg-modal-btn-primary' : 'pkg-modal-btn-warning') +
+                '" data-slug="' + slug + '" data-plan-id="' + (initialPlanId ?? '') + '"' +
+                (subMode ? ' data-use-subscription="1"' : '') + '>';
+            footerHtml += '<i class="feather ' + (subMode ? 'icon-award' : (initialPlanIsFree ? 'icon-download-cloud' : 'icon-credit-card')) + '"></i> <span id="modal-install-text">' +
+                (subMode ? 'نصب با اشتراک' : (initialPlanIsFree ? 'نصب پکیج' : 'پرداخت و نصب')) + '</span>';
             footerHtml += '</button>';
         } else if (installed.status === 'updating') {
             footerHtml += '<button type="button" class="pkg-modal-btn pkg-modal-btn-warning" disabled><span class="spinner-border spinner-border-sm"></span> در حال نصب...</button>';
@@ -571,7 +591,7 @@
 
 
         // اتصال event listener برای انتخاب پلن در مدال جزئیات
-        if (!installed && plans && plans.length > 0) {
+        if (!installed && plans && plans.length > 0 && !hasActiveSubscription) {
             $('#modal-pkg-body').off('click', '.pkg-plan-card').on('click', '.pkg-plan-card', function () {
                 // ★ در حالت نصب مجدد با لایسنس، پلن‌ها معنا ندارند
                 if (modalLicenseMode) return;
@@ -613,7 +633,11 @@
 
         // ★★★ بررسی خرید قبلی — باید بعد از رندر footer باشد
         const isPurchased = !!(pkg.purchased || pkg.is_purchased);
-        if (!installed && !isFree && isPurchased) {
+
+        // ★ اولویت: اشتراک فعال → خرید قبلی
+        if (!installed && hasActiveSubscription) {
+            applyModalSubscriptionMode(subscription);
+        } else if (!installed && !isFree && isPurchased) {
             checkModalLicense(slug);
         }
     }
@@ -750,6 +774,35 @@
 
     function renderError(msg) {
         return '<div class="pkg-modal-content-area"><div class="alert alert-danger m-3"><i class="feather icon-alert-octagon"></i> ' + escapeHtml(msg) + '</div></div>';
+    }
+
+    function applyModalSubscriptionMode(sub) {
+        modalLicenseMode = false;
+
+        let expiryText = 'نامحدود';
+        if (sub.subscription_expires_at) {
+            const days = (sub.days_remaining !== undefined && sub.days_remaining !== null)
+                ? parseInt(sub.days_remaining)
+                : daysRemaining(sub.subscription_expires_at);
+            expiryText = toJalali(sub.subscription_expires_at) +
+                (days !== null && !isNaN(days) ? ' — ' + number_format(Math.max(days, 0)) + ' روز باقی‌مانده' : '');
+        }
+
+        const box =
+            '<div class="pkg-section" id="modal-subscription-section">' +
+            '<h6 class="pkg-section-title"><i class="feather icon-award"></i> وضعیت اشتراک</h6>' +
+            '<div class="pkg-sub-box">' +
+            '<div class="pkg-sub-icon"><i class="feather icon-award"></i></div>' +
+            '<div class="pkg-sub-body">' +
+            '<strong>این پکیج با اشتراک شما رایگان است — بدون پرداخت نصب می‌شود</strong>' +
+            '<p class="mb-0">طرح: <strong>' + escapeHtml(sub.plan_name || 'اشتراک') + '</strong>' +
+            ' <span class="text-muted">(اعتبار تا ' + escapeHtml(expiryText) + ')</span></p>' +
+            '</div>' +
+            '</div>' +
+            '</div>';
+
+        $('#modal-pkg-body .pkg-modal-content-area').prepend(box);
+        // دکمه و قیمت در footer از قبل با حالت subscription رندر شده‌اند
     }
 
 })(jQuery);

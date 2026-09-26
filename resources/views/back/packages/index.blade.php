@@ -5,6 +5,9 @@
 @endpush
 
 @section('content')
+    @php
+        $hasActiveSubscription = ($pkg['subscription']['is_free_with_subscription'] ?? false);
+    @endphp
     <div class="app-content content pkg-page">
         <div class="content-overlay"></div>
         <div class="header-navbar-shadow"></div>
@@ -51,6 +54,22 @@
                         </div>
                     </div>
                 </div>
+
+                {{-- ★ بنر اشتراک فعال --}}
+                @if (!empty($subscriptionSummary) && ($subscriptionSummary['has_active_subscription'] ?? false))
+                    <div class="pkg-sub-banner mb-3">
+                        <div class="pkg-sub-banner-glow"></div>
+                        <div class="pkg-sub-banner-icon"><i class="feather icon-award"></i></div>
+                        <div class="pkg-sub-banner-info">
+                            <strong><i class="feather icon-check-circle"></i> اشتراک فعال: {{ $subscriptionSummary['plan_name'] ?? 'اشتراک' }}</strong>
+                            <span>پکیج‌های مشمول اشتراک، بدون پرداخت نصب می‌شوند</span>
+                        </div>
+                        <div class="pkg-sub-banner-days">
+                            <span class="pkg-sub-days-value">{{ $subscriptionSummary['days_remaining'] ?? 0 }}</span>
+                            <span class="pkg-sub-days-label">روز باقی‌مانده</span>
+                        </div>
+                    </div>
+                @endif
 
                 {{-- Stat cards --}}
                 @php
@@ -151,18 +170,17 @@
                                             <i class="feather icon-package"></i>
                                         </div>
                                     @endif
-                                    <div class="pkg-card-badges">
-                                        @if ($isPurchased && !$isFree)
-                                            <span class="pkg-tag pkg-tag-owned">خریداری‌شده</span>
-                                        @else
-                                            @if ($pkg['is_free'] ?? false)
+                                        <div class="pkg-card-badges">
+                                            @if (!$isFree && $hasActiveSubscription)
+                                                <span class="pkg-tag pkg-tag-subscription"><i class="feather icon-award"></i> رایگان با اشتراک</span>
+                                            @elseif ($isPurchased && !$isFree)
+                                                <span class="pkg-tag pkg-tag-owned">خریداری‌شده</span>
+                                            @elseif ($pkg['is_free'] ?? false)
                                                 <span class="pkg-tag pkg-tag-free">رایگان</span>
                                             @else
                                                 <span class="pkg-tag pkg-tag-paid">پولی</span>
                                             @endif
-                                        @endif
-
-                                    </div>
+                                        </div>
                                     @if ($isInstalled)
                                         <div class="pkg-card-installed-stamp">
                                             <i class="feather icon-check-circle"></i> نصب‌شده
@@ -196,45 +214,64 @@
                                     </div>
 
                                     <div class="pkg-card-footer">
-                                        <div class="pkg-card-price">
-                                            @php
-                                                $minPrice = $pkg['min_price'] ?? ($pkg['price'] ?? 0);
-                                                $isFree = $pkg['is_free'] ?? false;
-                                                $hasFreePlan = $pkg['has_free_plan'] ?? false;
-                                            @endphp
-                                            @if ($isFree)
-                                                <span class="text-success">رایگان</span>
-                                            @elseif ($hasFreePlan)
-                                                <span class="text-success">رایگان</span>
-                                            @else
-                                                <small class="text-muted d-block">از</small>
-                                                <span class="pkg-price-value">{{ number_format($minPrice) }}</span>
-                                                <span class="pkg-price-unit">تومان</span>
+                                        @if ($isFree)
+                                            <span class="text-success">رایگان</span>
+                                        @elseif ($hasActiveSubscription)
+                                            <span class="pkg-price-sub"><i class="feather icon-award"></i> رایگان با اشتراک</span>
+                                            @if (!empty($pkg['subscription']['days_remaining']))
+                                                <small class="text-muted d-block">{{ $pkg['subscription']['days_remaining'] }} روز باقی‌مانده</small>
                                             @endif
-                                        </div>
-                                        @if (!$isInstalled)
-                                            <button type="button"
-                                                    class="btn pkg-btn-install btn-install"
-                                                    data-slug="{{ $slug }}"
-                                                    data-name="{{ $pkg['name'] ?? $slug }}"
-                                                    data-free="{{ $isFree ? '1' : '0' }}"
-                                                    data-price="{{ $minPrice }}"
-                                                    data-purchased="{{ ($isPurchased && !$isFree) ? '1' : '0' }}"
-                                                    data-plans='@json($pkg['plans'] ?? [])'>
-                                                <i class="feather icon-{{ ($isPurchased && !$isFree) ? 'rotate-ccw' : 'download-cloud' }}"></i>
-                                                {{ ($isPurchased && !$isFree) ? 'نصب مجدد' : 'نصب' }}
-                                            </button>
-                                        @elseif ($hasUpdate)
-                                            <button type="button"
-                                                    class="btn pkg-btn-update btn-show-modal"
-                                                    data-slug="{{ $slug }}">
-                                                <i class="feather icon-arrow-up"></i> آپدیت
-                                            </button>
+                                        @elseif ($hasFreePlan)
+                                            <span class="text-success">رایگان</span>
                                         @else
-                                            <span class="pkg-up-to-date">
-                                                <i class="feather icon-check"></i> به‌روز
-                                            </span>
+                                            <small class="text-muted d-block">از</small>
+                                            <span class="pkg-price-value">{{ number_format($minPrice) }}</span>
+                                            <span class="pkg-price-unit">تومان</span>
                                         @endif
+
+                                            @if ($hasUpdate)
+                                                {{-- حالت ۱: آپدیت موجوده --}}
+                                                <button type="button"
+                                                        class="btn pkg-btn-update btn-show-modal"
+                                                        data-slug="{{ $slug }}">
+                                                    <i class="feather icon-arrow-up"></i> آپدیت
+                                                </button>
+
+                                            @elseif ($isPurchased || $isFree)
+                                                {{-- حالت ۲: نصبشده و بروزه (چه رایگان چه خریداریشده) --}}
+                                                <span class="pkg-up-to-date">
+        <i class="feather icon-check"></i> به روز
+    </span>
+
+                                            @elseif (!$isFree && $hasActiveSubscription)
+                                                {{-- حالت ۳: اشتراک فعال --}}
+                                                <button type="button"
+                                                        class="btn pkg-btn-install btn-install"
+                                                        data-slug="{{ $slug }}"
+                                                        data-name="{{ $pkg['name'] ?? $slug }}"
+                                                        data-free="0"
+                                                        data-price="{{ $minPrice }}"
+                                                        data-purchased="0"
+                                                        data-subscription="1"
+                                                        data-plans='@json($pkg['plans'] ?? [])'>
+                                                    <i class="feather icon-award"></i> نصب با اشتراک
+                                                </button>
+
+                                            @else
+                                                {{-- حالت ۵: نصب عادی (رایگان یا نیاز به خرید) --}}
+                                                <button type="button"
+                                                        class="btn pkg-btn-install btn-install"
+                                                        data-slug="{{ $slug }}"
+                                                        data-name="{{ $pkg['name'] ?? $slug }}"
+                                                        data-free="{{ $isFree ? '1' : '0' }}"
+                                                        data-price="{{ $minPrice }}"
+                                                        data-purchased="0"
+                                                        data-subscription="0"
+                                                        data-plans='@json($pkg['plans'] ?? [])'>
+                                                    <i class="feather icon-download-cloud"></i> نصب
+                                                </button>
+                                            @endif
+
                                     </div>
                                 </div>
                             </div>
@@ -372,6 +409,17 @@
                         <button type="button" class="btn pay-btn-ghost" data-dismiss="modal">بستن</button>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ★ نصب با اشتراک فعال --}}
+    <div id="confirm-subscription-section" class="d-none mt-3">
+        <div class="pkg-sub-box">
+            <div class="pkg-sub-icon"><i class="feather icon-award"></i></div>
+            <div class="pkg-sub-body">
+                <strong><i class="feather icon-check-circle"></i> این پکیج با اشتراک شما رایگان است</strong>
+                <p class="mb-0">طرح: <strong id="confirm-sub-plan"></strong><span id="confirm-sub-expiry"></span></p>
             </div>
         </div>
     </div>
