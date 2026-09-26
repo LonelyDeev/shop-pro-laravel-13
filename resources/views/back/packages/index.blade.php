@@ -235,7 +235,17 @@
                                         @endif
 
 
-                                            @if ($hasUpdate)
+                                            @php
+                                                $isInstalling = ($installStatusMap[$slug] ?? null) === 'installing';
+                                            @endphp
+
+                                            @if ($isInstalling)
+                                                {{-- حالت ۰: در حال نصب --}}
+                                                <button type="button" class="btn pkg-btn-installing" disabled>
+                                                    <span class="spinner-border spinner-border-sm"></span> در حال نصب...
+                                                </button>
+
+                                            @elseif ($hasUpdate)
                                                 {{-- حالت ۱: آپدیت موجوده --}}
                                                 <button type="button"
                                                         class="btn pkg-btn-update btn-show-modal"
@@ -244,13 +254,13 @@
                                                 </button>
 
                                             @elseif ($isInstalled)
-                                                {{-- حالت ۲: نصبشده و بروزه (چون hasUpdate=false) --}}
+                                                {{-- حالت ۲: نصبشده و بروز --}}
                                                 <span class="pkg-up-to-date">
         <i class="feather icon-check"></i> به‌روز
     </span>
 
                                             @elseif (!$isFree && $hasActiveSubscription)
-                                                {{-- حالت ۳: اشتراک فعال (نصب نشده) --}}
+                                                {{-- حالت ۳: اشتراک فعال --}}
                                                 <button type="button"
                                                         class="btn pkg-btn-install btn-install"
                                                         data-slug="{{ $slug }}"
@@ -264,7 +274,7 @@
                                                 </button>
 
                                             @else
-                                                {{-- حالت ۴: نصب عادی (رایگان یا نیاز به خرید) --}}
+                                                {{-- حالت ۴: نصب عادی --}}
                                                 <button type="button"
                                                         class="btn pkg-btn-install btn-install"
                                                         data-slug="{{ $slug }}"
