@@ -242,14 +242,14 @@
                                                     <i class="feather icon-arrow-up"></i> آپدیت
                                                 </button>
 
-                                            @elseif ($isPurchased || $isFree)
-                                                {{-- حالت ۲: نصبشده و بروزه (چه رایگان چه خریداریشده) --}}
+                                            @elseif ($isInstalled)
+                                                {{-- حالت ۲: نصبشده و بروزه (چون hasUpdate=false) --}}
                                                 <span class="pkg-up-to-date">
-        <i class="feather icon-check"></i> به روز
+        <i class="feather icon-check"></i> به‌روز
     </span>
 
                                             @elseif (!$isFree && $hasActiveSubscription)
-                                                {{-- حالت ۳: اشتراک فعال --}}
+                                                {{-- حالت ۳: اشتراک فعال (نصب نشده) --}}
                                                 <button type="button"
                                                         class="btn pkg-btn-install btn-install"
                                                         data-slug="{{ $slug }}"
@@ -263,7 +263,7 @@
                                                 </button>
 
                                             @else
-                                                {{-- حالت ۵: نصب عادی (رایگان یا نیاز به خرید) --}}
+                                                {{-- حالت ۴: نصب عادی (رایگان یا نیاز به خرید) --}}
                                                 <button type="button"
                                                         class="btn pkg-btn-install btn-install"
                                                         data-slug="{{ $slug }}"
