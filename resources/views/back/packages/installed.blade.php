@@ -181,12 +181,14 @@
                                     </button>
                                     <button type="button"
                                             class="pkg-modal-btn btn-toggle {{ $module->is_active ? 'pkg-modal-btn-outline' : 'pkg-modal-btn-success' }}"
+                                            id="modal-btn-toggle"
                                             data-slug="{{ $module->slug }}">
                                         <i class="feather icon-{{ $module->is_active ? 'eye-off' : 'eye' }}"></i>
                                         {{ $module->is_active ? 'غیرفعال' : 'فعال' }}
                                     </button>
                                     <button type="button"
                                             class="pkg-modal-btn pkg-modal-btn-danger btn-uninstall"
+                                            id="modal-btn-uninstall"
                                             data-slug="{{ $module->slug }}"
                                             data-name="{{ $module->name }}">
                                         <i class="feather icon-trash-2"></i> حذف
