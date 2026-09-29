@@ -715,12 +715,13 @@ class PackageController extends Controller
             $licenseKey    = $purchase['license_key'];
             $downloadToken = $purchase['download_token'] ?? null;
         }
-
-        // ★ ثبت رکورد "در حال نصب" قبل از dispatch (جلوگیری از دوباره‌کلیک)
+        $version = $package['latest_version']['version']
+            ?? collect($package['active_versions'] ?? [])->first()['version']
+            ?? null;
         InstalledModule::markPending(
             $slug,
             $package['name'] ?? null,
-            $package['latest_version']['version'] ?? null,
+            $version,
             $licenseKey
         );
 

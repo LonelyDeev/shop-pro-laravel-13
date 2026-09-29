@@ -79,12 +79,34 @@ class InstalledModule extends Model
     }
 
     // در InstalledModule:
-    public static function markPending(string $slug, ?string $name = null, ?string $version = null, ?string $licenseKey = null): self
-    {
-        $data = ['status' => self::STATUS_UPDATING, 'is_active' => false, 'last_error' => null];
-        if ($name !== null)       $data['name'] = $name;
-        if ($version !== null)    $data['version'] = $version;
-        if ($licenseKey !== null) $data['license_key'] = $licenseKey;
-        return static::updateOrCreate(['slug' => $slug], $data);
+    /**
+     * ساخت/به‌روزرسانی رکورد در حالت "در حال نصب" — در لحظه dispatch
+     * version همیشه مقدار دارد (ستون NOT NULL است)
+     */
+    public static function markPending(
+        string $slug,
+        ?string $name = null,
+        ?string $version = null,
+        ?string $licenseKey = null
+    ): self {
+        $module = static::firstOrNew(['slug' => $slug]);
+
+        $module->status    = self::STATUS_UPDATING;
+        $module->is_active = false;
+        $module->last_error = null;
+
+        if ($name !== null)       $module->name = $name;
+        if ($licenseKey !== null) $module->license_key = $licenseKey;
+
+        // ★ روی رکورد موجود نسخه قدیمی حفظ شود؛ روی رکورد جدید placeholder
+        if ($version !== null) {
+            $module->version = $version;
+        } elseif (!$module->exists && empty($module->version)) {
+            $module->version = '0.0.0';
+        }
+
+        $module->save();
+
+        return $module;
     }
 }
