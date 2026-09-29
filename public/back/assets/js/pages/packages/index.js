@@ -533,4 +533,46 @@
         $btn.find('i').removeClass('icon-credit-card icon-download-cloud icon-rotate-ccw').addClass('icon-award');
         $('#confirm-btn-text').text('نصب با اشتراک');
     }
+
+
+    $(document).on('click', '#btn-copy-project-code', function () {
+        const text = String($('#pkg-project-code').text() || '').trim();
+        const $icon = $(this).find('i');
+        const done = function () {
+            $icon.removeClass('icon-copy').addClass('icon-check text-success');
+            setTimeout(function () { $icon.removeClass('icon-check text-success').addClass('icon-copy'); }, 1800);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(done, done);
+        } else {
+            const $tmp = $('<textarea>').css({ position: 'fixed', opacity: 0 }).val(text).appendTo('body');
+            $tmp[0].select();
+            try { document.execCommand('copy'); } catch (e) {}
+            $tmp.remove();
+            done();
+        }
+    });
+
+    window.PkgCards = {
+        markPending: function (slug, phase) {
+            phase = phase || 'queued';
+            const $card = $('.pkg-card[data-slug="' + slug + '"]');
+            if (!$card.length) return;
+
+            const label = phase === 'running'
+                ? '<span class="spinner-border spinner-border-sm"></span> در حال نصب...'
+                : '<i class="feather icon-clock"></i> در صف نصب';
+
+            $card.find('.btn-install, .pkg-btn-installing').replaceWith(
+                '<button type="button" class="btn pkg-btn-installing" disabled>' + label + '</button>'
+            );
+
+            if ($card.find('.pkg-card-installed-stamp').length === 0) {
+                $card.find('.pkg-card-media').append(
+                    '<div class="pkg-card-installed-stamp pkg-stamp-pending">' + label + '</div>'
+                );
+            }
+        }
+    };
+
 })(jQuery);

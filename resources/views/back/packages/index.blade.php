@@ -66,6 +66,25 @@
                             <span class="pkg-sub-days-label">روز باقی‌مانده</span>
                         </div>
                     </div>
+                @else
+                    <div class="pkg-sub-banner pkg-sub-banner-cta mb-3">
+                        <div class="pkg-sub-banner-glow"></div>
+                        <div class="pkg-sub-banner-icon"><i class="feather icon-shopping-cart"></i></div>
+                        <div class="pkg-sub-banner-info">
+                            <strong><i class="feather icon-award"></i> اشتراک فعالی ندارید</strong>
+                            <span>برای دسترسی رایگان به پکیج‌های ویژه، اشتراک را از سایت مرکزی خریداری کنید</span>
+                            <div class="pkg-project-code">
+                                <span>کد پروژه شما:</span>
+                                <code id="pkg-project-code" class="ltr">{{ config('packages.api.project_key') }}</code>
+                                <button type="button" class="pkg-copy-code" id="btn-copy-project-code" title="کپی کد">
+                                    <i class="feather icon-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <a href="{{ config('packages.api.base_url') }}" target="_blank" class="btn pkg-sub-buy-btn">
+                            <i class="feather icon-external-link"></i> خرید اشتراک
+                        </a>
+                    </div>
                 @endif
 
                 {{-- Stat cards --}}
@@ -156,7 +175,7 @@
                                 $latestVersion = $pkg['latest_version'] ? $pkg['latest_version']['version'] : ($pkg['version'] ?? '');
                                 $hasUpdate = $isInstalled && version_compare($latestVersion, $installedVersion, '>');
                                 $thumbnail = $pkg['thumbnail_url'] ?? ($pkg['thumbnail'] ?? null);
-
+                                $pendingState = $pendingSlugs[$slug] ?? null;  // 'queued' | 'running' | null
                             @endphp
                             <div class="pkg-card" data-slug="{{ $slug }}">
                                 <div class="pkg-card-media">
@@ -189,7 +208,15 @@
                                         <div class="pkg-card-installed-stamp">
                                             <i class="feather icon-check-circle"></i> نصب‌شده
                                         </div>
-                                    @endif
+                                        @elseif ($pendingState)
+                                            <div class="pkg-card-installed-stamp pkg-stamp-pending">
+                                                @if ($pendingState === 'running')
+                                                    <span class="spinner-border spinner-border-sm"></span> در حال نصب...
+                                                @else
+                                                    <i class="feather icon-clock"></i> در صف نصب
+                                                @endif
+                                            </div>
+                                        @endif
                                     <div class="pkg-card-overlay">
                                         <button type="button" class="pkg-card-view btn-show-modal" data-slug="{{ $slug }}">
                                             <i class="feather icon-eye"></i> مشاهده جزئیات
@@ -237,12 +264,14 @@
                                                 $isInstalling = ($installStatusMap[$slug] ?? null) === 'installing';
                                             @endphp
 
-                                            @if ($isInstalling)
-                                                {{-- حالت ۰: در حال نصب --}}
+                                            @if ($pendingState === 'queued')
+                                                <button type="button" class="btn pkg-btn-installing" disabled>
+                                                    <i class="feather icon-clock"></i> در صف نصب
+                                                </button>
+                                            @elseif ($pendingState === 'running')
                                                 <button type="button" class="btn pkg-btn-installing" disabled>
                                                     <span class="spinner-border spinner-border-sm"></span> در حال نصب...
                                                 </button>
-
                                             @elseif ($hasUpdate)
                                                 {{-- حالت ۱: آپدیت موجوده --}}
                                                 <button type="button"
@@ -304,9 +333,15 @@
                         <h5>ارتباط با سرور پکیج‌ها برقرار نشد!</h5>
                         <p>لطفاً چند لحظه دیگر مجدد تلاش کنید یا با پشتیبانی تماس بگیرید.</p>
 
-                        <div class="alert alert-danger mt-1 " style="margin: 0 auto;width: max-content" role="alert">
-                            <p class="ltr">{!! $errors !!}</p>
-                        </div>
+                        @if ($errors)
+                            <div class="alert alert-danger mt-1 pkg-error-box" style="margin: 0 auto; width: max-content; max-width: 100%;" role="alert">
+                                <i class="feather icon-info"></i>
+                                <details>
+                                    <summary style="cursor: pointer;">مشاهده جزئیات خطا</summary>
+                                    <code class="ltr d-block mt-2" style="white-space: pre-wrap;">{{ $errors }}</code>
+                                </details>
+                            </div>
+                        @endif
                     </div>
                 @endif
 

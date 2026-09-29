@@ -37,7 +37,6 @@ class PackagePaymentController extends Controller
         // پیدا کردن رکورد خرید
         $purchase = PackagePurchase::query()
             ->when($transactionId, fn ($q) => $q->where('transaction_id', $transactionId))
-            ->when($purchaseId, fn ($q) => $q->orWhere('id', $purchaseId))
             ->first();
 
         if (!$purchase) {

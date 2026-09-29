@@ -34,6 +34,8 @@ class PackageController extends Controller
         $query = $request->only(['page', 'search', 'category', 'sort']);
         $cacheKey = 'packages.list.' . md5(json_encode($query));
         $errors=null;
+        $purchasedSlugs=null;
+        $pendingSlugs = [];
         try {
             $data = Cache::remember($cacheKey, now()->addMinutes(config('packages.cache.list_ttl')), function () use ($query) {
                 return $this->api->listPackages($query);
@@ -101,14 +103,34 @@ class PackageController extends Controller
                 // ->where('admin_id', auth('admin')->id())
                 ->pluck('package_slug')
                 ->all();
+
+            $pendingModules = InstalledModule::where('status', InstalledModule::STATUS_UPDATING)
+                ->where('updated_at', '>', now()->subMinutes(10))
+                ->get();
+
+            if ($pendingModules->isNotEmpty()) {
+                $runningSlugs = ModuleInstallLog::whereIn('module_slug', $pendingModules->pluck('slug'))
+                    ->where('status', ModuleInstallLog::STATUS_RUNNING)
+                    ->where('created_at', '>', now()->subMinutes(10))
+                    ->pluck('module_slug')
+                    ->unique()
+                    ->flip()
+                    ->all();
+
+                foreach ($pendingModules as $m) {
+                    $pendingSlugs[$m->slug] = isset($runningSlugs[$m->slug]) ? 'running' : 'queued';
+                }
+            }
+
         } catch (RuntimeException $e) {
             $packages = [];
             $pagination = [];
             $installedMap = [];
+            $subscriptionSummary = [];
             $errors = $e->getMessage();
             session()->flash('error', $e->getMessage());
         }
-        return view('back.packages.index', compact('packages', 'pagination', 'purchasedSlugs', 'installedMap', 'errors', 'subscriptionSummary'));
+        return view('back.packages.index', compact('packages', 'pagination', 'purchasedSlugs', 'installedMap', 'errors', 'subscriptionSummary','pendingSlugs'));
     }
 
     /* ===================================================================
@@ -253,7 +275,7 @@ class PackageController extends Controller
             }
 
             // پکیج پولی: ایجاد درخواست خرید با pricing_plan_id
-            $callbackUrl = route(config('packages.payment.callback_route'));
+            $callbackUrl = route(config('packages.payment.callback_route',route('admin.packages.payment.callback')));
 
             $purchase = $this->api->createPurchase($slug, $callbackUrl, $request->user('adminPanel')->id ?? null, $pricingPlanId);
 
@@ -374,8 +396,17 @@ class PackageController extends Controller
         $latestLog = ModuleInstallLog::where('module_slug', $slug)
             ->latest()
             ->first();
+        $phase = null;
+        if ($installed && $installed->status === InstalledModule::STATUS_UPDATING) {
+            $phase = ($latestLog
+                && $latestLog->status === ModuleInstallLog::STATUS_RUNNING
+                && $latestLog->created_at && $latestLog->created_at->gt(now()->subMinutes(10)))
+                ? 'running'
+                : 'queued';
+        }
 
         return response()->json([
+            'phase'      => $phase,
             'installed'  => $installed ? [
                 'version'    => $installed->version,
                 'status'     => $installed->status,

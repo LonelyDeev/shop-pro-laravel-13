@@ -125,9 +125,7 @@ class PackageApiService
                     'body'     => $errorBody,
                 ]);
 
-                /*throw new RuntimeException(
-                    'خطا در ارتباط با سرور پکیج‌ها (کد: ' . $response->status() . '): '.$errorMessage
-                );*/
+                throw new RuntimeException($errorMessage ?: 'ارتباط با سرور پکیج‌ها برقرار نشد.');
             }
 
             return $response->json();

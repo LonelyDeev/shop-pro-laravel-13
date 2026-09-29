@@ -82,7 +82,7 @@
 
 
     @if(function_exists('module_is_active') && module_is_active('SeoAudit'))
-        {!! \Modules\SeoAudit\Services\BreadcrumbsService::render() !!}
+        {!! app(\Modules\SeoAudit\Services\BreadcrumbsService::class)->render() !!}
     @endif
 
 
