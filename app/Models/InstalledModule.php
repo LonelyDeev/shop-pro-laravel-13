@@ -91,19 +91,27 @@ class InstalledModule extends Model
     ): self {
         $module = static::firstOrNew(['slug' => $slug]);
 
-        $module->status    = self::STATUS_UPDATING;
-        $module->is_active = false;
+        $module->status     = self::STATUS_UPDATING;
+        $module->is_active  = false;
         $module->last_error = null;
 
         if ($name !== null)       $module->name = $name;
         if ($licenseKey !== null) $module->license_key = $licenseKey;
 
-        // ★ روی رکورد موجود نسخه قدیمی حفظ شود؛ روی رکورد جدید placeholder
+        // نسخه: روی رکورد موجود حفظ، روی جدید placeholder
         if ($version !== null) {
             $module->version = $version;
         } elseif (!$module->exists && empty($module->version)) {
             $module->version = '0.0.0';
         }
+
+        // ★ ستون‌های NOT NULL که تا اجرای job مقدار نمی‌گیرند
+        if (empty($module->installed_at)) {
+            $module->installed_at = now();
+        }
+        $module->last_verified_at = $module->last_verified_at ?? now();
+        $module->integrity_hash   = $module->integrity_hash
+            ?? md5(config('packages.api.token', '') . config('packages.api.project_key', ''));
 
         $module->save();
 
