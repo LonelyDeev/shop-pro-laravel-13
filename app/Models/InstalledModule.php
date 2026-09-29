@@ -77,4 +77,14 @@ class InstalledModule extends Model
             'last_error' => $error,
         ]);
     }
+
+    // در InstalledModule:
+    public static function markPending(string $slug, ?string $name = null, ?string $version = null, ?string $licenseKey = null): self
+    {
+        $data = ['status' => self::STATUS_UPDATING, 'is_active' => false, 'last_error' => null];
+        if ($name !== null)       $data['name'] = $name;
+        if ($version !== null)    $data['version'] = $version;
+        if ($licenseKey !== null) $data['license_key'] = $licenseKey;
+        return static::updateOrCreate(['slug' => $slug], $data);
+    }
 }
