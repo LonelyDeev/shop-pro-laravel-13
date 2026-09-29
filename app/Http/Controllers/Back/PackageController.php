@@ -674,7 +674,7 @@ class PackageController extends Controller
             }
         }
 
-        if (!$eligible || empty($subscription['license_key'])) {
+        if (!$eligible) {
             return response()->json([
                 'success'       => false,
                 'needs_payment' => true,
@@ -682,15 +682,61 @@ class PackageController extends Controller
             ]);
         }
 
-        InstallPackageJob::dispatch(
+        $licenseKey    = $subscription['license_key'] ?? null;
+        $downloadToken = null;
+
+        // ★★★ لایسنس صادرنشده (مشتری پکیج را جداگانه نخریده، فقط اشتراک دارد)
+        //     → درخواست به purchase → مسیر اشتراکِ API بدون درگاه لایسنس صادر می‌کند
+        if (empty($licenseKey)) {
+            try {
+                $callbackUrl = route(config('packages.payment.callback_route'));
+                $purchase = $this->api->createPurchase(
+                    $slug,
+                    $callbackUrl,
+                    $request->user('adminPanel')->id ?? null,
+                    null   // pricing_plan_id لازم نیست — مسیر اشتراک قبل از چک پلن اجرا می‌شود
+                );
+            } catch (RuntimeException $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'صدور لایسنس از اشتراک ناموفق بود: ' . $e->getMessage(),
+                ], 500);
+            }
+
+            // اطمینان: پاسخ واقعاً از مسیر اشتراک باشد، نه شروع یک خرید پولی
+            if (empty($purchase['via_subscription']) || empty($purchase['license_key'])) {
+                return response()->json([
+                    'success'       => false,
+                    'needs_payment' => true,
+                    'message'       => 'دسترسی به این پکیج از طریق اشتراک ممکن نشد. لطفاً پلن موردنظر را خریداری کنید.',
+                ]);
+            }
+
+            $licenseKey    = $purchase['license_key'];
+            $downloadToken = $purchase['download_token'] ?? null;
+        }
+
+        // ★ ثبت رکورد "در حال نصب" قبل از dispatch (جلوگیری از دوباره‌کلیک)
+        InstalledModule::markPending(
             $slug,
-            $subscription['license_key'],   // لایسنسِ ارائه‌شده توسط اشتراک
-            $request->user('adminPanel')->id ?? null,
-            null,
-            null                            // سرویس install() خودش verifyLicense و token می‌گیرد
+            $package['name'] ?? null,
+            $package['latest_version']['version'] ?? null,
+            $licenseKey
         );
 
-        Log::info('Package install via subscription', ['slug' => $slug]);
+        InstallPackageJob::dispatch(
+            $slug,
+            $licenseKey,
+            $request->user('adminPanel')->id ?? null,
+            null,
+            $downloadToken   // ★ اگر token گرفتیم، install() مرحله verifyLicense را skip می‌کند
+        );
+
+        Log::info('Package install via subscription', [
+            'slug'          => $slug,
+            'had_license'   => !empty($subscription['license_key']),
+            'issued_new'    => $downloadToken !== null || !empty($purchase['license_key'] ?? null),
+        ]);
 
         return response()->json(['success' => true]);
     }

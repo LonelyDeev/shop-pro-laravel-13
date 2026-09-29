@@ -81,6 +81,11 @@
     @endif
 
 
+    @if(function_exists('module_is_active') && module_is_active('SeoAudit'))
+        {!! \Modules\SeoAudit\Services\BreadcrumbsService::render() !!}
+    @endif
+
+
 </head>
 
 <body>
