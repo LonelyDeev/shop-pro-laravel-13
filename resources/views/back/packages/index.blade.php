@@ -174,6 +174,7 @@
                                                 $hasFreePlan = $pkg['has_free_plan'] ?? false;
                                                  $hasActiveSubscription = ($pkg['subscription']['is_free_with_subscription'] ?? false);
                                             @endphp
+
                                             @if (!$isFree && $hasActiveSubscription)
                                                 <span class="pkg-tag pkg-tag-subscription"><i class="feather icon-award"></i> رایگان با اشتراک</span>
                                             @elseif ($isPurchased && !$isFree)
