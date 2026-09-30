@@ -58,7 +58,7 @@ class PackageApiService
      * =================================================================== */
     public function verifyPayment(string $transactionId): array
     {
-        return $this->request('POST', "/api/v1/payments/{$transactionId}/verify");
+        return $this->request('POST', "/api/v1/payments/{$transactionId}/verify", [], true);
     }
 
     /* ===================================================================
@@ -95,14 +95,15 @@ class PackageApiService
     /* ===================================================================
      *  درخواست HTTP مشترک
      * =================================================================== */
-    private function request(string $method, string $endpoint, array $data = []): array
+
+    private function request(string $method, string $endpoint, array $data = [], bool $soft4xx = false): array
     {
         try {
             $projectUrl = request()->root();
             $http = Http::timeout($this->timeout)
                 ->withToken($this->token)
                 ->withHeaders([
-                    'Accept'       => 'application/json',
+                    'Accept'        => 'application/json',
                     'X-Project-Key' => $this->projectKey,
                     'X-Project-Url' => $projectUrl,
                 ]);
@@ -111,19 +112,25 @@ class PackageApiService
                 ? $http->get($this->baseUrl . $endpoint, $data)
                 : $http->post($this->baseUrl . $endpoint, $data);
 
-
             if (!$response->successful()) {
-                $errorBody = $response->body();
                 $errorJson = $response->json();
-
-                // اگر پاسخ JSON است و دارای کلید error یا message است
-                $errorMessage = $errorJson['message'] ?? $errorJson['error'] ?? $errorBody;
+                $errorBody = $response->body();
+                $errorMessage = $errorJson['message'] ?? $errorJson['error'] ?? null;
 
                 Log::error('Packages API failed', [
                     'endpoint' => $endpoint,
                     'status'   => $response->status(),
                     'body'     => $errorBody,
                 ]);
+
+                // ★ 4xx = پاسخ کسب‌وکاری API (لغو پرداخت، تراکنش یافت نشد، ...)
+                //   برای verifyPayment این «جواب قطعیِ پرداخت‌نشدن» است، نه قطعیِ سرور
+                if ($soft4xx && $response->status() >= 400 && $response->status() < 500) {
+                    return [
+                        'paid'    => false,
+                        'message' => $errorMessage ?: 'پرداخت تأیید نشد.',
+                    ];
+                }
 
                 throw new RuntimeException($errorMessage ?: 'ارتباط با سرور پکیج‌ها برقرار نشد.');
             }
@@ -137,4 +144,5 @@ class PackageApiService
             throw new RuntimeException('ارتباط با سرور پکیج‌ها برقرار نشد. لطفاً مجدد تلاش کنید.');
         }
     }
+
 }

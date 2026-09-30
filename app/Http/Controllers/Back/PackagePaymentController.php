@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Back;
 
 use App\Http\Controllers\Controller;
 use App\Jobs\InstallPackageJob;
+use App\Models\InstalledModule;
 use App\Models\PackagePurchase;
 use App\Services\PackageApiService;
 use Illuminate\Http\Request;
@@ -22,6 +23,104 @@ class PackagePaymentController extends Controller
      * کال‌بک درگاه پرداخت → بازگشت به صفحه ایندکس + نمایش مودال نتیجه
      */
     public function callback(Request $request)
+    {
+        $transactionId = $request->query('transaction_id')
+            ?? $request->query('Authority')
+            ?? $request->query('transactionId')
+            ?? $request->query('tracking_code');
+
+        $purchaseId = $request->query('purchase_id');
+
+        // ★ پارامترهای لغو/خطا که درگاه به callback اضافه می‌کند
+        $isCancelled  = $request->query('cancel') === 'true' || $request->query('status') === 'failed';
+        $gatewayError = $request->query('error');   // «تراکنش توسط خریدار لغو شده است.»
+
+        if (!$transactionId && !$purchaseId) {
+            return $this->redirectToIndexWithResult('failed', 'پرداخت ناموفق بود',
+                $gatewayError ?: 'اطلاعات تراکنش ناقص است.');
+        }
+
+        $purchase = PackagePurchase::query()
+            ->when($transactionId, fn ($q) => $q->where('transaction_id', $transactionId))
+            ->first();
+
+        if (!$purchase) {
+            return $this->redirectToIndexWithResult('error', 'خطا', 'رکورد خرید یافت نشد.');
+        }
+
+        try {
+            $verify = $this->api->verifyPayment($transactionId ?: $purchase->transaction_id);
+
+            if (!($verify['paid'] ?? false)) {
+                $failReason = $verify['message'] ?? $gatewayError ?? 'پرداخت تأیید نشد.';
+                $purchase->markAsFailed($failReason);
+
+                // ★ پیام بر اساس لغو/ناموفق بودن
+                $title   = $isCancelled ? 'پرداخت لغو شد' : 'پرداخت ناموفق بود';
+                $message = $isCancelled
+                    ? 'پرداخت توسط شما لغو شد و مبلغی از حساب شما کسر نشده است. در صورت نیاز می‌توانید دوباره تلاش کنید.'
+                    : 'پرداخت شما تأیید نشد. در صورت کسر مبلغ، حداکثر ۷۲ ساعت بازمی‌گردد.';
+
+                return $this->redirectToIndexWithResult('failed', $title, $message, [
+                    'package_name'   => $purchase->package_name ?? $purchase->package_slug,
+                    'package_slug'   => $purchase->package_slug,
+                    'amount'         => $purchase->amount ?? null,
+                    'transaction_id' => $transactionId,
+                ]);
+            }
+
+            // ---------- مسیر موفق (بدون تغییر) ----------
+            $licenseKey = $verify['license_key'] ?? null;
+            if (!$licenseKey) {
+                throw new RuntimeException('لایسنس از API دریافت نشد.');
+            }
+
+            $purchase->markAsPaid([
+                'license_key'        => $licenseKey,
+                'license_expires_at' => $verify['expires_at'] ?? null,
+                'gateway'            => $verify['gateway'] ?? null,
+            ]);
+
+            InstalledModule::markPending(
+                $purchase->package_slug,
+                $purchase->package_name,
+                $purchase->version,
+                $licenseKey
+            );
+
+            InstallPackageJob::dispatch(
+                $purchase->package_slug,
+                $licenseKey,
+                $purchase->admin_id,
+                $purchase->id,
+                $verify['download_token'] ?? null
+            );
+
+            return $this->redirectToIndexWithResult('success', 'پرداخت با موفقیت انجام شد',
+                'مبلغ پرداخت‌شده تأیید شد و نصب پکیج آغاز گردید.', [
+                    'package_name'   => $purchase->package_name ?? $purchase->package_slug,
+                    'package_slug'   => $purchase->package_slug,
+                    'amount'         => $purchase->amount ?? null,
+                    'transaction_id' => $transactionId,
+                    'license_key'    => $licenseKey,
+                ]);
+
+        } catch (Throwable $e) {
+            Log::error('Payment callback failed', [
+                'transaction' => $transactionId,
+                'error'       => $e->getMessage(),
+            ]);
+
+            // ★ قطع ارتباط / 5xx = نامعلوم — رکورد failed نمی‌شود (شاید پرداخت واقعاً موفق بوده)
+            //   کاربر می‌تواند صفحه را رفرش کند تا دوباره verify شود؛
+            //   پیام «ناموفق» هم نمی‌گیرد که نگران شود، نه «موفق» که فریب بخورد
+            return $this->redirectToIndexWithResult('error', 'خطا در تأیید پرداخت',
+                'در تأیید پرداخت مشکلی پیش آمد. اگر مبلغ کسر شده است، حداکثر تا ۷۲ ساعت آینده وضعیت به‌روز می‌شود یا با پشتیبانی تماس بگیرید.', [
+                    'transaction_id' => $transactionId,
+                ]);
+        }
+    }
+   /* public function callback(Request $request)
     {
         $transactionId = $request->query('transaction_id')
             ?? $request->query('Authority')
@@ -104,7 +203,7 @@ class PackagePaymentController extends Controller
                 'transaction_id' => $transactionId,
             ]);
         }
-    }
+    }*/
 
     /**
      * ریدایرکت به ایندکس همراه با دیتای نتیجه پرداخت (برای مودال)
