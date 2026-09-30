@@ -299,6 +299,19 @@
                                                         data-plans='@json($pkg['plans'] ?? [])'>
                                                     <i class="feather icon-award"></i> نصب با اشتراک
                                                 </button>
+                                            @elseif ($isPurchased)
+                                                {{-- حالت ۳: اشتراک فعال --}}
+                                                <button type="button"
+                                                        class="btn pkg-btn-install btn-install"
+                                                        data-slug="{{ $slug }}"
+                                                        data-name="{{ $pkg['name'] ?? $slug }}"
+                                                        data-free="0"
+                                                        data-price="{{ $minPrice }}"
+                                                        data-purchased="0"
+                                                        data-subscription="1"
+                                                        data-plans='@json($pkg['plans'] ?? [])'>
+                                                    <i class="feather icon-award"></i> برسی و نصب
+                                                </button>
 
                                             @else
                                                 {{-- حالت ۴: نصب عادی --}}
