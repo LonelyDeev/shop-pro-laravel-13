@@ -126,7 +126,7 @@ class OrderController extends Controller
 
         // طرح اقساطی در صورت وجود ماژول
         $installmentPlan = null;
-        if (function_exists('module_is_active') && module_is_active('InstallmentPayment')) {
+        if (module_is_ready('InstallmentPayment', ['installment_settings'])){
             $installmentPlan = \Modules\InstallmentPayment\Models\InstallmentPlan::where('order_id', $order->id)->first();
         }
 

@@ -1549,3 +1549,45 @@ if (!function_exists('module_is_active')) {
         }
     }
 }
+if (!function_exists('module_is_active')) {
+    function module_is_active(string $moduleName): bool
+    {
+        try {
+            return app('modules')->isEnabled($moduleName);
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+}
+
+if (!function_exists('module_is_ready')) {
+    /**
+     * چک می‌کند ماژول فعال است و (در صورت مشخص کردن) جداول حیاتی آن وجود دارند.
+     *
+     * @param string $moduleName
+     * @param array  $requiredTables  اگر خالی باشد، فقط فعال بودن ماژول چک می‌شود.
+     * @return bool
+     */
+    function module_is_ready(string $moduleName, array $requiredTables = []): bool
+    {
+        if (!module_is_active($moduleName)) {
+            return false;
+        }
+
+        // اگر جدولی برای چک کردن مشخص نشده، همین فعال بودن کافی است
+        if (empty($requiredTables)) {
+            return true;
+        }
+
+        try {
+            foreach ($requiredTables as $table) {
+                if (!\Illuminate\Support\Facades\Schema::hasTable($table)) {
+                    return false;
+                }
+            }
+            return true;
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+}

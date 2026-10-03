@@ -4,11 +4,11 @@
 
 <div  class=" shopping-page">
     {{-- Hook برای پرداخت اقساطی --}}
-    @if(function_exists('module_is_active') && module_is_active('InstallmentPayment'))
+    @if(module_is_ready('InstallmentPayment', ['installment_excluded_products']))
         @include('installment-payment::front.checkout_hook', ['cart' => $cart])
     @endif
 
-    @if(function_exists('module_is_active') && module_is_active('CreditPay'))
+    @if(module_is_ready('CreditPay', ['credit_product_markups']))
         @include('credit-pay::front.checkout_hook', ['cart' => $cart])
     @endif
 
