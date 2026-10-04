@@ -339,7 +339,7 @@ class PackageInstallerService
         }
 
         $zip->close();
-
+        clearstatcache();
         return $moduleName;
     }
 
@@ -383,32 +383,61 @@ class PackageInstallerService
         $modulePath = config('packages.modules.path') . '/' . $moduleName;
         $prefix = "Modules\\{$moduleName}\\";
 
-        // ثبت در runtime برای request فعلی
+        // جلوگیری از ثبت تکراری (در لاگ شما ۵ بار ثبت شده بود!)
+        static $registered = [];
+        if (isset($registered[$prefix])) {
+            return;
+        }
+        $registered[$prefix] = true;
+
         spl_autoload_register(function ($class) use ($prefix, $modulePath) {
             if (strpos($class, $prefix) !== 0) {
                 return;
             }
 
-            $relativeClass = substr($class, strlen($prefix));
-            $file = $modulePath . '/app/' . str_replace('\\', '/', $relativeClass) . '.php';
+            $relative = substr($class, strlen($prefix));
+            $path     = str_replace('\\', '/', $relative) . '.php';
 
-            if (file_exists($file)) {
-                require_once $file;
-                return true;
+            // نسخه‌ای که دایرکتوری‌ها lcfirst شده‌اند:
+            // Database\Seeders\Foo  →  database/seeders/Foo.php
+            $parts     = explode('/', $path);
+            $classFile = array_pop($parts);
+            $lowerPath = implode('/', array_map('lcfirst', $parts)) . '/' . $classFile;
+
+            $candidates = [
+                $modulePath . '/app/' . $path,        // app/Console/Commands/Foo.php
+                $modulePath . '/' . $path,            // Entities/Foo.php (بدون app)
+                $modulePath . '/app/' . $lowerPath,
+                $modulePath . '/' . $lowerPath,       // database/seeders/Foo.php  ← حل مشکل شما
+            ];
+
+            foreach ($candidates as $file) {
+                if (is_file($file)) {
+                    require_once $file;
+                    return true;
+                }
             }
 
-            // fallback: بدون app/
-            $file2 = $modulePath . '/' . str_replace('\\', '/', $relativeClass) . '.php';
-            if (file_exists($file2)) {
-                require_once $file2;
-                return true;
+            // Fallback نهایی: جستجوی «نام فایل = نام کلاس» در کل ماژول
+            try {
+                $iterator = new \RecursiveIteratorIterator(
+                    new \RecursiveDirectoryIterator($modulePath, \FilesystemIterator::SKIP_DOTS)
+                );
+                foreach ($iterator as $f) {
+                    if ($f->isFile() && $f->getFilename() === $classFile) {
+                        require_once $f->getPathname();
+                        return true;
+                    }
+                }
+            } catch (\Throwable $e) {
+                // نادیده بگیر
             }
+
             return false;
         }, true, true);
 
         Log::info("✅ Autoloader registered for module: {$moduleName}");
     }
-
     /* ===================================================================
      *  اجرای Composer Dump-Autoload (بدون exec)
      * =================================================================== */
@@ -887,6 +916,8 @@ class PackageInstallerService
      * =================================================================== */
     private function runModuleSeeders(string $moduleName): void
     {
+        $this->registerModuleAutoloader($moduleName);
+
         $modulePath = config('packages.modules.path') . '/' . $moduleName;
         $seedersPath = $this->findSeedersPath($modulePath);
 
@@ -898,12 +929,23 @@ class PackageInstallerService
         $this->step('run_seeders', 'اجرای seederهای ماژول');
 
         try {
+            // ۱) require مستقیم همه فایل‌های seeder
+            //    → مستقل از autoload؛ مشکل case-sensitivity کاملاً بی‌اثر می‌شود
+            $this->requireAllPhpFiles($seedersPath);
+
             $mainSeederClass = "Modules\\{$moduleName}\\Database\\Seeders\\{$moduleName}DatabaseSeeder";
 
+            // ۲) اگر هنوز لود نشده بود، کلاس را از خود فایل‌ها پیدا کن
             if (!class_exists($mainSeederClass)) {
-                Log::info('Main seeder class not found', [
+                $mainSeederClass = $this->resolveSeederClass($moduleName, $seedersPath)
+                    ?? $mainSeederClass;
+            }
+
+            if (!class_exists($mainSeederClass)) {
+                Log::warning('Main seeder class not found', [
                     'module' => $moduleName,
                     'class'  => $mainSeederClass,
+                    'files'  => scandir($seedersPath),
                 ]);
                 return;
             }
@@ -911,12 +953,12 @@ class PackageInstallerService
             $seeder = app($mainSeederClass);
             $seeder->setContainer(app());
 
-            $output = new \Symfony\Component\Console\Output\BufferedOutput();
+            $output  = new \Symfony\Component\Console\Output\BufferedOutput();
             $command = new \Illuminate\Console\Command();
             $command->setLaravel(app());
             $command->setOutput(
                 new \Illuminate\Console\OutputStyle(
-                    new \Symfony\Component\Console\Input\ArgvInput(),
+                    new \Symfony\Component\Console\Input\ArrayInput([]),
                     $output
                 )
             );
@@ -927,7 +969,7 @@ class PackageInstallerService
             Log::info("Module seeders executed: {$moduleName}", [
                 'output' => $output->fetch(),
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::warning('Seeder execution failed (continuing)', [
                 'module' => $moduleName,
                 'error'  => $e->getMessage(),
@@ -935,6 +977,64 @@ class PackageInstallerService
         }
     }
 
+    private function requireAllPhpFiles(string $directory): void
+    {
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($directory, \FilesystemIterator::SKIP_DOTS)
+        );
+
+        foreach ($iterator as $file) {
+            /** @var \SplFileInfo $file */
+            if ($file->isFile() && strtolower($file->getExtension()) === 'php') {
+                try {
+                    require_once $file->getPathname();
+                } catch (\Throwable $e) {
+                    Log::warning('Could not require seeder file', [
+                        'file'  => $file->getPathname(),
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+        }
+    }
+
+    private function resolveSeederClass(string $moduleName, string $seedersPath): ?string
+    {
+        $target = strtolower($moduleName . 'DatabaseSeeder.php');
+
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($seedersPath, \FilesystemIterator::SKIP_DOTS)
+        );
+
+        foreach ($iterator as $file) {
+            if (! $file->isFile() || strtolower($file->getExtension()) !== 'php') {
+                continue;
+            }
+
+            $isExact = strtolower($file->getFilename()) === $target;
+            $isAny   = str_ends_with(strtolower($file->getFilename()), 'databaseseeder.php');
+
+            if ($isExact || $isAny) {
+                $content = file_get_contents($file->getPathname());
+                $class   = pathinfo($file->getFilename(), PATHINFO_FILENAME);
+
+                if (preg_match('/^\s*namespace\s+([^;]+);/m', $content, $m)) {
+                    $class = trim($m[1]) . '\\' . $class;
+                }
+
+                require_once $file->getPathname();
+
+                if (class_exists($class)) {
+                    return $class;
+                }
+                if ($isExact) {
+                    break; // دقیقاً همین فایل بود ولی کلاس ندارد
+                }
+            }
+        }
+
+        return null;
+    }
     /* ===================================================================
      *  رفرش کش‌ها (بدون exec)
      * =================================================================== */
