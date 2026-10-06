@@ -319,13 +319,24 @@
                                                         class="btn pkg-btn-install btn-install"
                                                         data-slug="{{ $slug }}"
                                                         data-name="{{ $pkg['name'] ?? $slug }}"
+                                                        data-free="0"
+                                                        data-price="{{ $minPrice }}"
+                                                        data-purchased="0"
+                                                        data-subscription="1"
+                                                        data-plans='@json($pkg['plans'] ?? [])'>
+                                                    <i class="feather icon-download-cloud"></i> نصب
+                                                </button>
+                                               {{-- <button type="button"
+                                                        class="btn pkg-btn-install btn-install"
+                                                        data-slug="{{ $slug }}"
+                                                        data-name="{{ $pkg['name'] ?? $slug }}"
                                                         data-free="{{ $isFree ? '1' : '0' }}"
                                                         data-price="{{ $minPrice }}"
                                                         data-purchased="0"
                                                         data-subscription="0"
                                                         data-plans='@json($pkg['plans'] ?? [])'>
                                                     <i class="feather icon-download-cloud"></i> نصب
-                                                </button>
+                                                </button>--}}
                                             @endif
 
                                     </div>

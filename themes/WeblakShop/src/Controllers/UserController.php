@@ -50,7 +50,7 @@ class UserController extends Controller
         }else if ($this->username($request->username)=="email") {
 
             $this->validate($request, [
-                'username' => 'string|email|exists:Users,email',
+                'username' => 'string|email|exists:users,email',
             ],[
                 'username.email'=>'ایمیل را بطور صحیح وارد کنید',
                 'username.exists'=>'حساب کاربری با مشخصات وارد شده وجود ندارد. لطفا از شماره تلفن همراه برای ساخت حساب کاربری استفاده نمایید.',
